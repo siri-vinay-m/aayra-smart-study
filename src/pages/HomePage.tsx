@@ -14,7 +14,7 @@ const HomePage = () => {
     <MainLayout>
       <div className="px-4">
         <div className="text-center mb-2">
-          <h1 className="text-2xl font-semibold text-primary">AAYRA</h1>
+          <h1 className="text-2xl font-semibold text-orange-500">AAYRA</h1>
           <p className="text-lg text-gray-600">The Smarter way to Master more.</p>
         </div>
         

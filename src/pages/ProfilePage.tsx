@@ -38,7 +38,8 @@ const ProfilePage = () => {
       });
     }
     
-    navigate('/');
+    // Navigate to home page after saving changes
+    navigate('/home');
   };
   
   const handleLogout = () => {
@@ -95,7 +96,7 @@ const ProfilePage = () => {
                   )}
                 </Avatar>
                 <div>
-                  <p className="text-primary hover:underline">Edit Profile Picture</p>
+                  <p className="text-orange-500 hover:underline">Edit Profile Picture</p>
                 </div>
               </div>
             </DialogTrigger>
@@ -160,7 +161,7 @@ const ProfilePage = () => {
           <div className="space-y-2">
             <Label htmlFor="weekdays">Preferred Study Weekdays</Label>
             <Select value={weekdays} onValueChange={setWeekdays}>
-              <SelectTrigger className="border-primary focus:ring-primary">
+              <SelectTrigger className="border-orange-500 focus:ring-orange-500">
                 <SelectValue placeholder="Select weekdays" />
               </SelectTrigger>
               <SelectContent>
@@ -180,7 +181,7 @@ const ProfilePage = () => {
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="text-primary font-semibold focus:ring-primary focus:border-primary"
+              className="text-orange-500 font-semibold focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
           
@@ -196,7 +197,7 @@ const ProfilePage = () => {
                       : 'Limited to 2 sessions per day'}
                   </p>
                 </div>
-                <Button className="bg-primary hover:bg-primary-dark">
+                <Button className="bg-orange-500 hover:bg-orange-600">
                   {user?.isSubscribed ? 'Manage' : 'Upgrade'}
                 </Button>
               </div>
@@ -206,7 +207,7 @@ const ProfilePage = () => {
           <div className="space-y-4 pt-6">
             <Button 
               onClick={handleSaveProfile}
-              className="w-full bg-primary hover:bg-primary-dark"
+              className="w-full bg-orange-500 hover:bg-orange-600"
             >
               Save Changes
             </Button>

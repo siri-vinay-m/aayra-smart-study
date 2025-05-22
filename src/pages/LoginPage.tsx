@@ -53,7 +53,7 @@ const LoginPage = () => {
         isSubscribed: false,
         subscriptionPlan: 'free'
       });
-      navigate('/profile'); // Send new users to profile
+      navigate('/home'); // Always navigate to home page after login
     }
   };
 
@@ -61,7 +61,7 @@ const LoginPage = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">AAYRA</h1>
+          <h1 className="text-4xl font-bold text-orange-500 mb-2">AAYRA</h1>
           <p className="text-gray-600">The Smarter way to Master more.</p>
         </div>
         
@@ -97,7 +97,7 @@ const LoginPage = () => {
               />
             </div>
             
-            <Button type="submit" className="w-full bg-primary hover:bg-primary-dark">
+            <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600">
               Log In
             </Button>
           </form>
@@ -105,7 +105,7 @@ const LoginPage = () => {
           <div className="mt-6 text-center">
             <p>
               Don't have an account?{' '}
-              <a href="/register" className="text-primary hover:underline">
+              <a href="/register" className="text-orange-500 hover:underline">
                 Register
               </a>
             </p>

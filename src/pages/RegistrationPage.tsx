@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useUser } from '@/contexts/UserContext';
 import { Eye, EyeOff } from 'lucide-react';
@@ -17,9 +16,6 @@ const RegistrationPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [category, setCategory] = useState('');
-  const [weekdays, setWeekdays] = useState('');
-  const [startTime, setStartTime] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -49,10 +45,6 @@ const RegistrationPage = () => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
     
-    if (!category) {
-      newErrors.category = 'Please select a student category';
-    }
-    
     if (!agreeTerms) {
       newErrors.agreeTerms = 'You must agree to the Terms of Service';
     }
@@ -69,14 +61,14 @@ const RegistrationPage = () => {
       
       // Simulate API call
       setTimeout(() => {
-        // Create a new user
+        // Create a new user with minimal information
         setUser({
           id: '1',
           displayName,
           email,
-          studentCategory: category as any,
-          preferredStudyWeekdays: weekdays,
-          preferredStudyStartTime: startTime,
+          studentCategory: null,
+          preferredStudyWeekdays: null,
+          preferredStudyStartTime: null,
           profilePicture: null,
           isSubscribed: false,
           subscriptionPlan: 'free'
@@ -84,7 +76,8 @@ const RegistrationPage = () => {
         
         setIsAuthenticated(true);
         setIsLoading(false);
-        navigate('/');
+        // Redirect to profile page to complete profile setup
+        navigate('/profile');
       }, 1500);
     }
   };
@@ -101,7 +94,7 @@ const RegistrationPage = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary">AAYRA</h1>
+          <h1 className="text-3xl font-bold text-orange-500">AAYRA</h1>
           <p className="mt-1 text-gray-600">The Smarter way to Master more.</p>
         </div>
         
@@ -192,52 +185,6 @@ const RegistrationPage = () => {
               )}
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="category">Student Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className={errors.category ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="high_school">High School Student</SelectItem>
-                  <SelectItem value="college">College Student</SelectItem>
-                  <SelectItem value="competitive_exams">Competitive Exam Aspirant</SelectItem>
-                  <SelectItem value="professional">Professional Learner</SelectItem>
-                  <SelectItem value="lifelong_learner">Lifelong Learner</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.category && (
-                <p className="text-sm text-red-500">{errors.category}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="weekdays">Preferred Study Weekdays (Optional)</Label>
-              <Select value={weekdays} onValueChange={setWeekdays}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select weekdays" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Days</SelectItem>
-                  <SelectItem value="weekdays">Weekdays</SelectItem>
-                  <SelectItem value="weekends">Weekends</SelectItem>
-                  <SelectItem value="mon_wed_fri">Monday, Wednesday, Friday</SelectItem>
-                  <SelectItem value="tue_thu">Tuesday, Thursday</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="start-time">Preferred Study Start Time (Optional)</Label>
-              <Input
-                id="start-time"
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="text-primary"
-              />
-            </div>
-            
             <div className="flex items-center space-x-2">
               <Checkbox 
                 id="terms" 
@@ -246,7 +193,7 @@ const RegistrationPage = () => {
                 className={errors.agreeTerms ? 'border-red-500' : ''}
               />
               <Label htmlFor="terms" className="text-sm">
-                I agree to the AAYRA <a href="#" className="text-primary hover:underline">Terms of Service</a> and <a href="#" className="text-primary hover:underline">Privacy Policy</a>
+                I agree to the AAYRA <a href="#" className="text-orange-500 hover:underline">Terms of Service</a> and <a href="#" className="text-orange-500 hover:underline">Privacy Policy</a>
               </Label>
             </div>
             {errors.agreeTerms && (
@@ -255,7 +202,7 @@ const RegistrationPage = () => {
             
             <Button 
               type="submit" 
-              className="w-full bg-primary hover:bg-primary-dark"
+              className="w-full bg-orange-500 hover:bg-orange-600"
               disabled={isLoading}
             >
               {isLoading ? 'Creating Account...' : 'Create Account'}
@@ -263,7 +210,7 @@ const RegistrationPage = () => {
             
             <div className="text-center mt-4">
               <p className="text-sm text-gray-600">
-                Already have an account? <a href="/login" className="text-primary hover:underline">Log In</a>
+                Already have an account? <a href="/login" className="text-orange-500 hover:underline">Log In</a>
               </p>
             </div>
           </form>
