@@ -2,21 +2,28 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Heart, Home, ArrowLeft } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
 
 const BottomTaskBar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated } = useUser();
   
   const handleFavorites = () => {
     navigate('/favorites');
   };
   
   const handleHome = () => {
-    navigate('/');
+    // Only navigate to home if authenticated
+    if (isAuthenticated) {
+      navigate('/home');
+    } else {
+      navigate('/login');
+    }
   };
   
   const handleBack = () => {
-    if (location.pathname === '/') {
+    if (location.pathname === '/home') {
       // Show exit confirmation dialog
       const confirmExit = window.confirm('Do you want to exit?');
       if (confirmExit) {
@@ -42,7 +49,7 @@ const BottomTaskBar = () => {
           onClick={handleHome}
           className="p-2 rounded-full hover:bg-gray-100"
         >
-          <Home size={24} className={location.pathname === '/' ? 'text-primary' : 'text-gray-600'} />
+          <Home size={24} className={location.pathname === '/home' ? 'text-primary' : 'text-gray-600'} />
         </button>
         
         <button 

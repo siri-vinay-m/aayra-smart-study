@@ -9,6 +9,10 @@ const PendingReviewsPage = () => {
   const { pendingReviews } = useSession();
   const navigate = useNavigate();
   
+  const handleReviewClick = (sessionId: string) => {
+    navigate(`/review/${sessionId}`);
+  };
+  
   return (
     <MainLayout>
       <div className="px-4">
@@ -24,7 +28,7 @@ const PendingReviewsPage = () => {
               <div 
                 key={review.id}
                 className="bg-white shadow-sm rounded-lg p-4 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => navigate(`/review/${review.sessionId}`)}
+                onClick={() => handleReviewClick(review.sessionId)}
               >
                 <div className="flex justify-between items-start">
                   <div>

@@ -17,6 +17,7 @@ import UploadPage from "./pages/UploadPage";
 import ValidationPage from "./pages/ValidationPage";
 import BreakTimerPage from "./pages/BreakTimerPage";
 import PendingReviewsPage from "./pages/PendingReviewsPage";
+import ReviewSessionPage from "./pages/ReviewSessionPage";
 import CompletedSessionsPage from "./pages/CompletedSessionsPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -46,6 +47,7 @@ const App = () => {
                   <Route path="/validation" element={<ValidationPage />} />
                   <Route path="/break" element={<BreakTimerPage />} />
                   <Route path="/pending-reviews" element={<PendingReviewsPage />} />
+                  <Route path="/review/:sessionId" element={<ReviewSessionPage />} />
                   <Route path="/completed-sessions" element={<CompletedSessionsPage />} />
                   <Route path="/favorites" element={<FavoritesPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
