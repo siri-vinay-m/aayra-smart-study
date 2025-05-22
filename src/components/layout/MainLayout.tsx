@@ -18,7 +18,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
     <div className="aayra-container">
       {!hideTopBar && <TopProfileBar />}
       
-      <div className="flex-1 py-4">
+      <div className="flex-1 py-4 pb-16">
         {children}
       </div>
       

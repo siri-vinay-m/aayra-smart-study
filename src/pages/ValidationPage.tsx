@@ -1,79 +1,127 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Check, X } from 'lucide-react';
 
-// Sample flashcard data (in real app, this would come from AI)
-const sampleFlashcards = [
-  {
-    id: 'fc1',
-    front: 'What is a derivative?',
-    back: 'A derivative measures the rate at which a function changes at a specific point.'
-  },
-  {
-    id: 'fc2',
-    front: 'What is the chain rule?',
-    back: 'The chain rule is a formula for computing the derivative of a composite function.'
-  },
-  {
-    id: 'fc3',
-    front: 'What is an integral?',
-    back: 'An integral represents the area under a curve of a function.'
-  },
-  {
-    id: 'fc4',
-    front: 'What is the power rule?',
-    back: 'The power rule states that the derivative of x^n is n*x^(n-1).'
-  },
-  {
-    id: 'fc5',
-    front: 'What is the product rule?',
-    back: 'The product rule is used to find the derivative of a product of two functions.'
-  }
-];
+type SessionStatus = "focus_pending" | "focus_inprogress" | "upload_pending" | "validating" | "break_pending" | "completed";
 
-// Sample quiz data
-const sampleQuiz = [
-  {
-    id: 'q1',
-    question: 'What is the derivative of x²?',
-    options: ['x', '2x', '2x²', 'x²'],
-    answer: '2x',
-    explanation: 'Using the power rule, the derivative of x² is 2x.'
-  },
-  {
-    id: 'q2',
-    question: 'Is the integral of a constant function equal to the constant times x plus C?',
-    options: ['True', 'False'],
-    answer: 'True',
-    explanation: 'The integral of a constant k is kx + C.'
-  },
-  {
-    id: 'q3',
-    question: 'Which of the following is NOT a technique of integration?',
-    options: ['Substitution', 'Integration by parts', 'Chain rule', 'Partial fractions'],
-    answer: 'Chain rule',
-    explanation: 'Chain rule is a differentiation technique, not an integration technique.'
-  },
-];
-
-// Sample summary
-const sampleSummary = 'Calculus is the mathematical study of continuous change. The two main branches are differential calculus and integral calculus. Differential calculus focuses on rates of change and slopes of curves, while integral calculus focuses on accumulation of quantities and the areas under curves. Key concepts include limits, derivatives, and integrals.';
+interface StudySession {
+  id: string;
+  status: SessionStatus;
+  subjectName: string;
+  topicName: string;
+  sessionName: string;
+  sequenceNumber: number;
+  isFavorite: boolean;
+  createdAt: string;
+  lastReviewedAt: string | null;
+}
 
 const ValidationPage = () => {
-  const { currentSession, setCurrentSession, setCompletedSessions } = useSession();
+  const { currentSession, setCurrentSession, completedSessions, setCompletedSessions } = useSession();
   const navigate = useNavigate();
-  const [step, setStep] = useState<'flashcards' | 'quiz' | 'summary'>('flashcards');
-  const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [showExplanation, setShowExplanation] = useState(false);
+  const [currentTab, setCurrentTab] = useState('flashcards');
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+  
+  // Simulated content from AI
+  const flashcards = [
+    { front: 'What is the principle of conservation of energy?', back: 'Energy cannot be created or destroyed, only converted from one form to another.' },
+    { front: 'Define kinetic energy.', back: 'The energy possessed by an object due to its motion.' },
+    { front: 'What is potential energy?', back: 'The stored energy an object has due to its position or state.' },
+    { front: 'Define the First Law of Thermodynamics.', back: 'Energy can be changed from one form to another, but it cannot be created or destroyed.' },
+    { front: 'What is work in physics?', back: 'The product of the force applied to an object and the distance the object moves in the direction of the force.' },
+  ];
+  
+  const quizQuestions = [
+    {
+      question: 'What does the principle of conservation of energy state?',
+      options: [
+        'Energy can be created but not destroyed.',
+        'Energy can be destroyed but not created.',
+        'Energy can be neither created nor destroyed, only converted from one form to another.',
+        'Energy can be both created and destroyed under certain conditions.'
+      ],
+      correctAnswer: 'Energy can be neither created nor destroyed, only converted from one form to another.',
+      explanation: 'The principle of conservation of energy states that energy cannot be created or destroyed, only converted from one form to another.'
+    },
+    {
+      question: 'Which of the following is an example of potential energy?',
+      options: [
+        'A car moving at constant speed',
+        'A book sitting on a high shelf',
+        'A fan spinning',
+        'Sound waves traveling through air'
+      ],
+      correctAnswer: 'A book sitting on a high shelf',
+      explanation: 'A book on a high shelf has gravitational potential energy due to its height above the ground.'
+    },
+    {
+      question: 'Kinetic energy is directly proportional to:',
+      options: [
+        'Mass only',
+        'Velocity only',
+        'The square of velocity',
+        'The square of mass'
+      ],
+      correctAnswer: 'The square of velocity',
+      explanation: 'The formula for kinetic energy is KE = 0.5mv², showing it is directly proportional to the square of velocity.'
+    },
+    {
+      question: 'When work is done on an object, what happens to its energy?',
+      options: [
+        'It always increases',
+        'It always decreases',
+        'It can either increase or decrease depending on the direction of force',
+        'It remains constant'
+      ],
+      correctAnswer: 'It can either increase or decrease depending on the direction of force',
+      explanation: 'Positive work increases the energy of the object, while negative work decreases it.'
+    },
+    {
+      question: 'Which of these conversions involves a change from kinetic to potential energy?',
+      options: [
+        'A ball rolling down a hill',
+        'A car accelerating',
+        'A thrown ball reaching its maximum height',
+        'A light bulb turning on'
+      ],
+      correctAnswer: 'A thrown ball reaching its maximum height',
+      explanation: 'As a ball is thrown upward, its kinetic energy is gradually converted to potential energy until it reaches maximum height.'
+    },
+    {
+      question: 'The First Law of Thermodynamics is essentially:',
+      options: [
+        'The law of conservation of mass',
+        'The law of conservation of energy',
+        'The law of entropy',
+        'Newton\'s first law'
+      ],
+      correctAnswer: 'The law of conservation of energy',
+      explanation: 'The First Law of Thermodynamics is another way to express the law of conservation of energy.'
+    },
+  ];
+  
+  const summary = `
+    This study session focused on energy principles in physics. We covered the conservation of energy, which states that energy cannot be created or destroyed, only converted from one form to another. We examined different types of energy, primarily kinetic energy (due to motion) and potential energy (due to position or state).
+    
+    The First Law of Thermodynamics was introduced as an extension of energy conservation. We also discussed work in physics as the product of force and displacement in the direction of force.
+    
+    Key formulas explored included:
+    - Kinetic Energy: KE = 0.5mv²
+    - Gravitational Potential Energy: PE = mgh
+    - Work: W = Fd cosθ
+    
+    Understanding these principles is crucial for analyzing physical systems and predicting how energy transforms within them.
+  `;
   
   useEffect(() => {
     if (!currentSession) {
@@ -82,185 +130,186 @@ const ValidationPage = () => {
   }, [currentSession, navigate]);
   
   if (!currentSession) {
-    return null;
+    return (
+      <MainLayout>
+        <div className="px-4 text-center">
+          <p className="text-lg text-gray-600">No active session found.</p>
+        </div>
+      </MainLayout>
+    );
   }
   
-  const handleNextFlashcard = () => {
-    if (currentFlashcardIndex < sampleFlashcards.length - 1) {
-      setCurrentFlashcardIndex(currentFlashcardIndex + 1);
-      setFlipped(false);
+  const handleNextCard = () => {
+    if (currentCardIndex < flashcards.length - 1) {
+      setCurrentCardIndex(currentCardIndex + 1);
+      setShowAnswer(false);
     } else {
-      setStep('quiz');
+      setCurrentTab('quiz');
     }
   };
   
   const handleSubmitAnswer = () => {
-    if (!answers[sampleQuiz[currentQuizIndex].id]) {
-      return; // No answer selected
+    if (selectedAnswer) {
+      setIsAnswerSubmitted(true);
     }
-    
-    setShowExplanation(true);
   };
   
   const handleNextQuestion = () => {
-    setShowExplanation(false);
-    if (currentQuizIndex < sampleQuiz.length - 1) {
-      setCurrentQuizIndex(currentQuizIndex + 1);
+    setSelectedAnswer(null);
+    setIsAnswerSubmitted(false);
+    
+    if (currentQuestionIndex < quizQuestions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      setStep('summary');
+      setCurrentTab('summary');
     }
   };
   
-  const handleTakeBreak = () => {
-    // Update session as completed
-    const updatedSession = {
-      ...currentSession,
-      status: 'completed'
-    };
-    
-    setCurrentSession(null);
-    
-    setCompletedSessions(prevSessions => [updatedSession, ...prevSessions]);
+  const handleFinishValidation = () => {
+    // Update session status
+    if (currentSession) {
+      setCurrentSession({
+        ...currentSession,
+        status: "break_pending" as SessionStatus
+      });
+      
+      // Add to completed sessions with proper typing
+      setCompletedSessions((prevSessions) => [
+        ...prevSessions,
+        {
+          ...currentSession,
+          status: "completed" as SessionStatus,
+          lastReviewedAt: new Date().toISOString()
+        }
+      ]);
+    }
     
     navigate('/break');
-  };
-  
-  const renderFlashcards = () => {
-    const flashcard = sampleFlashcards[currentFlashcardIndex];
-    
-    return (
-      <div className="flex flex-col items-center">
-        <div className="text-sm text-gray-500 mb-2">
-          Flashcard {currentFlashcardIndex + 1} of {sampleFlashcards.length}
-        </div>
-        
-        <div 
-          className={`w-full h-60 perspective-1000 transition-transform duration-700 cursor-pointer ${flipped ? 'rotate-y-180' : ''}`}
-          onClick={() => setFlipped(!flipped)}
-        >
-          <div className={`relative w-full h-full transition-all duration-700 transform-style-3d`}>
-            <div className={`absolute w-full h-full bg-white border border-gray-200 rounded-lg p-6 flex items-center justify-center transition-transform duration-700 ${flipped ? 'opacity-0 -rotate-y-180' : 'backface-hidden'}`}>
-              <h3 className="text-xl font-medium text-center">{flashcard.front}</h3>
-            </div>
-            
-            <div className={`absolute w-full h-full bg-primary/5 border border-primary/20 rounded-lg p-6 flex items-center justify-center transition-transform duration-700 ${flipped ? 'backface-hidden' : 'opacity-0 rotate-y-180'}`}>
-              <p className="text-center">{flashcard.back}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="mt-8 w-full">
-          <Button 
-            onClick={handleNextFlashcard}
-            className="w-full bg-primary hover:bg-primary-dark"
-          >
-            {currentFlashcardIndex < sampleFlashcards.length - 1 ? 'Next' : 'Start Quiz'}
-          </Button>
-        </div>
-      </div>
-    );
-  };
-  
-  const renderQuiz = () => {
-    const question = sampleQuiz[currentQuizIndex];
-    
-    return (
-      <div className="space-y-6">
-        <div className="text-sm text-gray-500">
-          Question {currentQuizIndex + 1} of {sampleQuiz.length}
-        </div>
-        
-        <Card className="p-4">
-          <h3 className="text-lg font-medium mb-4">{question.question}</h3>
-          
-          <RadioGroup 
-            value={answers[question.id]} 
-            onValueChange={(value) => setAnswers({...answers, [question.id]: value})}
-            className="space-y-3"
-            disabled={showExplanation}
-          >
-            {question.options.map((option, index) => (
-              <div key={index} className="flex items-center">
-                <RadioGroupItem 
-                  value={option} 
-                  id={`option-${index}`} 
-                  className="mr-2"
-                />
-                <Label 
-                  htmlFor={`option-${index}`}
-                  className={
-                    showExplanation && option === question.answer
-                      ? 'text-success font-medium'
-                      : showExplanation && answers[question.id] === option && option !== question.answer
-                      ? 'text-destructive'
-                      : ''
-                  }
-                >
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-          
-          {showExplanation && (
-            <div className="mt-4 p-3 bg-muted rounded-lg">
-              <p className="text-sm">
-                <span className="font-medium">Explanation:</span> {question.explanation}
-              </p>
-            </div>
-          )}
-        </Card>
-        
-        <div>
-          {showExplanation ? (
-            <Button 
-              onClick={handleNextQuestion}
-              className="w-full bg-primary hover:bg-primary-dark"
-            >
-              {currentQuizIndex < sampleQuiz.length - 1 ? 'Next Question' : 'View Summary'}
-            </Button>
-          ) : (
-            <Button 
-              onClick={handleSubmitAnswer}
-              className="w-full bg-primary hover:bg-primary-dark"
-              disabled={!answers[question.id]}
-            >
-              Submit Answer
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  };
-  
-  const renderSummary = () => {
-    return (
-      <div className="space-y-6">
-        <h3 className="text-xl font-medium">Session Summary</h3>
-        
-        <Card className="p-4">
-          <p className="text-gray-700">{sampleSummary}</p>
-        </Card>
-        
-        <Button 
-          onClick={handleTakeBreak}
-          className="w-full bg-primary hover:bg-primary-dark"
-        >
-          Take a Break
-        </Button>
-      </div>
-    );
   };
   
   return (
     <MainLayout>
       <div className="px-4">
-        <h1 className="text-2xl font-semibold mb-2">Validation</h1>
-        <p className="text-gray-600 mb-6">Let's review what you've learned</p>
+        <h1 className="text-xl font-semibold mb-4">{currentSession.sessionName} - Validation</h1>
         
-        {step === 'flashcards' && renderFlashcards()}
-        {step === 'quiz' && renderQuiz()}
-        {step === 'summary' && renderSummary()}
+        <Tabs value={currentTab} onValueChange={setCurrentTab}>
+          <TabsList className="grid grid-cols-3 mb-6">
+            <TabsTrigger value="flashcards" disabled={currentTab !== 'flashcards'}>Flashcards</TabsTrigger>
+            <TabsTrigger value="quiz" disabled={currentTab !== 'flashcards' && currentTab !== 'quiz'}>Quiz</TabsTrigger>
+            <TabsTrigger value="summary" disabled={currentTab !== 'summary'}>Summary</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="flashcards">
+            <Card className="min-h-[300px] mb-6">
+              <CardContent className="p-6">
+                <div className="flip-card">
+                  <div className={`flip-card-inner ${showAnswer ? 'flipped' : ''}`}>
+                    <div className="flip-card-front p-4 flex items-center justify-center">
+                      <p className="text-lg font-medium text-center">{flashcards[currentCardIndex].front}</p>
+                    </div>
+                    <div className="flip-card-back p-4 flex items-center justify-center bg-orange-50">
+                      <p className="text-lg text-center">{flashcards[currentCardIndex].back}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-center mt-4">
+                  <Button variant="outline" onClick={() => setShowAnswer(!showAnswer)} className="mb-4">
+                    {showAnswer ? 'Show Question' : 'Show Answer'}
+                  </Button>
+                  
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="text-sm text-gray-500">
+                      Card {currentCardIndex + 1} of {flashcards.length}
+                    </div>
+                    
+                    <Button onClick={handleNextCard}>
+                      {currentCardIndex < flashcards.length - 1 ? 'Next Card' : 'Start Quiz'}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="quiz">
+            <Card className="min-h-[300px] mb-6">
+              <CardContent className="p-6">
+                <p className="text-lg font-medium mb-4">Question {currentQuestionIndex + 1} of {quizQuestions.length}</p>
+                <p className="mb-6">{quizQuestions[currentQuestionIndex].question}</p>
+                
+                <div className="space-y-3 mb-6">
+                  {quizQuestions[currentQuestionIndex].options.map((option, index) => (
+                    <div 
+                      key={index} 
+                      className={`p-3 border rounded-md cursor-pointer transition-colors ${
+                        selectedAnswer === option
+                          ? 'border-primary bg-primary/10'
+                          : 'hover:bg-gray-50'
+                      } ${
+                        isAnswerSubmitted && option === quizQuestions[currentQuestionIndex].correctAnswer
+                          ? 'border-green-500 bg-green-50'
+                          : ''
+                      } ${
+                        isAnswerSubmitted && selectedAnswer === option && option !== quizQuestions[currentQuestionIndex].correctAnswer
+                          ? 'border-red-500 bg-red-50'
+                          : ''
+                      }`}
+                      onClick={() => !isAnswerSubmitted && setSelectedAnswer(option)}
+                    >
+                      <div className="flex items-center">
+                        <span className="mr-2">{String.fromCharCode(65 + index)}.</span>
+                        <span>{option}</span>
+                        {isAnswerSubmitted && option === quizQuestions[currentQuestionIndex].correctAnswer && (
+                          <Check className="ml-auto text-green-500" />
+                        )}
+                        {isAnswerSubmitted && selectedAnswer === option && option !== quizQuestions[currentQuestionIndex].correctAnswer && (
+                          <X className="ml-auto text-red-500" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {isAnswerSubmitted && (
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-md">
+                    <p className="font-medium mb-1">Explanation:</p>
+                    <p>{quizQuestions[currentQuestionIndex].explanation}</p>
+                  </div>
+                )}
+                
+                <div className="flex justify-end">
+                  {!isAnswerSubmitted ? (
+                    <Button onClick={handleSubmitAnswer} disabled={!selectedAnswer}>
+                      Submit Answer
+                    </Button>
+                  ) : (
+                    <Button onClick={handleNextQuestion}>
+                      {currentQuestionIndex < quizQuestions.length - 1 ? 'Next Question' : 'View Summary'}
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="summary">
+            <Card className="min-h-[300px] mb-6">
+              <CardContent className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Session Summary</h2>
+                <div className="whitespace-pre-line mb-6">
+                  {summary}
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button onClick={handleFinishValidation}>
+                    Take a Break
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </MainLayout>
   );

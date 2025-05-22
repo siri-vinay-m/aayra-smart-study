@@ -10,6 +10,7 @@ import { SessionProvider } from "./contexts/SessionContext";
 import { TimerProvider } from "./contexts/TimerContext";
 
 import HomePage from "./pages/HomePage";
+import RegistrationPage from "./pages/RegistrationPage";
 import NewSessionPage from "./pages/NewSessionPage";
 import FocusTimerPage from "./pages/FocusTimerPage";
 import UploadPage from "./pages/UploadPage";
@@ -34,6 +35,7 @@ const App = () => (
             <TimerProvider>
               <Routes>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/register" element={<RegistrationPage />} />
                 <Route path="/new-session" element={<NewSessionPage />} />
                 <Route path="/focus" element={<FocusTimerPage />} />
                 <Route path="/upload" element={<UploadPage />} />

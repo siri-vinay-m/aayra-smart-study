@@ -7,6 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Camera, Trash, X } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
 
 const ProfilePage = () => {
   const { user, setUser, setIsAuthenticated } = useUser();
@@ -16,6 +25,7 @@ const ProfilePage = () => {
   const [category, setCategory] = useState<string>(user?.studentCategory || '');
   const [weekdays, setWeekdays] = useState<string>(user?.preferredStudyWeekdays || '');
   const [startTime, setStartTime] = useState<string>(user?.preferredStudyStartTime || '');
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   
   const handleSaveProfile = () => {
     if (user) {
@@ -36,28 +46,96 @@ const ProfilePage = () => {
     navigate('/login');
   };
   
+  const handleUploadProfilePicture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const fileReader = new FileReader();
+      fileReader.onload = (event) => {
+        if (user && event.target?.result) {
+          setUser({
+            ...user,
+            profilePicture: event.target.result as string
+          });
+        }
+        setProfileDialogOpen(false);
+      };
+      fileReader.readAsDataURL(e.target.files[0]);
+    }
+  };
+  
+  const handleRemoveProfilePicture = () => {
+    if (user) {
+      setUser({
+        ...user,
+        profilePicture: null
+      });
+    }
+    setProfileDialogOpen(false);
+  };
+  
   return (
-    <MainLayout hideBottomBar>
+    <MainLayout>
       <div className="px-4 pb-8">
         <h1 className="text-2xl font-semibold mb-6">Profile</h1>
         
         <div className="flex items-center mb-8">
-          <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center mr-4 cursor-pointer">
-            {user?.profilePicture ? (
-              <img 
-                src={user.profilePicture} 
-                alt="Profile" 
-                className="w-full h-full rounded-full object-cover"
-              />
-            ) : (
-              <span className="text-3xl font-medium text-gray-600">
-                {displayName.charAt(0) || 'U'}
-              </span>
-            )}
-          </div>
-          <div>
-            <p className="text-gray-600">Edit Profile Picture</p>
-          </div>
+          <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
+            <DialogTrigger asChild>
+              <div className="flex items-center cursor-pointer">
+                <Avatar className="h-20 w-20 mr-4">
+                  {user?.profilePicture ? (
+                    <AvatarImage 
+                      src={user.profilePicture} 
+                      alt="Profile" 
+                      className="object-cover"
+                    />
+                  ) : (
+                    <AvatarFallback className="bg-gray-200 text-3xl font-medium text-gray-600">
+                      {displayName.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div>
+                  <p className="text-primary hover:underline">Edit Profile Picture</p>
+                </div>
+              </div>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Profile Picture</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col gap-4 mt-2">
+                <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-50">
+                  <Camera size={20} />
+                  <span>Upload New Picture</span>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleUploadProfilePicture}
+                  />
+                </label>
+                
+                {user?.profilePicture && (
+                  <Button 
+                    variant="outline" 
+                    className="text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600"
+                    onClick={handleRemoveProfilePicture}
+                  >
+                    <Trash size={16} className="mr-2" />
+                    Remove Profile Picture
+                  </Button>
+                )}
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => setProfileDialogOpen(false)}
+                >
+                  <X size={16} className="mr-2" />
+                  Cancel
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
         
         <div className="space-y-6">
@@ -90,7 +168,7 @@ const ProfilePage = () => {
           <div className="space-y-2">
             <Label htmlFor="weekdays">Preferred Study Weekdays</Label>
             <Select value={weekdays} onValueChange={setWeekdays}>
-              <SelectTrigger>
+              <SelectTrigger className="border-primary focus:ring-primary">
                 <SelectValue placeholder="Select weekdays" />
               </SelectTrigger>
               <SelectContent>
@@ -110,6 +188,7 @@ const ProfilePage = () => {
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
+              className="text-primary font-semibold focus:ring-primary focus:border-primary"
             />
           </div>
           
