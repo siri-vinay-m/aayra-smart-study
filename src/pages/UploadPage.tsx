@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Mic, Upload, Link, FileText, Stop, Play, Trash, Save } from 'lucide-react';
+import { Mic, Upload, Link, FileText, CircleStop, Play, Trash, Save } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface UploadItem {
@@ -280,7 +279,7 @@ const UploadPage = () => {
                 }`}
               >
                 {isRecording ? (
-                  <Stop size={32} className="text-white" />
+                  <CircleStop size={32} className="text-white" />
                 ) : (
                   <Mic size={32} className="text-white" />
                 )}
