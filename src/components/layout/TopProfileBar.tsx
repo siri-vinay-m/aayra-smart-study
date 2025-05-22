@@ -12,7 +12,7 @@ const TopProfileBar = () => {
   };
   
   return (
-    <div className="top-profile-bar">
+    <div className="top-profile-bar flex justify-between items-center px-4 py-2 border-b">
       <div className="text-lg font-semibold">
         {user?.displayName || 'User'}
       </div>

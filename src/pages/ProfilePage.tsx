@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Camera, Trash, X } from 'lucide-react';
+import { Camera, Trash } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Dialog, 
@@ -125,14 +125,6 @@ const ProfilePage = () => {
                     Remove Profile Picture
                   </Button>
                 )}
-                
-                <Button 
-                  variant="outline" 
-                  onClick={() => setProfileDialogOpen(false)}
-                >
-                  <X size={16} className="mr-2" />
-                  Cancel
-                </Button>
               </div>
             </DialogContent>
           </Dialog>

@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 
 export type StudentCategory = 
   | 'high_school'
@@ -30,18 +30,9 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>({
-    id: '1',
-    displayName: 'John Doe',
-    email: 'john@example.com',
-    studentCategory: 'college',
-    profilePicture: null,
-    preferredStudyWeekdays: 'Mon,Wed,Fri',
-    preferredStudyStartTime: '09:00',
-    isSubscribed: false,
-    subscriptionPlan: 'free'
-  });
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  // Start with null user and not authenticated for proper login flow
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   return (
     <UserContext.Provider value={{ user, setUser, isAuthenticated, setIsAuthenticated }}>

@@ -27,18 +27,17 @@ const ValidationPage = () => {
   const navigate = useNavigate();
   const [currentTab, setCurrentTab] = useState('flashcards');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [showAnswer, setShowAnswer] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   
-  // Simulated content from AI
+  // Simulated content from AI - now these are just key points
   const flashcards = [
-    { front: 'What is the principle of conservation of energy?', back: 'Energy cannot be created or destroyed, only converted from one form to another.' },
-    { front: 'Define kinetic energy.', back: 'The energy possessed by an object due to its motion.' },
-    { front: 'What is potential energy?', back: 'The stored energy an object has due to its position or state.' },
-    { front: 'Define the First Law of Thermodynamics.', back: 'Energy can be changed from one form to another, but it cannot be created or destroyed.' },
-    { front: 'What is work in physics?', back: 'The product of the force applied to an object and the distance the object moves in the direction of the force.' },
+    { keyPoint: 'The principle of conservation of energy states that energy cannot be created or destroyed, only converted from one form to another.' },
+    { keyPoint: 'Kinetic energy is the energy possessed by an object due to its motion, calculated as KE = 0.5mv².' },
+    { keyPoint: 'Potential energy is the stored energy an object has due to its position or state, such as gravitational potential energy (PE = mgh).' },
+    { keyPoint: 'The First Law of Thermodynamics is another expression of energy conservation, stating energy can be changed from one form to another, but cannot be created or destroyed.' },
+    { keyPoint: 'Work in physics is defined as the product of the force applied to an object and the distance the object moves in the direction of the force (W = Fd cosθ).' },
   ];
   
   const quizQuestions = [
@@ -142,7 +141,6 @@ const ValidationPage = () => {
   const handleNextCard = () => {
     if (currentCardIndex < flashcards.length - 1) {
       setCurrentCardIndex(currentCardIndex + 1);
-      setShowAnswer(false);
     } else {
       setCurrentTab('quiz');
     }
@@ -202,29 +200,18 @@ const ValidationPage = () => {
           <TabsContent value="flashcards">
             <Card className="min-h-[300px] mb-6">
               <CardContent className="p-6">
-                <div className="flip-card">
-                  <div className={`flip-card-inner ${showAnswer ? 'flipped' : ''}`}>
-                    <div className="flip-card-front p-4 flex items-center justify-center">
-                      <p className="text-lg font-medium text-center">{flashcards[currentCardIndex].front}</p>
-                    </div>
-                    <div className="flip-card-back p-4 flex items-center justify-center bg-orange-50">
-                      <p className="text-lg text-center">{flashcards[currentCardIndex].back}</p>
-                    </div>
-                  </div>
+                <div className="p-4 flex items-center justify-center min-h-[200px]">
+                  <p className="text-lg font-medium text-center">{flashcards[currentCardIndex].keyPoint}</p>
                 </div>
                 
                 <div className="text-center mt-4">
-                  <Button variant="outline" onClick={() => setShowAnswer(!showAnswer)} className="mb-4">
-                    {showAnswer ? 'Show Question' : 'Show Answer'}
-                  </Button>
-                  
                   <div className="flex justify-between items-center mt-2">
                     <div className="text-sm text-gray-500">
-                      Card {currentCardIndex + 1} of {flashcards.length}
+                      Key Point {currentCardIndex + 1} of {flashcards.length}
                     </div>
                     
                     <Button onClick={handleNextCard}>
-                      {currentCardIndex < flashcards.length - 1 ? 'Next Card' : 'Start Quiz'}
+                      {currentCardIndex < flashcards.length - 1 ? 'Next Key Point' : 'Start Quiz'}
                     </Button>
                   </div>
                 </div>
