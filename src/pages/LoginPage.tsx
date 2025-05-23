@@ -1,59 +1,37 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useUser } from '@/contexts/UserContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { setUser, setIsAuthenticated } = useUser();
+  const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    // For demo - simple validation
     if (!email || !password) {
       setError('Please enter both email and password');
+      setLoading(false);
       return;
     }
 
-    // For demo - we're just doing a mock login
-    // In a real app, you'd validate with a backend
-    if (email === 'demo@example.com' && password === 'password') {
-      setIsAuthenticated(true);
-      setUser({
-        id: '1',
-        displayName: 'John Doe',
-        email: email,
-        studentCategory: 'college',
-        profilePicture: null,
-        preferredStudyWeekdays: 'Mon,Wed,Fri',
-        preferredStudyStartTime: '09:00',
-        isSubscribed: false,
-        subscriptionPlan: 'free'
-      });
+    try {
+      await signIn(email, password);
       navigate('/home');
-    } else {
-      // For demo purpose, allow any login
-      setIsAuthenticated(true);
-      setUser({
-        id: '1',
-        displayName: 'User',
-        email: email,
-        studentCategory: null,
-        profilePicture: null,
-        preferredStudyWeekdays: null,
-        preferredStudyStartTime: null,
-        isSubscribed: false,
-        subscriptionPlan: 'free'
-      });
-      navigate('/home'); // Always navigate to home page after login
+    } catch (error: any) {
+      setError(error.message || 'Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -83,6 +61,7 @@ const LoginPage = () => {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
               />
             </div>
             
@@ -94,20 +73,25 @@ const LoginPage = () => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
               />
             </div>
             
-            <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600">
-              Log In
+            <Button 
+              type="submit" 
+              className="w-full bg-orange-500 hover:bg-orange-600"
+              disabled={loading}
+            >
+              {loading ? 'Logging in...' : 'Log In'}
             </Button>
           </form>
           
           <div className="mt-6 text-center">
             <p>
               Don't have an account?{' '}
-              <a href="/register" className="text-orange-500 hover:underline">
+              <Link to="/register" className="text-orange-500 hover:underline">
                 Register
-              </a>
+              </Link>
             </p>
           </div>
         </div>

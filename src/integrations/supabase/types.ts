@@ -9,7 +9,137 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string | null
+          display_name: string
+          email: string
+          id: string
+          is_subscribed: boolean | null
+          preferred_study_start_time: string | null
+          preferred_study_weekdays: string | null
+          profile_picture: string | null
+          student_category: string | null
+          subscription_plan: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_name: string
+          email: string
+          id: string
+          is_subscribed?: boolean | null
+          preferred_study_start_time?: string | null
+          preferred_study_weekdays?: string | null
+          profile_picture?: string | null
+          student_category?: string | null
+          subscription_plan?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string
+          email?: string
+          id?: string
+          is_subscribed?: boolean | null
+          preferred_study_start_time?: string | null
+          preferred_study_weekdays?: string | null
+          profile_picture?: string | null
+          student_category?: string | null
+          subscription_plan?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          due_date: string
+          flashcards: Json | null
+          id: string
+          quiz_questions: Json | null
+          review_stage: string
+          session_id: string
+          session_name: string
+          summary: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          due_date: string
+          flashcards?: Json | null
+          id?: string
+          quiz_questions?: Json | null
+          review_stage: string
+          session_id: string
+          session_name: string
+          summary?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          due_date?: string
+          flashcards?: Json | null
+          id?: string
+          quiz_questions?: Json | null
+          review_stage?: string
+          session_id?: string
+          session_name?: string
+          summary?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "study_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_sessions: {
+        Row: {
+          break_duration: number | null
+          completed_at: string | null
+          created_at: string | null
+          focus_duration: number | null
+          id: string
+          session_name: string
+          status: string | null
+          subject: string | null
+          user_id: string
+        }
+        Insert: {
+          break_duration?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          focus_duration?: number | null
+          id?: string
+          session_name: string
+          status?: string | null
+          subject?: string | null
+          user_id: string
+        }
+        Update: {
+          break_duration?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          focus_duration?: number | null
+          id?: string
+          session_name?: string
+          status?: string | null
+          subject?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

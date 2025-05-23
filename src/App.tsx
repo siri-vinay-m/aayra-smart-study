@@ -5,9 +5,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
+import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { SessionProvider } from "./contexts/SessionContext";
 import { TimerProvider } from "./contexts/TimerContext";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 import HomePage from "./pages/HomePage";
 import RegistrationPage from "./pages/RegistrationPage";
@@ -32,31 +34,77 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <UserProvider>
-          <SessionProvider>
-            <BrowserRouter>
-              <TimerProvider>
-                <Routes>
-                  <Route path="/" element={<Navigate to="/login" replace />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/register" element={<RegistrationPage />} />
-                  <Route path="/home" element={<HomePage />} />
-                  <Route path="/new-session" element={<NewSessionPage />} />
-                  <Route path="/focus" element={<FocusTimerPage />} />
-                  <Route path="/upload" element={<UploadPage />} />
-                  <Route path="/validation" element={<ValidationPage />} />
-                  <Route path="/break" element={<BreakTimerPage />} />
-                  <Route path="/pending-reviews" element={<PendingReviewsPage />} />
-                  <Route path="/review/:sessionId" element={<ReviewSessionPage />} />
-                  <Route path="/completed-sessions" element={<CompletedSessionsPage />} />
-                  <Route path="/favorites" element={<FavoritesPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </TimerProvider>
-            </BrowserRouter>
-          </SessionProvider>
-        </UserProvider>
+        <AuthProvider>
+          <UserProvider>
+            <SessionProvider>
+              <BrowserRouter>
+                <TimerProvider>
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/login" replace />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegistrationPage />} />
+                    <Route path="/home" element={
+                      <ProtectedRoute>
+                        <HomePage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/new-session" element={
+                      <ProtectedRoute>
+                        <NewSessionPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/focus" element={
+                      <ProtectedRoute>
+                        <FocusTimerPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/upload" element={
+                      <ProtectedRoute>
+                        <UploadPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/validation" element={
+                      <ProtectedRoute>
+                        <ValidationPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/break" element={
+                      <ProtectedRoute>
+                        <BreakTimerPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/pending-reviews" element={
+                      <ProtectedRoute>
+                        <PendingReviewsPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/review/:sessionId" element={
+                      <ProtectedRoute>
+                        <ReviewSessionPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/completed-sessions" element={
+                      <ProtectedRoute>
+                        <CompletedSessionsPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/favorites" element={
+                      <ProtectedRoute>
+                        <FavoritesPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/profile" element={
+                      <ProtectedRoute>
+                        <ProfilePage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </TimerProvider>
+              </BrowserRouter>
+            </SessionProvider>
+          </UserProvider>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

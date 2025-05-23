@@ -1,16 +1,16 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useUser } from '@/contexts/UserContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
 
 const RegistrationPage = () => {
   const navigate = useNavigate();
-  const { setUser, setIsAuthenticated } = useUser();
+  const { signUp } = useAuth();
   
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -53,41 +53,21 @@ const RegistrationPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validateForm()) {
       setIsLoading(true);
       
-      // Simulate API call
-      setTimeout(() => {
-        // Create a new user with minimal information
-        setUser({
-          id: '1',
-          displayName,
-          email,
-          studentCategory: null,
-          preferredStudyWeekdays: null,
-          preferredStudyStartTime: null,
-          profilePicture: null,
-          isSubscribed: false,
-          subscriptionPlan: 'free'
-        });
-        
-        setIsAuthenticated(true);
+      try {
+        await signUp(email, password, displayName);
+        navigate('/home');
+      } catch (error: any) {
+        setErrors({ general: error.message || 'Registration failed' });
+      } finally {
         setIsLoading(false);
-        // Redirect to profile page to complete profile setup
-        navigate('/profile');
-      }, 1500);
+      }
     }
-  };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
   };
 
   return (
@@ -100,6 +80,12 @@ const RegistrationPage = () => {
         
         <div className="bg-white shadow-md rounded-lg p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {errors.general && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded">
+                {errors.general}
+              </div>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="display-name">Display Name</Label>
               <Input
@@ -143,7 +129,7 @@ const RegistrationPage = () => {
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={togglePasswordVisibility}
+                  onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
                     <EyeOff size={20} className="text-gray-400" />
@@ -171,7 +157,7 @@ const RegistrationPage = () => {
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={toggleConfirmPasswordVisibility}
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
                     <EyeOff size={20} className="text-gray-400" />
@@ -210,7 +196,7 @@ const RegistrationPage = () => {
             
             <div className="text-center mt-4">
               <p className="text-sm text-gray-600">
-                Already have an account? <a href="/login" className="text-orange-500 hover:underline">Log In</a>
+                Already have an account? <Link to="/login" className="text-orange-500 hover:underline">Log In</Link>
               </p>
             </div>
           </form>
