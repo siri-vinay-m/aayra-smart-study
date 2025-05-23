@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
 export interface StudySession {
@@ -29,6 +28,7 @@ interface SessionContextType {
   setCompletedSessions: React.Dispatch<React.SetStateAction<StudySession[]>>;
   pendingReviews: PendingReview[];
   setPendingReviews: React.Dispatch<React.SetStateAction<PendingReview[]>>;
+  completeSession: (sessionId: string) => void;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -73,6 +73,14 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   ]);
 
+  const completeSession = (sessionId: string) => {
+    if (currentSession && currentSession.id === sessionId) {
+      const completedSession = { ...currentSession, status: 'completed' as const };
+      setCompletedSessions(prev => [...prev, completedSession]);
+      setCurrentSession(null);
+    }
+  };
+
   return (
     <SessionContext.Provider 
       value={{
@@ -81,7 +89,8 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         completedSessions,
         setCompletedSessions,
         pendingReviews,
-        setPendingReviews
+        setPendingReviews,
+        completeSession
       }}
     >
       {children}
