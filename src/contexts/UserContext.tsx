@@ -22,12 +22,21 @@ interface User {
   subscriptionPlan: 'free' | 'premium' | null;
 }
 
+export interface UpdateUserPayload {
+  displayName?: string;
+  studentCategory?: StudentCategory | null;
+  profilePictureURL?: string | null;
+  preferredStudyWeekdays?: string | null;
+  preferredStudyStartTime?: string | null;
+}
+
 interface UserContextType {
   user: User | null;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   isAuthenticated: boolean;
   setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
   loadUserData: () => Promise<void>;
+  updateUserProfile: (updates: UpdateUserPayload) => Promise<{ success: boolean; error?: any }>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -75,6 +84,53 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateUserProfile = async (updates: UpdateUserPayload): Promise<{ success: boolean; error?: any }> => {
+    if (!user || !user.id) {
+      return { success: false, error: new Error("User not available") };
+    }
+
+    const supabasePayload: { [key: string]: any } = {};
+    if (updates.displayName !== undefined) supabasePayload.displayname = updates.displayName;
+    if (updates.studentCategory !== undefined) supabasePayload.studentcategory = updates.studentCategory;
+    if (updates.profilePictureURL !== undefined) supabasePayload.profilepictureurl = updates.profilePictureURL;
+    if (updates.preferredStudyWeekdays !== undefined) supabasePayload.preferredstudyweekdays = updates.preferredStudyWeekdays;
+    if (updates.preferredStudyStartTime !== undefined) supabasePayload.preferredstudystarttime = updates.preferredStudyStartTime;
+
+    if (Object.keys(supabasePayload).length === 0) {
+      return { success: true }; // No actual updates to make
+    }
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update(supabasePayload)
+        .eq('userid', user.id);
+
+      if (error) {
+        console.error('Error updating user profile:', error);
+        return { success: false, error };
+      }
+
+      setUser(prevUser => {
+        if (!prevUser) return null; // Should not happen if user.id was available
+        // Create a new object for the updated user state
+        const updatedUser = { ...prevUser };
+        // Apply updates one by one, handling potential null/undefined
+        if (updates.displayName !== undefined) updatedUser.displayName = updates.displayName;
+        if (updates.studentCategory !== undefined) updatedUser.studentCategory = updates.studentCategory;
+        if (updates.profilePictureURL !== undefined) updatedUser.profilePictureURL = updates.profilePictureURL;
+        if (updates.preferredStudyWeekdays !== undefined) updatedUser.preferredStudyWeekdays = updates.preferredStudyWeekdays;
+        if (updates.preferredStudyStartTime !== undefined) updatedUser.preferredStudyStartTime = updates.preferredStudyStartTime;
+        return updatedUser;
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Exception in updateUserProfile:', error);
+      return { success: false, error };
+    }
+  };
+
   useEffect(() => {
     if (session) {
       loadUserData();
@@ -86,11 +142,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   return (
     <UserContext.Provider value={{ 
-      user, 
-      setUser, 
-      isAuthenticated, 
+      user,
+      setUser,
+      isAuthenticated,
       setIsAuthenticated,
-      loadUserData 
+      loadUserData,
+      updateUserProfile
     }}>
       {children}
     </UserContext.Provider>

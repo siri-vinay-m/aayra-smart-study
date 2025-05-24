@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import { useUser } from '@/contexts/UserContext';
+import { useUser, UpdateUserPayload, StudentCategory } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 
 const ProfilePage = () => {
-  const { user, setUser, setIsAuthenticated } = useUser();
+  const { user, setUser, setIsAuthenticated, updateUserProfile } = useUser();
   const navigate = useNavigate();
   
   const [displayName, setDisplayName] = useState(user?.displayName || '');
@@ -27,19 +27,32 @@ const ProfilePage = () => {
   const [startTime, setStartTime] = useState<string>(user?.preferredStudyStartTime || '');
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   
-  const handleSaveProfile = () => {
-    if (user) {
-      setUser({
-        ...user,
-        displayName,
-        studentCategory: category as any,
-        preferredStudyWeekdays: weekdays,
-        preferredStudyStartTime: startTime
-      });
+  const handleSaveProfile = async () => {
+    if (!user) {
+      alert('User data not available. Please try again.');
+      return;
     }
-    
-    // Navigate to home page after saving changes
-    navigate('/home');
+
+    const payload: UpdateUserPayload = {
+      displayName,
+      studentCategory: category as StudentCategory || null, // Ensure category is compatible or null
+      preferredStudyWeekdays: weekdays || null,
+      preferredStudyStartTime: startTime || null,
+    };
+
+    // Log payload for debugging
+    // console.log("Saving profile with payload:", payload);
+
+    const result = await updateUserProfile(payload);
+
+    if (result.success) {
+      // Optionally, show a success message/toast here
+      // console.log("Profile saved successfully");
+      navigate('/home');
+    } else {
+      console.error("Failed to save profile:", result.error);
+      alert('Failed to save profile: ' + (result.error?.message || 'Unknown error'));
+    }
   };
   
   const handleLogout = () => {
