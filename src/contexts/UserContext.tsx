@@ -49,9 +49,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         .from('users')
         .select('*')
         .eq('userid', authUser.id)
-        .single();
+        .maybeSingle();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Error loading user data:', error);
         return;
       }
@@ -68,6 +68,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           isSubscribed: false, // This would be calculated based on UserSubscriptions
           subscriptionPlan: 'free'
         });
+        setIsAuthenticated(true);
+      } else {
+        // User record doesn't exist, but auth user exists - this is handled by AuthContext
         setIsAuthenticated(true);
       }
     } catch (error) {
