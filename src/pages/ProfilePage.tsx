@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ImageUpload from '@/components/ui/image-upload';
 import { useUser, type StudentCategory } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Crown } from 'lucide-react';
 
 const ProfilePage = () => {
   const { user, setUser, loadUserData } = useUser();
@@ -35,6 +38,10 @@ const ProfilePage = () => {
       setStudentCategory(authUser.user_metadata?.student_category || 'college');
     }
   }, [user, authUser]);
+  
+  const handleImageChange = (imageUrl: string) => {
+    setProfilePictureURL(imageUrl);
+  };
   
   const handleSaveProfile = async () => {
     if (!authUser) return;
@@ -143,6 +150,42 @@ const ProfilePage = () => {
       <div className="px-4 max-w-md mx-auto">
         <h1 className="text-2xl font-semibold mb-6 text-center">Profile</h1>
         
+        {/* Profile Picture Section */}
+        <div className="flex justify-center mb-6">
+          <ImageUpload
+            currentImageUrl={profilePictureURL}
+            onImageChange={handleImageChange}
+          />
+        </div>
+        
+        {/* Subscription Status Card */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Crown size={20} className={user?.subscriptionPlan === 'premium' ? 'text-yellow-500' : 'text-gray-400'} />
+              Subscription Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Current Plan:</span>
+              <span className={`font-medium capitalize ${
+                user?.subscriptionPlan === 'premium' ? 'text-yellow-600' : 'text-gray-900'
+              }`}>
+                {user?.subscriptionPlan || 'Free'}
+              </span>
+            </div>
+            {user?.subscriptionPlan === 'free' && (
+              <Button 
+                variant="outline" 
+                className="w-full mt-3 border-orange-500 text-orange-500 hover:bg-orange-50"
+              >
+                Upgrade to Premium
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+        
         <div className="space-y-4 mb-6">
           <div>
             <Label htmlFor="displayName">Display Name</Label>
@@ -169,17 +212,6 @@ const ProfilePage = () => {
                 <SelectItem value="lifelong_learner">Lifelong Learner</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          
-          <div>
-            <Label htmlFor="profilePictureURL">Profile Picture URL</Label>
-            <Input
-              id="profilePictureURL"
-              type="url"
-              value={profilePictureURL}
-              onChange={(e) => setProfilePictureURL(e.target.value)}
-              placeholder="https://example.com/your-photo.jpg"
-            />
           </div>
           
           <div>
