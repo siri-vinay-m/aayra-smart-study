@@ -107,3 +107,6 @@ export const useUser = (): UserContextType => {
   }
   return context;
 };
+
+// Export the context for testing
+export { UserContext };
