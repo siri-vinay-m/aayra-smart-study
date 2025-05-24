@@ -54,7 +54,7 @@ const ProfilePage = () => {
         if (user && event.target?.result) {
           setUser({
             ...user,
-            profilePicture: event.target.result as string
+            profilePictureURL: event.target.result as string
           });
         }
         setProfileDialogOpen(false);
@@ -67,7 +67,7 @@ const ProfilePage = () => {
     if (user) {
       setUser({
         ...user,
-        profilePicture: null
+        profilePictureURL: null
       });
     }
     setProfileDialogOpen(false);
@@ -83,9 +83,9 @@ const ProfilePage = () => {
             <DialogTrigger asChild>
               <div className="flex items-center cursor-pointer">
                 <Avatar className="h-20 w-20 mr-4">
-                  {user?.profilePicture ? (
+                  {user?.profilePictureURL ? (
                     <AvatarImage 
-                      src={user.profilePicture} 
+                      src={user.profilePictureURL} 
                       alt="Profile" 
                       className="object-cover"
                     />
@@ -116,7 +116,7 @@ const ProfilePage = () => {
                   />
                 </label>
                 
-                {user?.profilePicture && (
+                {user?.profilePictureURL && (
                   <Button 
                     variant="outline" 
                     className="text-red-500 border-red-500 hover:bg-red-50 hover:text-red-600"

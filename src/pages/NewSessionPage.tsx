@@ -29,6 +29,8 @@ const NewSessionPage = () => {
       sequenceNumber: 1,
       status: 'focus_inprogress' as const,
       isFavorite: false,
+      focusDurationMinutes: 25,
+      breakDurationMinutes: 5,
       createdAt: new Date().toISOString(),
       lastReviewedAt: null
     };

@@ -60,7 +60,7 @@ const RegistrationPage = () => {
       setIsLoading(true);
       
       try {
-        await signUp(email, password, displayName);
+        await signUp(email, password, displayName, 'college');
         navigate('/home');
       } catch (error: any) {
         setErrors({ general: error.message || 'Registration failed' });
