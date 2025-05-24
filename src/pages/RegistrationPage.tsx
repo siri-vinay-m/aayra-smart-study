@@ -61,7 +61,7 @@ const RegistrationPage = () => {
       
       try {
         await signUp(email, password, displayName, 'college');
-        navigate('/home');
+        navigate('/profile');
       } catch (error: any) {
         setErrors({ general: error.message || 'Registration failed' });
       } finally {
