@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
+import { useUser, UpdateUserPayload, StudentCategory } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,10 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Crown } from 'lucide-react';
 
 const ProfilePage = () => {
-  const { user, setUser, loadUserData } = useUser();
+  const { user, setUser, loadUserData, setIsAuthenticated, updateUserProfile } = useUser();
   const { signOut, user: authUser } = useAuth();
-  const { toast } = useToast();
-  
+  const { toast } = useToast(); 
   const [displayName, setDisplayName] = useState('');
   const [studentCategory, setStudentCategory] = useState<StudentCategory>('college');
   const [profilePictureURL, setProfilePictureURL] = useState('');
@@ -25,6 +25,34 @@ const ProfilePage = () => {
   const [preferredStudyStartTime, setPreferredStudyStartTime] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
+  const handleSaveProfile = async () => {
+    if (!user) {
+      alert('User data not available. Please try again.');
+      return;
+    }
+
+    const payload: UpdateUserPayload = {
+      displayName,
+      studentCategory: category as StudentCategory || null, // Ensure category is compatible or null
+      preferredStudyWeekdays: weekdays || null,
+      preferredStudyStartTime: startTime || null,
+    };
+
+    // Log payload for debugging
+    // console.log("Saving profile with payload:", payload);
+
+    const result = await updateUserProfile(payload);
+
+    if (result.success) {
+      // Optionally, show a success message/toast here
+      // console.log("Profile saved successfully");
+      navigate('/home');
+    } else {
+      console.error("Failed to save profile:", result.error);
+      alert('Failed to save profile: ' + (result.error?.message || 'Unknown error'));
+    }
+  };
+
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName);
