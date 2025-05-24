@@ -40,22 +40,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setTimeout(async () => {
             try {
               const { data: existingUser } = await supabase
-                .from('Users')
+                .from('users')
                 .select('*')
-                .eq('UserID', session.user.id)
+                .eq('userid', session.user.id)
                 .single();
 
               if (!existingUser) {
                 // Create user record if it doesn't exist
                 const { error } = await supabase
-                  .from('Users')
+                  .from('users')
                   .insert({
-                    UserID: session.user.id,
-                    Email: session.user.email || '',
-                    DisplayName: session.user.user_metadata?.display_name || 'User',
-                    StudentCategory: session.user.user_metadata?.student_category || 'college',
-                    PasswordHash: '', // Managed by Supabase Auth
-                    EmailVerified: session.user.email_confirmed_at ? true : false
+                    userid: session.user.id,
+                    email: session.user.email || '',
+                    displayname: session.user.user_metadata?.display_name || 'User',
+                    studentcategory: session.user.user_metadata?.student_category || 'college',
+                    passwordhash: '', // Managed by Supabase Auth
+                    emailverified: session.user.email_confirmed_at ? true : false
                   });
 
                 if (error) {

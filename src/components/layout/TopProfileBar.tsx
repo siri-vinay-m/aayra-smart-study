@@ -21,9 +21,9 @@ const TopProfileBar = () => {
         className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer"
         onClick={handleProfileClick}
       >
-        {user?.profilePicture ? (
+        {user?.profilePictureURL ? (
           <img 
-            src={user.profilePicture} 
+            src={user.profilePictureURL} 
             alt="Profile" 
             className="w-full h-full rounded-full object-cover"
           />

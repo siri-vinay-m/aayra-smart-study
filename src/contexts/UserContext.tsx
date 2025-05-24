@@ -46,9 +46,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     try {
       const { data: userData, error } = await supabase
-        .from('Users')
+        .from('users')
         .select('*')
-        .eq('UserID', authUser.id)
+        .eq('userid', authUser.id)
         .single();
 
       if (error) {
@@ -58,13 +58,13 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (userData) {
         setUser({
-          id: userData.UserID,
-          displayName: userData.DisplayName,
-          email: userData.Email,
-          studentCategory: userData.StudentCategory as StudentCategory,
-          profilePictureURL: userData.ProfilePictureURL,
-          preferredStudyWeekdays: userData.PreferredStudyWeekdays,
-          preferredStudyStartTime: userData.PreferredStudyStartTime,
+          id: userData.userid,
+          displayName: userData.displayname,
+          email: userData.email,
+          studentCategory: userData.studentcategory as StudentCategory,
+          profilePictureURL: userData.profilepictureurl,
+          preferredStudyWeekdays: userData.preferredstudyweekdays,
+          preferredStudyStartTime: userData.preferredstudystarttime,
           isSubscribed: false, // This would be calculated based on UserSubscriptions
           subscriptionPlan: 'free'
         });

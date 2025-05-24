@@ -51,11 +51,11 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     try {
       const { data: sessions, error } = await supabase
-        .from('StudySessions')
+        .from('studysessions')
         .select('*')
-        .eq('UserID', authUser.id)
-        .eq('Status', 'completed')
-        .order('CreatedAt', { ascending: false });
+        .eq('userid', authUser.id)
+        .eq('status', 'completed')
+        .order('createdat', { ascending: false });
 
       if (error) {
         console.error('Error loading completed sessions:', error);
@@ -63,17 +63,17 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
 
       const formattedSessions: StudySession[] = sessions.map(session => ({
-        id: session.SessionID,
-        subjectName: session.SubjectName,
-        topicName: session.TopicName,
-        sessionName: session.SessionName,
-        sequenceNumber: session.SequenceNumber,
-        status: session.Status as StudySession['status'],
-        isFavorite: session.IsFavorite,
-        focusDurationMinutes: session.FocusDurationMinutes,
-        breakDurationMinutes: session.BreakDurationMinutes,
-        createdAt: session.CreatedAt,
-        lastReviewedAt: session.LastReviewedAt
+        id: session.sessionid,
+        subjectName: session.subjectname,
+        topicName: session.topicname,
+        sessionName: session.sessionname,
+        sequenceNumber: session.sequencenumber,
+        status: session.status as StudySession['status'],
+        isFavorite: session.isfavorite,
+        focusDurationMinutes: session.focusdurationminutes,
+        breakDurationMinutes: session.breakdurationminutes,
+        createdAt: session.createdat,
+        lastReviewedAt: session.lastreviewedat
       }));
 
       setCompletedSessions(formattedSessions);
@@ -88,12 +88,12 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       // Get the next sequence number for this subject-topic combination
       const { data: existingSessions, error: countError } = await supabase
-        .from('StudySessions')
-        .select('SequenceNumber')
-        .eq('UserID', authUser.id)
-        .eq('SubjectName', subjectName)
-        .eq('TopicName', topicName)
-        .order('SequenceNumber', { ascending: false })
+        .from('studysessions')
+        .select('sequencenumber')
+        .eq('userid', authUser.id)
+        .eq('subjectname', subjectName)
+        .eq('topicname', topicName)
+        .order('sequencenumber', { ascending: false })
         .limit(1);
 
       if (countError) {
@@ -101,20 +101,20 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         return null;
       }
 
-      const nextSequence = existingSessions.length > 0 ? existingSessions[0].SequenceNumber + 1 : 1;
+      const nextSequence = existingSessions.length > 0 ? existingSessions[0].sequencenumber + 1 : 1;
       const sessionName = `${subjectName} - ${topicName} #${nextSequence}`;
 
       const { data: newSession, error } = await supabase
-        .from('StudySessions')
+        .from('studysessions')
         .insert({
-          UserID: authUser.id,
-          SubjectName: subjectName,
-          TopicName: topicName,
-          SessionName: sessionName,
-          SequenceNumber: nextSequence,
-          Status: 'focus_pending',
-          FocusDurationMinutes: focusDuration,
-          BreakDurationMinutes: breakDuration
+          userid: authUser.id,
+          subjectname: subjectName,
+          topicname: topicName,
+          sessionname: sessionName,
+          sequencenumber: nextSequence,
+          status: 'focus_pending',
+          focusdurationminutes: focusDuration,
+          breakdurationminutes: breakDuration
         })
         .select()
         .single();
@@ -125,17 +125,17 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
 
       const formattedSession: StudySession = {
-        id: newSession.SessionID,
-        subjectName: newSession.SubjectName,
-        topicName: newSession.TopicName,
-        sessionName: newSession.SessionName,
-        sequenceNumber: newSession.SequenceNumber,
-        status: newSession.Status as StudySession['status'],
-        isFavorite: newSession.IsFavorite,
-        focusDurationMinutes: newSession.FocusDurationMinutes,
-        breakDurationMinutes: newSession.BreakDurationMinutes,
-        createdAt: newSession.CreatedAt,
-        lastReviewedAt: newSession.LastReviewedAt
+        id: newSession.sessionid,
+        subjectName: newSession.subjectname,
+        topicName: newSession.topicname,
+        sessionName: newSession.sessionname,
+        sequenceNumber: newSession.sequencenumber,
+        status: newSession.status as StudySession['status'],
+        isFavorite: newSession.isfavorite,
+        focusDurationMinutes: newSession.focusdurationminutes,
+        breakDurationMinutes: newSession.breakdurationminutes,
+        createdAt: newSession.createdat,
+        lastReviewedAt: newSession.lastreviewedat
       };
 
       return formattedSession;
@@ -150,9 +150,9 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     try {
       const { error } = await supabase
-        .from('StudySessions')
-        .update({ Status: 'completed' })
-        .eq('SessionID', sessionId);
+        .from('studysessions')
+        .update({ status: 'completed' })
+        .eq('sessionid', sessionId);
 
       if (error) {
         console.error('Error completing session:', error);
@@ -199,7 +199,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
 export const useSession = (): SessionContextType => {
   const context = useContext(SessionContext);
   if (context === undefined) {
-    throw new Error('useSession must be used within a SessionProvider');
+    throw new error('useSession must be used within a SessionProvider');
   }
   return context;
 };
