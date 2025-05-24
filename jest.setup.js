@@ -7,3 +7,6 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
   unobserve: jest.fn(),
   disconnect: jest.fn(),
 }));
+
+// Extend Jest matchers with jest-dom
+expect.extend(require('@testing-library/jest-dom/matchers'));
