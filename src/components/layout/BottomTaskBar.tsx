@@ -14,12 +14,7 @@ const BottomTaskBar = () => {
   };
   
   const handleHome = () => {
-    // Only navigate to home if authenticated
-    if (isAuthenticated) {
-      navigate('/home');
-    } else {
-      navigate('/login');
-    }
+    navigate('/home');
   };
   
   const handleBack = () => {
