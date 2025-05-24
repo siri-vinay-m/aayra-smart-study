@@ -9,6 +9,7 @@ import { UserProvider } from "./contexts/UserContext";
 import { SessionProvider } from "./contexts/SessionContext";
 import { TimerProvider } from "./contexts/TimerContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import RootRedirect from './components/auth/RootRedirect';
 
 import HomePage from "./pages/HomePage";
 import RegistrationPage from "./pages/RegistrationPage";
@@ -37,7 +38,7 @@ const App = () => {
               <SessionProvider>
                 <TimerProvider>
                   <Routes>
-                    <Route path="/" element={<Navigate to="/login" replace />} />
+                    <Route path="/" element={<RootRedirect />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegistrationPage />} />
                     <Route path="/home" element={
