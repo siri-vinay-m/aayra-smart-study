@@ -1,3 +1,4 @@
+
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
 import RootRedirect from "./RootRedirect";
@@ -26,7 +27,8 @@ describe("RootRedirect", () => {
         </Routes>
       </MemoryRouter>
     );
-    expect(screen.getByTestId("location-display")).toHaveTextContent("/home");
+    expect(screen.getByTestId("location-display")).toBeInTheDocument();
+    expect(screen.getByTestId("location-display").textContent).toBe("/home");
   });
 
   it("redirects to /login when not authenticated", () => {
@@ -40,6 +42,7 @@ describe("RootRedirect", () => {
         </Routes>
       </MemoryRouter>
     );
-    expect(screen.getByTestId("location-display")).toHaveTextContent("/login");
+    expect(screen.getByTestId("location-display")).toBeInTheDocument();
+    expect(screen.getByTestId("location-display").textContent).toBe("/login");
   });
 });

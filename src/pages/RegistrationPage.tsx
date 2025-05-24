@@ -4,203 +4,165 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
-import { Eye, EyeOff } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { type StudentCategory } from '@/contexts/UserContext';
 
 const RegistrationPage = () => {
   const navigate = useNavigate();
   const { signUp } = useAuth();
+  const { toast } = useToast();
   
-  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [agreeTerms, setAgreeTerms] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [displayName, setDisplayName] = useState('');
+  const [studentCategory, setStudentCategory] = useState<StudentCategory>('college');
   const [isLoading, setIsLoading] = useState(false);
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!displayName.trim()) {
-      newErrors.displayName = 'Display name is required';
-    }
-    
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email)) {
-      newErrors.email = 'Invalid email address';
-    }
-    
-    if (!password) {
-      newErrors.password = 'Password is required';
-    } else if (password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    }
-    
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-    
-    if (!agreeTerms) {
-      newErrors.agreeTerms = 'You must agree to the Terms of Service';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (validateForm()) {
-      setIsLoading(true);
+    if (password !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      await signUp(email, password, displayName, studentCategory);
       
-      try {
-        await signUp(email, password, displayName, 'college');
-        navigate('/profile');
-      } catch (error: any) {
-        setErrors({ general: error.message || 'Registration failed' });
-      } finally {
-        setIsLoading(false);
-      }
+      toast({
+        title: "Success",
+        description: "Registration successful! Please check your email to verify your account."
+      });
+      
+      navigate('/login');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      toast({
+        title: "Registration Failed",
+        description: error.message || "An error occurred during registration.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
-
+  
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-orange-500">AAYRA</h1>
-          <p className="mt-1 text-gray-600">The Smarter way to Master more.</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Create your account
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Start your learning journey with AAYRA
+          </p>
         </div>
         
-        <div className="bg-white shadow-md rounded-lg p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {errors.general && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded">
-                {errors.general}
-              </div>
-            )}
-            
-            <div className="space-y-2">
-              <Label htmlFor="display-name">Display Name</Label>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="displayName">Display Name</Label>
               <Input
-                id="display-name"
+                id="displayName"
+                type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Enter your name"
-                className={errors.displayName ? 'border-red-500' : ''}
+                required
+                placeholder="Your full name"
               />
-              {errors.displayName && (
-                <p className="text-sm text-red-500">{errors.displayName}</p>
-              )}
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+            <div>
+              <Label htmlFor="email">Email address</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className={errors.email ? 'border-red-500' : ''}
+                required
+                placeholder="your.email@example.com"
               />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email}</p>
-              )}
             </div>
             
-            <div className="space-y-2">
+            <div>
+              <Label htmlFor="studentCategory">Student Category</Label>
+              <Select value={studentCategory} onValueChange={(value) => setStudentCategory(value as StudentCategory)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="high_school">High School</SelectItem>
+                  <SelectItem value="college">College</SelectItem>
+                  <SelectItem value="competitive_exams">Competitive Exams</SelectItem>
+                  <SelectItem value="professional">Professional</SelectItem>
+                  <SelectItem value="lifelong_learner">Lifelong Learner</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
               <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a strong password"
-                  className={errors.password ? 'border-red-500 pr-10' : 'pr-10'}
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff size={20} className="text-gray-400" />
-                  ) : (
-                    <Eye size={20} className="text-gray-400" />
-                  )}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-sm text-red-500">{errors.password}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm Password</Label>
-              <div className="relative">
-                <Input
-                  id="confirm-password"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Re-enter your password"
-                  className={errors.confirmPassword ? 'border-red-500 pr-10' : 'pr-10'}
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff size={20} className="text-gray-400" />
-                  ) : (
-                    <Eye size={20} className="text-gray-400" />
-                  )}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="text-sm text-red-500">{errors.confirmPassword}</p>
-              )}
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="terms" 
-                checked={agreeTerms}
-                onCheckedChange={(checked) => setAgreeTerms(checked as boolean)}
-                className={errors.agreeTerms ? 'border-red-500' : ''}
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="Enter your password"
               />
-              <Label htmlFor="terms" className="text-sm">
-                I agree to the AAYRA <a href="#" className="text-orange-500 hover:underline">Terms of Service</a> and <a href="#" className="text-orange-500 hover:underline">Privacy Policy</a>
-              </Label>
             </div>
-            {errors.agreeTerms && (
-              <p className="text-sm text-red-500 mt-1">{errors.agreeTerms}</p>
-            )}
             
-            <Button 
-              type="submit" 
-              className="w-full bg-orange-500 hover:bg-orange-600"
+            <div>
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                placeholder="Confirm your password"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Button
+              type="submit"
+              className="w-full"
               disabled={isLoading}
             >
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </Button>
-            
-            <div className="text-center mt-4">
-              <p className="text-sm text-gray-600">
-                Already have an account? <Link to="/login" className="text-orange-500 hover:underline">Log In</Link>
-              </p>
-            </div>
-          </form>
-        </div>
+          </div>
+          
+          <div className="text-center">
+            <p className="text-sm text-gray-600">
+              Already have an account?{' '}
+              <Link to="/login" className="font-medium text-orange-600 hover:text-orange-500">
+                Sign in here
+              </Link>
+            </p>
+          </div>
+        </form>
       </div>
     </div>
   );

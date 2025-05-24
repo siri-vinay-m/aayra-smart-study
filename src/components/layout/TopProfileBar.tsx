@@ -2,6 +2,7 @@
 import React from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
+import { User } from 'lucide-react';
 
 const TopProfileBar = () => {
   const { user } = useUser();
@@ -18,7 +19,7 @@ const TopProfileBar = () => {
       </div>
       
       <div 
-        className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer"
+        className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors"
         onClick={handleProfileClick}
       >
         {user?.profilePictureURL ? (
@@ -28,9 +29,7 @@ const TopProfileBar = () => {
             className="w-full h-full rounded-full object-cover"
           />
         ) : (
-          <span className="text-lg font-medium text-gray-600">
-            {user?.displayName?.charAt(0) || 'U'}
-          </span>
+          <User size={20} className="text-gray-600" />
         )}
       </div>
     </div>
