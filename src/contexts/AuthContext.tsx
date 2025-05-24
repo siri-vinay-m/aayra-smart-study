@@ -8,7 +8,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string, studentCategory: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -29,10 +29,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // If user signs in, create/update user record in Users table
+        if (event === 'SIGNED_IN' && session?.user) {
+          setTimeout(async () => {
+            try {
+              const { data: existingUser } = await supabase
+                .from('Users')
+                .select('*')
+                .eq('UserID', session.user.id)
+                .single();
+
+              if (!existingUser) {
+                // Create user record if it doesn't exist
+                const { error } = await supabase
+                  .from('Users')
+                  .insert({
+                    UserID: session.user.id,
+                    Email: session.user.email || '',
+                    DisplayName: session.user.user_metadata?.display_name || 'User',
+                    StudentCategory: session.user.user_metadata?.student_category || 'college',
+                    PasswordHash: '', // Managed by Supabase Auth
+                    EmailVerified: session.user.email_confirmed_at ? true : false
+                  });
+
+                if (error) {
+                  console.error('Error creating user record:', error);
+                }
+              }
+            } catch (error) {
+              console.error('Error handling user record:', error);
+            }
+          }, 0);
+        }
       }
     );
 
@@ -47,13 +81,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (error) throw error;
   };
 
-  const signUp = async (email: string, password: string, displayName: string) => {
+  const signUp = async (email: string, password: string, displayName: string, studentCategory: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           display_name: displayName,
+          student_category: studentCategory,
         }
       }
     });
