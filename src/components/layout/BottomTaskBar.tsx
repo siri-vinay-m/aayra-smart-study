@@ -19,8 +19,12 @@ const BottomTaskBar = () => {
   
   const handleBack = () => {
     if (location.pathname === '/home') {
-      // Navigate to login page when on home page
-      navigate('/login');
+      // Show exit confirmation dialog
+      const confirmExit = window.confirm('Do you want to exit?');
+      if (confirmExit) {
+        // In a real app, this would exit the application
+        console.log('Exit app');
+      }
     } else {
       navigate(-1);
     }

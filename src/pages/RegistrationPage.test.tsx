@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -96,8 +95,7 @@ describe('RegistrationPage', () => {
     await userEvent.click(submitButton);
 
     // Check for the "Invalid email address" message
-    const errorMessage = await screen.findByText('Invalid email address');
-    expect(errorMessage).toBeInTheDocument();
+    expect(await screen.findByText('Invalid email address')).toBeInTheDocument();
 
     // Check that other error messages are not present
     expect(screen.queryByText('Display name is required')).not.toBeInTheDocument();
