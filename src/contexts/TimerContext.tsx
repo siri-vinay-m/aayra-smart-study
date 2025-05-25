@@ -4,7 +4,7 @@ import { useSession } from './SessionContext';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
-type TimerType = 'focus' | 'break';
+export type TimerType = 'focus' | 'break';
 type TimerStatus = 'idle' | 'running' | 'paused' | 'completed';
 
 interface TimerContextType {

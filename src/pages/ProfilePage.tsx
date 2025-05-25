@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Crown } from 'lucide-react';
 
 const ProfilePage = () => {
-  const { user, setUser, loadUserData, updateUserProfile } = useUser();
+  const { user, setUser, loadUserData } = useUser();
   const { signOut, user: authUser } = useAuth();
   const { toast } = useToast(); 
   const [displayName, setDisplayName] = useState('');
