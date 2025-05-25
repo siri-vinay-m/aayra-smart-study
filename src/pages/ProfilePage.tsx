@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useUser, StudentCategory } from '@/contexts/UserContext';
@@ -33,9 +34,9 @@ const ProfilePage = () => {
       if (Array.isArray(user.preferredStudyWeekdays)) {
         setPreferredStudyWeekdays(user.preferredStudyWeekdays);
       } else {
-        const weekdaysValue = user.preferredStudyWeekdays;
-        if (weekdaysValue && typeof weekdaysValue === 'string' && weekdaysValue.trim() !== '') {
-          const parsedDays = weekdaysValue.split(',').map(day => day.trim()).filter(day => day);
+        // Handle the case where preferredStudyWeekdays is a string or null
+        if (typeof user.preferredStudyWeekdays === 'string' && user.preferredStudyWeekdays.trim() !== '') {
+          const parsedDays = user.preferredStudyWeekdays.split(',').map(day => day.trim()).filter(day => day);
           const validWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
           setPreferredStudyWeekdays(parsedDays.filter(day => validWeekdays.includes(day)));
         } else {
