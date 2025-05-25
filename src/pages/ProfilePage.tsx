@@ -32,12 +32,15 @@ const ProfilePage = () => {
       setProfilePictureURL(user.profilePictureURL || '');
       if (Array.isArray(user.preferredStudyWeekdays)) {
         setPreferredStudyWeekdays(user.preferredStudyWeekdays);
-      } else if (user.preferredStudyWeekdays && typeof user.preferredStudyWeekdays === 'string' && user.preferredStudyWeekdays.trim() !== '') {
-        const parsedDays = user.preferredStudyWeekdays.split(',').map(day => day.trim()).filter(day => day);
-        const validWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-        setPreferredStudyWeekdays(parsedDays.filter(day => validWeekdays.includes(day)));
       } else {
-        setPreferredStudyWeekdays([]);
+        const weekdaysValue = user.preferredStudyWeekdays;
+        if (weekdaysValue && typeof weekdaysValue === 'string' && weekdaysValue.trim() !== '') {
+          const parsedDays = weekdaysValue.split(',').map(day => day.trim()).filter(day => day);
+          const validWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+          setPreferredStudyWeekdays(parsedDays.filter(day => validWeekdays.includes(day)));
+        } else {
+          setPreferredStudyWeekdays([]);
+        }
       }
       setPreferredStudyStartTime(user.preferredStudyStartTime || '');
     } else if (authUser) {
