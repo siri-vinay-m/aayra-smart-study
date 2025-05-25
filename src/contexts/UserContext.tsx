@@ -10,7 +10,7 @@ export type StudentCategory =
   | 'professional'
   | 'lifelong_learner';
 
-interface User {
+export interface User {
   id: string;
   displayName: string;
   email: string;
@@ -179,4 +179,5 @@ export const useUser = (): UserContextType => {
   return context;
 };
 
+// Export UserContext for testing
 export { UserContext };

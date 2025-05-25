@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, Square, Play } from 'lucide-react';
+import { Mic, Square, Play, Pause } from 'lucide-react';
 
 interface VoiceRecorderProps {
   onRecordingComplete?: (audioBlob: Blob) => void;
@@ -99,8 +99,8 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
           size="sm"
           className="flex items-center gap-1"
         >
-          {isPlaying ? <Square size={16} /> : <Play size={16} />}
-          {isPlaying ? 'Stop' : 'Play'}
+          {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+          {isPlaying ? 'Pause' : 'Play'}
         </Button>
       )}
     </div>

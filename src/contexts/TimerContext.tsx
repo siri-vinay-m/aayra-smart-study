@@ -164,3 +164,6 @@ export const useTimer = (): TimerContextType => {
   }
   return context;
 };
+
+// Export TimerContext for testing
+export { TimerContext };

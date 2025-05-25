@@ -106,11 +106,14 @@ const ProfilePage = () => {
         newProfilePictureUrl = urlData.publicUrl;
       }
 
+      // Convert array to comma-separated string for database storage
+      const weekdaysForDb = preferredStudyWeekdays.length > 0 ? preferredStudyWeekdays.join(',') : null;
+
       const userDataToSave = {
         displayname: displayName,
         studentcategory: studentCategory,
         profilepictureurl: newProfilePictureUrl,
-        preferredstudyweekdays: preferredStudyWeekdays.length > 0 ? preferredStudyWeekdays : null,
+        preferredstudyweekdays: weekdaysForDb,
         preferredstudystarttime: preferredStudyStartTime || null,
         lastloginat: new Date().toISOString()
       };
@@ -225,6 +228,7 @@ const ProfilePage = () => {
             currentImageUrl={profilePictureURL}
             onFileSelect={handleFileSelect}
             isLoading={isLoading}
+            data-testid="profile-image-upload"
           />
         </div>
         
@@ -303,7 +307,7 @@ const ProfilePage = () => {
                   onCheckedChange={handleSelectAllWeekdays}
                   onSelect={(e) => e.preventDefault()}
                 >
-                  Select All
+                  All Weekdays
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuSeparator />
                 {weekdaysDefinition.map((day) => (

@@ -245,3 +245,6 @@ export const useSession = (): SessionContextType => {
   }
   return context;
 };
+
+// Export SessionContext for testing
+export { SessionContext };
