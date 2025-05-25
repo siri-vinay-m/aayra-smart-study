@@ -60,12 +60,16 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     if (!audioUrl) return;
 
     if (isPlaying) {
-      audioRef.current?.pause();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
       setIsPlaying(false);
     } else {
       if (!audioRef.current) {
         audioRef.current = new Audio(audioUrl);
         audioRef.current.onended = () => setIsPlaying(false);
+        audioRef.current.onpause = () => setIsPlaying(false);
       }
       audioRef.current.play();
       setIsPlaying(true);
@@ -99,8 +103,8 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
           size="sm"
           className="flex items-center gap-1"
         >
-          {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-          {isPlaying ? 'Pause' : 'Play'}
+          {isPlaying ? <Square size={16} /> : <Play size={16} />}
+          {isPlaying ? 'Stop' : 'Play'}
         </Button>
       )}
     </div>

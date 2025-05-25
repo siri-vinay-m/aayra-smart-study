@@ -28,6 +28,11 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - progress);
 
+  const handleSkip = () => {
+    // Complete current phase and proceed to next
+    skipTimer();
+  };
+
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="circular-timer">
@@ -89,10 +94,10 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
           )}
 
           <button
-            onClick={skipTimer} // Directly call skipTimer
+            onClick={handleSkip}
             className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors"
           >
-            Skip
+            Skip {timerType === 'focus' ? 'to Upload' : 'to Focus'}
           </button>
         </div>
       )}

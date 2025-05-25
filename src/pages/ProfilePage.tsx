@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useUser, StudentCategory } from '@/contexts/UserContext';
@@ -27,19 +28,24 @@ const ProfilePage = () => {
 
   useEffect(() => {
     if (user) {
-      setDisplayName(user.displayName);
+      setDisplayName(user.displayName || '');
       setStudentCategory(user.studentCategory || 'college');
       setProfilePictureURL(user.profilePictureURL || '');
-      // Handle preferredStudyWeekdays properly according to its actual type
+      
+      // Handle preferredStudyWeekdays - it can be string[] | null
       if (user.preferredStudyWeekdays && Array.isArray(user.preferredStudyWeekdays)) {
         setPreferredStudyWeekdays(user.preferredStudyWeekdays);
       } else {
         setPreferredStudyWeekdays([]);
       }
+      
       setPreferredStudyStartTime(user.preferredStudyStartTime || '');
     } else if (authUser) {
       setDisplayName(authUser.user_metadata?.display_name || 'User');
       setStudentCategory(authUser.user_metadata?.student_category || 'college');
+      setProfilePictureURL('');
+      setPreferredStudyWeekdays([]);
+      setPreferredStudyStartTime('');
     }
   }, [user, authUser]);
 
@@ -69,10 +75,17 @@ const ProfilePage = () => {
   };
   
   const handleSaveProfile = async () => {
-    if (!authUser) return;
+    if (!authUser) {
+      toast({
+        title: "Error",
+        description: "Please log in to save your profile.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setIsLoading(true);
-    let newProfilePictureUrl = user?.profilePictureURL || null;
+    let newProfilePictureUrl = profilePictureURL || null;
 
     try {
       if (selectedFile) {
@@ -88,7 +101,8 @@ const ProfilePage = () => {
           });
 
         if (uploadError) {
-          throw uploadError;
+          console.error('Upload error:', uploadError);
+          throw new Error(`Upload failed: ${uploadError.message}`);
         }
 
         const { data: urlData } = supabase.storage
@@ -176,7 +190,7 @@ const ProfilePage = () => {
       console.error('Error in handleSaveProfile:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: `Profile save failed: ${error.message}`,
         variant: "destructive"
       });
     } finally {

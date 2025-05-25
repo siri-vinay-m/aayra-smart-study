@@ -44,11 +44,7 @@ const NewSessionPage = () => {
         };
         setCurrentSession(updatedSession);
         
-        toast({
-          title: "Session Created",
-          description: "Your new study session has been started!"
-        });
-        
+        // Navigate directly without showing toast popup
         navigate('/focus');
       } else {
         toast({
