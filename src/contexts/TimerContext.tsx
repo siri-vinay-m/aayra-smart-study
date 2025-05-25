@@ -28,28 +28,35 @@ export const BREAK_TIME = 5 * 60; // 5 minutes in seconds
 export const WARNING_TIME = 5 * 60; // 5 minutes warning in seconds (at 20 minutes)
 
 export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { currentSession, updateCurrentSessionStatus } = useSession(); // Added updateCurrentSessionStatus
   const [timerType, setTimerType] = useState<TimerType>('focus');
-  const [timeLeft, setTimeLeft] = useState(FOCUS_TIME);
+  
+  // Initialize timeLeft based on currentSession or default
+  const getInitialTime = (type: TimerType) => {
+    if (currentSession) {
+      return type === 'focus' 
+        ? currentSession.focusDurationMinutes * 60
+        : currentSession.breakDurationMinutes * 60;
+    }
+    return type === 'focus' ? FOCUS_TIME : BREAK_TIME;
+  };
+
+  const [timeLeft, setTimeLeft] = useState(getInitialTime(timerType));
   const [status, setStatus] = useState<TimerStatus>('idle');
   const [progress, setProgress] = useState(0);
-  const { currentSession } = useSession();
   const navigate = useNavigate();
 
-  // Reset timer when type changes
+  // Reset timer when type changes or currentSession changes
   useEffect(() => {
-    if (timerType === 'focus') {
-      setTimeLeft(FOCUS_TIME);
-    } else {
-      setTimeLeft(BREAK_TIME);
-    }
+    setTimeLeft(getInitialTime(timerType));
     setStatus('idle');
-  }, [timerType]);
+  }, [timerType, currentSession]);
 
   // Calculate progress
   useEffect(() => {
-    const totalTime = timerType === 'focus' ? FOCUS_TIME : BREAK_TIME;
-    setProgress((totalTime - timeLeft) / totalTime);
-  }, [timeLeft, timerType]);
+    const totalTime = getInitialTime(timerType);
+    setProgress(totalTime > 0 ? (totalTime - timeLeft) / totalTime : 0);
+  }, [timeLeft, timerType, currentSession]);
 
   // Timer countdown logic
   useEffect(() => {
@@ -104,16 +111,30 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const resetTimer = () => {
-    setTimeLeft(timerType === 'focus' ? FOCUS_TIME : BREAK_TIME);
+    setTimeLeft(getInitialTime(timerType));
     setStatus('idle');
   };
 
-  const skipTimer = () => {
-    setStatus('completed');
+  const skipTimer = async () => { // Made async
+    if (!currentSession || !updateCurrentSessionStatus) {
+      console.warn("Skip timer called without current session or update function.");
+      return;
+    }
+
+    setStatus('completed'); // Mark current timer as completed
+
     if (timerType === 'focus') {
+      await updateCurrentSessionStatus('upload_pending');
+      // The useEffect for timeLeft === 0 and status === 'running' (now 'completed') already handles navigation
+      // However, skipTimer is an explicit action, so direct navigation is fine.
+      // The original navigation for completed focus timer was to '/upload'.
       navigate('/upload');
-    } else {
-      navigate('/');
+    } else { // timerType === 'break'
+      await updateCurrentSessionStatus('focus_pending');
+      setTimerType('focus'); // Prepare TimerContext for the next focus session
+      // The original navigation for completed break timer was to '/'.
+      // Assuming we want to start a new focus session immediately.
+      navigate('/focus'); 
     }
   };
 

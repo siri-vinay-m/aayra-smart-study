@@ -9,26 +9,31 @@ import { Button } from '@/components/ui/button';
 
 const BreakTimerPage = () => {
   const { currentSession } = useSession();
-  const { setTimerType, startTimer, status, timeLeft } = useTimer();
+  const { setTimerType, startTimer, status, timeLeft, skipTimer } = useTimer(); // Added skipTimer
   const navigate = useNavigate();
   
   useEffect(() => {
     setTimerType('break');
     // Auto-start the break timer
     setTimeout(() => {
-      startTimer();
+      if (status === 'idle') { // Only start if it's idle, to prevent multiple starts
+        startTimer();
+      }
     }, 100);
-  }, [setTimerType, startTimer]);
+  }, [setTimerType, startTimer, status]); // Added status to dependency array
 
-  // Navigate to home when break timer completes
+  // Navigate to home when break timer completes (This might be superseded by logic in TimerContext if skipTimer also navigates)
+  // For now, let's keep it, but be mindful of potential double navigation or conflicting logic.
+  // The TimerContext's useEffect for timeLeft === 0 already handles navigation for completed timers.
+  // This specific effect might be redundant if skipTimer also sets status to 'completed'.
   useEffect(() => {
-    if (status === 'completed' && timeLeft === 0) {
-      navigate('/home');
+    if (status === 'completed' && timeLeft === 0 && timerType === 'break') { // Added timerType check for safety
+      // navigate('/home'); // This navigation is now handled by TimerContext
     }
-  }, [status, timeLeft, navigate]);
+  }, [status, timeLeft, navigate, timerType]); // Added timerType
   
   const handleSkip = () => {
-    navigate('/home');
+    skipTimer(); // Use skipTimer from TimerContext
   };
   
   if (!currentSession) {

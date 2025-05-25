@@ -6,59 +6,47 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ImageUpload from '@/components/ui/image-upload';
-import { useUser, type StudentCategory } from '@/contexts/UserContext';
+// Removed duplicate: import { useUser, type StudentCategory } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Crown } from 'lucide-react';
 
 const ProfilePage = () => {
-  const { user, setUser, loadUserData, setIsAuthenticated, updateUserProfile } = useUser();
+  const { user, setUser, loadUserData, setIsAuthenticated, updateUserProfile } = useUser(); // One useUser import is kept (from line 3)
   const { signOut, user: authUser } = useAuth();
   const { toast } = useToast(); 
   const [displayName, setDisplayName] = useState('');
   const [studentCategory, setStudentCategory] = useState<StudentCategory>('college');
-  const [profilePictureURL, setProfilePictureURL] = useState('');
-  const [preferredStudyWeekdays, setPreferredStudyWeekdays] = useState('');
+  const [profilePictureURL, setProfilePictureURL] = useState(''); // This will hold the URL from DB or the new preview for saving
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); // For the new image file
+  const [preferredStudyWeekdays, setPreferredStudyWeekdays] = useState<string[]>([]); // Changed to string array
   const [preferredStudyStartTime, setPreferredStudyStartTime] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const handleSaveProfile = async () => {
-    if (!user) {
-      alert('User data not available. Please try again.');
-      return;
-    }
-
-    const payload: UpdateUserPayload = {
-      displayName,
-      studentCategory: category as StudentCategory || null, // Ensure category is compatible or null
-      preferredStudyWeekdays: weekdays || null,
-      preferredStudyStartTime: startTime || null,
-    };
-
-    // Log payload for debugging
-    // console.log("Saving profile with payload:", payload);
-
-    const result = await updateUserProfile(payload);
-
-    if (result.success) {
-      // Optionally, show a success message/toast here
-      // console.log("Profile saved successfully");
-      navigate('/home');
-    } else {
-      console.error("Failed to save profile:", result.error);
-      alert('Failed to save profile: ' + (result.error?.message || 'Unknown error'));
-    }
-  };
+  // The first handleSaveProfile (lines 26-44 in original file) is removed as it's unused and incomplete.
+  // The second handleSaveProfile (lines 73-144 in original) is the one being modified.
 
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName);
       setStudentCategory(user.studentCategory || 'college');
-      setProfilePictureURL(user.profilePictureURL || '');
-      setPreferredStudyWeekdays(user.preferredStudyWeekdays || '');
+      setProfilePictureURL(user.profilePictureURL || ''); // Initialize with URL from DB
+      // Handle loading of preferredStudyWeekdays (string[] or string from DB)
+      if (Array.isArray(user.preferredStudyWeekdays)) {
+        setPreferredStudyWeekdays(user.preferredStudyWeekdays);
+      } else if (typeof user.preferredStudyWeekdays === 'string' && user.preferredStudyWeekdays.trim() !== '') {
+        // Attempt to parse if it's a comma-separated string (legacy)
+        const parsedDays = user.preferredStudyWeekdays.split(',').map(day => day.trim()).filter(day => day);
+        // Ensure only valid days are set, comparing against a defined list if necessary
+        const validWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        setPreferredStudyWeekdays(parsedDays.filter(day => validWeekdays.includes(day)));
+      } else {
+        setPreferredStudyWeekdays([]); // Default to empty array if null, undefined, or empty string
+      }
       setPreferredStudyStartTime(user.preferredStudyStartTime || '');
     } else if (authUser) {
       // Set defaults from auth user metadata
@@ -67,60 +55,122 @@ const ProfilePage = () => {
     }
   }, [user, authUser]);
   
-  const handleImageChange = (imageUrl: string) => {
-    setProfilePictureURL(imageUrl);
+  const handleFileSelect = (file: File | null) => {
+    setSelectedFile(file);
+    // If a new file is selected, ProfilePage doesn't need to manage its preview URL directly.
+    // ImageUpload component handles its own internal preview.
+    // ProfilePictureURL will be updated with the actual storage URL on save.
+    // If the user clears the selection (file is null), we can decide if we want to revert to original DB URL or clear preview.
+    // For now, selectedFile being null means no new upload.
   };
   
   const handleSaveProfile = async () => {
     if (!authUser) return;
     
     setIsLoading(true);
-    
+    let newProfilePictureUrl = user?.profilePictureURL || null; // Start with existing URL
+
     try {
+      if (selectedFile) {
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `${authUser.id}-${Date.now()}.${fileExt}`;
+        const filePath = `public/${fileName}`; // Bucket is 'profile-pictures'
+
+        const { error: uploadError } = await supabase.storage
+          .from('profile-pictures')
+          .upload(filePath, selectedFile, {
+            cacheControl: '3600',
+            upsert: true, // Overwrite if file with same name exists (good for user retrying upload)
+          });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('profile-pictures')
+          .getPublicUrl(filePath);
+        
+        if (!urlData || !urlData.publicUrl) {
+          throw new Error("Could not get public URL for uploaded image.");
+        }
+        newProfilePictureUrl = urlData.publicUrl;
+      }
+
+      // User data to save, including the new (or existing) profile picture URL
+      const userDataToSave = {
+        displayname: displayName,
+        studentcategory: studentCategory,
+        profilepictureurl: newProfilePictureUrl,
+        preferredstudyweekdays: preferredStudyWeekdays.length > 0 ? preferredStudyWeekdays : null,
+        preferredstudystarttime: preferredStudyStartTime || null,
+      };
+
       // Check if user record exists
-      const { data: existingUser } = await supabase
+      const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('userid')
         .eq('userid', authUser.id)
         .maybeSingle();
 
+      if (fetchError) throw fetchError;
+
       let error;
-      
       if (existingUser) {
-        // Update existing user
         const { error: updateError } = await supabase
           .from('users')
-          .update({
-            displayname: displayName,
-            studentcategory: studentCategory,
-            profilepictureurl: profilePictureURL || null,
-            preferredstudyweekdays: preferredStudyWeekdays || null,
-            preferredstudystarttime: preferredStudyStartTime || null
-          })
+          .update(userDataToSave)
           .eq('userid', authUser.id);
-        
         error = updateError;
       } else {
-        // Create new user record
         const { error: insertError } = await supabase
           .from('users')
           .insert({
             userid: authUser.id,
             email: authUser.email || '',
-            displayname: displayName,
-            studentcategory: studentCategory,
             passwordhash: '', // Managed by Supabase Auth
             emailverified: authUser.email_confirmed_at ? true : false,
-            profilepictureurl: profilePictureURL || null,
-            preferredstudyweekdays: preferredStudyWeekdays || null,
-            preferredstudystarttime: preferredStudyStartTime || null
+            ...userDataToSave,
           });
-        
         error = insertError;
       }
       
       if (error) {
         console.error('Error saving profile:', error);
+        toast({
+          title: "Error",
+          description: `Failed to save profile: ${error.message}. Please try again.`,
+          variant: "destructive"
+        });
+      } else {
+        // Update local user state
+        setUser(prevUser => ({
+          ...(prevUser || { id: authUser.id, email: authUser.email || '', isSubscribed: false, subscriptionPlan: 'free' }),
+          displayName,
+          studentCategory,
+          profilePictureURL: newProfilePictureUrl, // Use the potentially updated URL
+          preferredStudyWeekdays: preferredStudyWeekdays,
+          preferredStudyStartTime: preferredStudyStartTime || null,
+          id: authUser.id,
+          email: authUser.email || '',
+          isSubscribed: prevUser?.isSubscribed || false,
+          subscriptionPlan: prevUser?.subscriptionPlan || 'free'
+        }));
+        
+        setSelectedFile(null); // Clear selected file after successful save
+        // The ImageUpload component will update its preview based on currentImageUrl prop change if needed
+        // or its internal preview state will be reset on next selection.
+        
+        toast({
+          title: "Success",
+          description: "Profile updated successfully!"
+        });
+        
+        // Reload user data to ensure consistency, especially for profilePictureURL from DB
+        await loadUserData();
+      }
+    } catch (error: any) {
+      console.error('Error in handleSaveProfile:', error);
         toast({
           title: "Error",
           description: "Failed to save profile. Please try again.",
@@ -134,7 +184,7 @@ const ProfilePage = () => {
           email: authUser.email || '',
           studentCategory,
           profilePictureURL: profilePictureURL || null,
-          preferredStudyWeekdays: preferredStudyWeekdays || null,
+          preferredStudyWeekdays: preferredStudyWeekdays, // setUser expects string[] as per UserContext change
           preferredStudyStartTime: preferredStudyStartTime || null,
           isSubscribed: user?.isSubscribed || false,
           subscriptionPlan: user?.subscriptionPlan || 'free'
@@ -163,13 +213,29 @@ const ProfilePage = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-    } catch (error) {
+    } catch (error: any) { // Added type any for error
       console.error('Error signing out:', error);
       toast({
         title: "Error",
-        description: "Failed to sign out. Please try again.",
+        description: `Failed to sign out: ${error.message}. Please try again.`, // More specific error
         variant: "destructive"
       });
+    }
+  };
+
+  const weekdaysDefinition = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+  const handleWeekdayToggle = (day: string) => {
+    setPreferredStudyWeekdays(prev => 
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
+  };
+
+  const handleSelectAllWeekdays = (checked: boolean) => {
+    if (checked) {
+      setPreferredStudyWeekdays(weekdaysDefinition);
+    } else {
+      setPreferredStudyWeekdays([]);
     }
   };
   
@@ -181,8 +247,9 @@ const ProfilePage = () => {
         {/* Profile Picture Section */}
         <div className="flex justify-center mb-6">
           <ImageUpload
-            currentImageUrl={profilePictureURL}
-            onImageChange={handleImageChange}
+            currentImageUrl={profilePictureURL} // This is the URL from the database
+            onFileSelect={handleFileSelect}    // This callback receives the File object
+            isLoading={isLoading}              // Pass loading state for UI feedback in ImageUpload
           />
         </div>
         
@@ -243,14 +310,39 @@ const ProfilePage = () => {
           </div>
           
           <div>
-            <Label htmlFor="weekdays">Preferred Study Weekdays</Label>
-            <Input
-              id="weekdays"
-              type="text"
-              value={preferredStudyWeekdays}
-              onChange={(e) => setPreferredStudyWeekdays(e.target.value)}
-              placeholder="Mon, Wed, Fri"
-            />
+            <Label htmlFor="weekdays-trigger">Preferred Study Weekdays</Label>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button id="weekdays-trigger" variant="outline" className="w-full justify-start font-normal">
+                  {preferredStudyWeekdays.length === 0
+                    ? "Select weekdays"
+                    : preferredStudyWeekdays.length === weekdaysDefinition.length
+                    ? "All weekdays"
+                    : preferredStudyWeekdays.sort((a, b) => weekdaysDefinition.indexOf(a) - weekdaysDefinition.indexOf(b)).join(', ')}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+                <DropdownMenuLabel>Select Days</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={preferredStudyWeekdays.length === weekdaysDefinition.length && weekdaysDefinition.length > 0}
+                  onCheckedChange={handleSelectAllWeekdays}
+                  onSelect={(e) => e.preventDefault()} // Prevent menu closing
+                >
+                  All Weekdays
+                </DropdownMenuCheckboxItem>
+                {weekdaysDefinition.map((day) => (
+                  <DropdownMenuCheckboxItem
+                    key={day}
+                    checked={preferredStudyWeekdays.includes(day)}
+                    onCheckedChange={() => handleWeekdayToggle(day)} // onCheckedChange for checkbox item passes boolean
+                    onSelect={(e) => e.preventDefault()} // Prevent menu closing
+                  >
+                    {day}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           
           <div>

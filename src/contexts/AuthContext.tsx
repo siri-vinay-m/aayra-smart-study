@@ -62,8 +62,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   console.error('Error creating user record:', error);
                 }
               }
+              // Always update last_login_at on SIGNED_IN event
+              const { error: updateError } = await supabase
+                .from('users')
+                .update({ last_login_at: new Date().toISOString() })
+                .eq('userid', session.user.id);
+
+              if (updateError) {
+                console.error('Error updating last_login_at:', updateError);
+              }
+              
             } catch (error) {
-              console.error('Error handling user record:', error);
+              console.error('Error handling user record or last_login_at:', error);
             }
           }, 0);
         }

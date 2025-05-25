@@ -89,11 +89,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
           )}
 
           <button
-            onClick={() => {
-              if (window.confirm(`Do you want to skip to ${timerType === 'focus' ? 'validation' : 'home'}?`)) {
-                skipTimer();
-              }
-            }}
+            onClick={skipTimer} // Directly call skipTimer
             className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors"
           >
             Skip
