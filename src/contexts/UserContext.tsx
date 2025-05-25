@@ -16,21 +16,21 @@ interface User {
   email: string;
   studentCategory: StudentCategory | null;
   profilePictureURL: string | null;
-  preferredStudyWeekdays: string[] | null; // Changed to string array
+  preferredStudyWeekdays: string[] | null;
   preferredStudyStartTime: string | null;
   isSubscribed: boolean;
   subscriptionPlan: 'free' | 'premium' | null;
-  lastLoginAt?: string | null; // Added lastLoginAt
-  currentSubscriptionId?: string | null; // Added currentSubscriptionId
+  lastLoginAt?: string | null;
+  currentSubscriptionId?: string | null;
 }
 
 export interface UpdateUserPayload {
   displayName?: string;
   studentCategory?: StudentCategory | null;
   profilePictureURL?: string | null;
-  preferredStudyWeekdays?: string[] | null; // Changed to string array
+  preferredStudyWeekdays?: string[] | null;
   preferredStudyStartTime?: string | null;
-  currentSubscriptionId?: string | null; // Added currentSubscriptionId
+  currentSubscriptionId?: string | null;
 }
 
 interface UserContextType {
@@ -69,22 +69,31 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       if (userData) {
+        // Parse weekdays - handle both array and comma-separated string formats
+        let parsedWeekdays: string[] | null = null;
+        if (userData.preferredstudyweekdays) {
+          if (Array.isArray(userData.preferredstudyweekdays)) {
+            parsedWeekdays = userData.preferredstudyweekdays;
+          } else if (typeof userData.preferredstudyweekdays === 'string') {
+            parsedWeekdays = userData.preferredstudyweekdays.split(',').map(day => day.trim()).filter(day => day);
+          }
+        }
+
         setUser({
           id: userData.userid,
           displayName: userData.displayname,
           email: userData.email,
           studentCategory: userData.studentcategory as StudentCategory,
           profilePictureURL: userData.profilepictureurl,
-          preferredStudyWeekdays: userData.preferredstudyweekdays as string[] | null, // Cast to string array
+          preferredStudyWeekdays: parsedWeekdays,
           preferredStudyStartTime: userData.preferredstudystarttime,
-          isSubscribed: false, // This would be calculated based on UserSubscriptions
-          subscriptionPlan: 'free', // Assuming default, might need actual logic
-          lastLoginAt: userData.last_login_at || null,
-          currentSubscriptionId: userData.current_subscription_id || null
+          isSubscribed: false,
+          subscriptionPlan: 'free',
+          lastLoginAt: userData.lastloginat || null,
+          currentSubscriptionId: userData.currentsubscriptionid || null
         });
         setIsAuthenticated(true);
       } else {
-        // User record doesn't exist, but auth user exists - this is handled by AuthContext
         setIsAuthenticated(true);
       }
     } catch (error) {
@@ -103,10 +112,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (updates.profilePictureURL !== undefined) supabasePayload.profilepictureurl = updates.profilePictureURL;
     if (updates.preferredStudyWeekdays !== undefined) supabasePayload.preferredstudyweekdays = updates.preferredStudyWeekdays;
     if (updates.preferredStudyStartTime !== undefined) supabasePayload.preferredstudystarttime = updates.preferredStudyStartTime;
-    if (updates.currentSubscriptionId !== undefined) supabasePayload.current_subscription_id = updates.currentSubscriptionId; // Added
+    if (updates.currentSubscriptionId !== undefined) supabasePayload.currentsubscriptionid = updates.currentSubscriptionId;
 
     if (Object.keys(supabasePayload).length === 0) {
-      return { success: true }; // No actual updates to make
+      return { success: true };
     }
 
     try {
@@ -121,16 +130,14 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       setUser(prevUser => {
-        if (!prevUser) return null; // Should not happen if user.id was available
-        // Create a new object for the updated user state
+        if (!prevUser) return null;
         const updatedUser = { ...prevUser };
-        // Apply updates one by one, handling potential null/undefined
         if (updates.displayName !== undefined) updatedUser.displayName = updates.displayName;
         if (updates.studentCategory !== undefined) updatedUser.studentCategory = updates.studentCategory;
         if (updates.profilePictureURL !== undefined) updatedUser.profilePictureURL = updates.profilePictureURL;
-        if (updates.preferredStudyWeekdays !== undefined) updatedUser.preferredStudyWeekdays = updates.preferredStudyWeekdays as string[] | null; // Cast to string array
+        if (updates.preferredStudyWeekdays !== undefined) updatedUser.preferredStudyWeekdays = updates.preferredStudyWeekdays as string[] | null;
         if (updates.preferredStudyStartTime !== undefined) updatedUser.preferredStudyStartTime = updates.preferredStudyStartTime;
-        if (updates.currentSubscriptionId !== undefined) updatedUser.currentSubscriptionId = updates.currentSubscriptionId; // Added
+        if (updates.currentSubscriptionId !== undefined) updatedUser.currentSubscriptionId = updates.currentSubscriptionId;
         return updatedUser;
       });
 
@@ -172,5 +179,4 @@ export const useUser = (): UserContextType => {
   return context;
 };
 
-// Export the context for testing
 export { UserContext };

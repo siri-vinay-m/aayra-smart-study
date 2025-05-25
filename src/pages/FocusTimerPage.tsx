@@ -1,11 +1,17 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import CircularTimer from '@/components/timer/CircularTimer';
 import { useSession } from '@/contexts/SessionContext';
+import { useTimer } from '@/contexts/TimerContext';
 
 const FocusTimerPage = () => {
   const { currentSession } = useSession();
+  const { setTimerType } = useTimer();
+
+  useEffect(() => {
+    setTimerType('focus');
+  }, [setTimerType]);
   
   if (!currentSession) {
     return (

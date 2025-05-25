@@ -8,11 +8,10 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const ValidationPage = () => {
   const navigate = useNavigate();
-  const { currentSession, completeSession, setCurrentSession } = useSession(); // Added setCurrentSession
+  const { currentSession, completeSession, setCurrentSession } = useSession();
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [currentStep, setCurrentStep] = useState<'flashcards' | 'quiz'>('flashcards'); // Step 2: State for flow control
+  const [currentStep, setCurrentStep] = useState<'flashcards' | 'quiz'>('flashcards');
   
-  // Mock flashcards data - in real app this would come from the session
   const flashcards = [
     {
       question: "What is the main concept you studied?",
@@ -33,33 +32,23 @@ const ValidationPage = () => {
       if (currentCardIndex < flashcards.length - 1) {
         setCurrentCardIndex(currentCardIndex + 1);
       } else {
-        // Last flashcard, transition to quiz
-        setCurrentStep('quiz'); // Step 4: Defining "Flashcards Completed"
+        setCurrentStep('quiz');
       }
     }
-    // If currentStep is 'quiz', this button might be "Submit Quiz" - handled by specific quiz button
   };
   
   const handleCompleteQuiz = () => {
-    // This function will be called by a button in the quiz section
     if (currentSession) {
-      // Update session status before completing
-      if (setCurrentSession) { // Check if setCurrentSession is available
+      if (setCurrentSession) {
          setCurrentSession(prev => prev ? ({ ...prev, status: 'break_pending' }) : null);
       }
-      // Ideally, completeSession should also update status in DB to 'break_pending' or similar before 'completed'
-      // For now, using existing completeSession then navigating to /break
-      completeSession(currentSession.id); // This sets status to 'completed' and currentSession to null
+      completeSession(currentSession.id);
     }
     navigate('/break');
   };
 
   const handleSkip = () => {
-    // Skips the entire validation phase (flashcards and quiz)
     if (currentSession) {
-      // Optionally mark as completed or a specific skipped status
-      // For now, just navigate to break, session will remain in 'validating' or its current state
-      // unless completeSession is called. Let's assume skipping validation means not completing it.
       if (setCurrentSession) {
         setCurrentSession(prev => prev ? ({ ...prev, status: 'break_pending' }) : null);
       }
@@ -77,7 +66,6 @@ const ValidationPage = () => {
     );
   }
   
-  // Determine content based on currentStep
   let pageContent;
 
   if (currentStep === 'flashcards') {
@@ -106,19 +94,18 @@ const ValidationPage = () => {
             onClick={handleNext}
             className="bg-orange-500 hover:bg-orange-600 px-6 py-3"
           >
-            {isLastFlashcard ? 'Start Quiz' : 'Next Card'}
+            {isLastFlashcard ? 'Start Quiz' : 'Next'}
           </Button>
         </div>
       </>
     );
-  } else { // currentStep === 'quiz'
+  } else {
     pageContent = (
       <>
         <h2 className="text-xl font-semibold mb-4 text-center">Quiz Time!</h2>
         <Card className="mb-6 min-h-[150px] flex flex-col justify-center">
           <CardContent className="p-6 text-center">
             <p>Quiz questions and interactions would appear here.</p>
-            {/* Placeholder for quiz content */}
           </CardContent>
         </Card>
         <div className="flex gap-4 justify-center">

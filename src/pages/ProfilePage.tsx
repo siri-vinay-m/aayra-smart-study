@@ -9,78 +9,87 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ImageUpload from '@/components/ui/image-upload';
-// Removed duplicate: import { useUser, type StudentCategory } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Crown } from 'lucide-react';
 
 const ProfilePage = () => {
-  const { user, setUser, loadUserData, setIsAuthenticated, updateUserProfile } = useUser(); // One useUser import is kept (from line 3)
+  const { user, setUser, loadUserData, updateUserProfile } = useUser();
   const { signOut, user: authUser } = useAuth();
   const { toast } = useToast(); 
   const [displayName, setDisplayName] = useState('');
   const [studentCategory, setStudentCategory] = useState<StudentCategory>('college');
-  const [profilePictureURL, setProfilePictureURL] = useState(''); // This will hold the URL from DB or the new preview for saving
-  const [selectedFile, setSelectedFile] = useState<File | null>(null); // For the new image file
-  const [preferredStudyWeekdays, setPreferredStudyWeekdays] = useState<string[]>([]); // Changed to string array
+  const [profilePictureURL, setProfilePictureURL] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preferredStudyWeekdays, setPreferredStudyWeekdays] = useState<string[]>([]);
   const [preferredStudyStartTime, setPreferredStudyStartTime] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // The first handleSaveProfile (lines 26-44 in original file) is removed as it's unused and incomplete.
-  // The second handleSaveProfile (lines 73-144 in original) is the one being modified.
 
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName);
       setStudentCategory(user.studentCategory || 'college');
-      setProfilePictureURL(user.profilePictureURL || ''); // Initialize with URL from DB
-      // Handle loading of preferredStudyWeekdays (string[] or string from DB)
+      setProfilePictureURL(user.profilePictureURL || '');
       if (Array.isArray(user.preferredStudyWeekdays)) {
         setPreferredStudyWeekdays(user.preferredStudyWeekdays);
       } else if (typeof user.preferredStudyWeekdays === 'string' && user.preferredStudyWeekdays.trim() !== '') {
-        // Attempt to parse if it's a comma-separated string (legacy)
         const parsedDays = user.preferredStudyWeekdays.split(',').map(day => day.trim()).filter(day => day);
-        // Ensure only valid days are set, comparing against a defined list if necessary
         const validWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
         setPreferredStudyWeekdays(parsedDays.filter(day => validWeekdays.includes(day)));
       } else {
-        setPreferredStudyWeekdays([]); // Default to empty array if null, undefined, or empty string
+        setPreferredStudyWeekdays([]);
       }
       setPreferredStudyStartTime(user.preferredStudyStartTime || '');
     } else if (authUser) {
-      // Set defaults from auth user metadata
       setDisplayName(authUser.user_metadata?.display_name || 'User');
       setStudentCategory(authUser.user_metadata?.student_category || 'college');
     }
   }, [user, authUser]);
+
+  // Update last login time when component mounts
+  useEffect(() => {
+    const updateLastLogin = async () => {
+      if (authUser) {
+        try {
+          const { error } = await supabase
+            .from('users')
+            .update({ lastloginat: new Date().toISOString() })
+            .eq('userid', authUser.id);
+          
+          if (error) {
+            console.error('Error updating last login:', error);
+          }
+        } catch (error) {
+          console.error('Error in updateLastLogin:', error);
+        }
+      }
+    };
+
+    updateLastLogin();
+  }, [authUser]);
   
   const handleFileSelect = (file: File | null) => {
     setSelectedFile(file);
-    // If a new file is selected, ProfilePage doesn't need to manage its preview URL directly.
-    // ImageUpload component handles its own internal preview.
-    // ProfilePictureURL will be updated with the actual storage URL on save.
-    // If the user clears the selection (file is null), we can decide if we want to revert to original DB URL or clear preview.
-    // For now, selectedFile being null means no new upload.
   };
   
   const handleSaveProfile = async () => {
     if (!authUser) return;
     
     setIsLoading(true);
-    let newProfilePictureUrl = user?.profilePictureURL || null; // Start with existing URL
+    let newProfilePictureUrl = user?.profilePictureURL || null;
 
     try {
       if (selectedFile) {
         const fileExt = selectedFile.name.split('.').pop();
         const fileName = `${authUser.id}-${Date.now()}.${fileExt}`;
-        const filePath = `public/${fileName}`; // Bucket is 'profile-pictures'
+        const filePath = `public/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('profile-pictures')
           .upload(filePath, selectedFile, {
             cacheControl: '3600',
-            upsert: true, // Overwrite if file with same name exists (good for user retrying upload)
+            upsert: true,
           });
 
         if (uploadError) {
@@ -97,16 +106,15 @@ const ProfilePage = () => {
         newProfilePictureUrl = urlData.publicUrl;
       }
 
-      // User data to save, including the new (or existing) profile picture URL
       const userDataToSave = {
         displayname: displayName,
         studentcategory: studentCategory,
         profilepictureurl: newProfilePictureUrl,
         preferredstudyweekdays: preferredStudyWeekdays.length > 0 ? preferredStudyWeekdays : null,
         preferredstudystarttime: preferredStudyStartTime || null,
+        lastloginat: new Date().toISOString()
       };
 
-      // Check if user record exists
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('userid')
@@ -128,7 +136,7 @@ const ProfilePage = () => {
           .insert({
             userid: authUser.id,
             email: authUser.email || '',
-            passwordhash: '', // Managed by Supabase Auth
+            passwordhash: '',
             emailverified: authUser.email_confirmed_at ? true : false,
             ...userDataToSave,
           });
@@ -143,62 +151,30 @@ const ProfilePage = () => {
           variant: "destructive"
         });
       } else {
-        // Update local user state
         setUser(prevUser => ({
           ...(prevUser || { id: authUser.id, email: authUser.email || '', isSubscribed: false, subscriptionPlan: 'free' }),
           displayName,
           studentCategory,
-          profilePictureURL: newProfilePictureUrl, // Use the potentially updated URL
+          profilePictureURL: newProfilePictureUrl,
           preferredStudyWeekdays: preferredStudyWeekdays,
           preferredStudyStartTime: preferredStudyStartTime || null,
           id: authUser.id,
           email: authUser.email || '',
           isSubscribed: prevUser?.isSubscribed || false,
-          subscriptionPlan: prevUser?.subscriptionPlan || 'free'
+          subscriptionPlan: prevUser?.subscriptionPlan || 'free',
+          lastLoginAt: new Date().toISOString()
         }));
         
-        setSelectedFile(null); // Clear selected file after successful save
-        // The ImageUpload component will update its preview based on currentImageUrl prop change if needed
-        // or its internal preview state will be reset on next selection.
+        setSelectedFile(null);
         
         toast({
           title: "Success",
           description: "Profile updated successfully!"
         });
         
-        // Reload user data to ensure consistency, especially for profilePictureURL from DB
         await loadUserData();
       }
     } catch (error: any) {
-      console.error('Error in handleSaveProfile:', error);
-        toast({
-          title: "Error",
-          description: "Failed to save profile. Please try again.",
-          variant: "destructive"
-        });
-      } else {
-        // Update local user state
-        setUser({
-          id: authUser.id,
-          displayName,
-          email: authUser.email || '',
-          studentCategory,
-          profilePictureURL: profilePictureURL || null,
-          preferredStudyWeekdays: preferredStudyWeekdays, // setUser expects string[] as per UserContext change
-          preferredStudyStartTime: preferredStudyStartTime || null,
-          isSubscribed: user?.isSubscribed || false,
-          subscriptionPlan: user?.subscriptionPlan || 'free'
-        });
-        
-        toast({
-          title: "Success",
-          description: "Profile updated successfully!"
-        });
-        
-        // Reload user data to ensure consistency
-        await loadUserData();
-      }
-    } catch (error) {
       console.error('Error in handleSaveProfile:', error);
       toast({
         title: "Error",
@@ -213,11 +189,11 @@ const ProfilePage = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-    } catch (error: any) { // Added type any for error
+    } catch (error: any) {
       console.error('Error signing out:', error);
       toast({
         title: "Error",
-        description: `Failed to sign out: ${error.message}. Please try again.`, // More specific error
+        description: `Failed to sign out: ${error.message}. Please try again.`,
         variant: "destructive"
       });
     }
@@ -244,16 +220,14 @@ const ProfilePage = () => {
       <div className="px-4 max-w-md mx-auto">
         <h1 className="text-2xl font-semibold mb-6 text-center">Profile</h1>
         
-        {/* Profile Picture Section */}
         <div className="flex justify-center mb-6">
           <ImageUpload
-            currentImageUrl={profilePictureURL} // This is the URL from the database
-            onFileSelect={handleFileSelect}    // This callback receives the File object
-            isLoading={isLoading}              // Pass loading state for UI feedback in ImageUpload
+            currentImageUrl={profilePictureURL}
+            onFileSelect={handleFileSelect}
+            isLoading={isLoading}
           />
         </div>
         
-        {/* Subscription Status Card */}
         <Card className="mb-6">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -327,16 +301,17 @@ const ProfilePage = () => {
                 <DropdownMenuCheckboxItem
                   checked={preferredStudyWeekdays.length === weekdaysDefinition.length && weekdaysDefinition.length > 0}
                   onCheckedChange={handleSelectAllWeekdays}
-                  onSelect={(e) => e.preventDefault()} // Prevent menu closing
+                  onSelect={(e) => e.preventDefault()}
                 >
-                  All Weekdays
+                  Select All
                 </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
                 {weekdaysDefinition.map((day) => (
                   <DropdownMenuCheckboxItem
                     key={day}
                     checked={preferredStudyWeekdays.includes(day)}
-                    onCheckedChange={() => handleWeekdayToggle(day)} // onCheckedChange for checkbox item passes boolean
-                    onSelect={(e) => e.preventDefault()} // Prevent menu closing
+                    onCheckedChange={() => handleWeekdayToggle(day)}
+                    onSelect={(e) => e.preventDefault()}
                   >
                     {day}
                   </DropdownMenuCheckboxItem>
