@@ -30,23 +30,11 @@ const ProfilePage = () => {
       setDisplayName(user.displayName);
       setStudentCategory(user.studentCategory || 'college');
       setProfilePictureURL(user.profilePictureURL || '');
-      if (Array.isArray(user.preferredStudyWeekdays)) {
+      // Handle preferredStudyWeekdays properly according to its actual type
+      if (user.preferredStudyWeekdays && Array.isArray(user.preferredStudyWeekdays)) {
         setPreferredStudyWeekdays(user.preferredStudyWeekdays);
       } else {
-        // Handle the case where preferredStudyWeekdays is a string or null
-        const weekdaysValue = user.preferredStudyWeekdays;
-        if (weekdaysValue && typeof weekdaysValue === 'string') {
-          const trimmedValue = weekdaysValue.trim();
-          if (trimmedValue !== '') {
-            const parsedDays = trimmedValue.split(',').map(day => day.trim()).filter(day => day);
-            const validWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-            setPreferredStudyWeekdays(parsedDays.filter(day => validWeekdays.includes(day)));
-          } else {
-            setPreferredStudyWeekdays([]);
-          }
-        } else {
-          setPreferredStudyWeekdays([]);
-        }
+        setPreferredStudyWeekdays([]);
       }
       setPreferredStudyStartTime(user.preferredStudyStartTime || '');
     } else if (authUser) {
