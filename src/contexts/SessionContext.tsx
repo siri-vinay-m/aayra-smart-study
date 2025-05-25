@@ -36,12 +36,24 @@ interface SessionContextType {
   completeSession: (sessionId: string) => void;
   loadCompletedSessions: () => Promise<void>;
   createNewSession: (subjectName: string, topicName: string, focusDuration: number, breakDuration: number) => Promise<StudySession | null>;
+  updateCurrentSessionStatus: (newStatus: StudySession['status']) => Promise<void>; // New function
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
-export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [currentSession, setCurrentSession] = useState<StudySession | null>(null);
+// Props for testing purposes
+interface SessionProviderProps {
+  children: ReactNode;
+  initialCurrentSession?: StudySession | null;
+  updateCurrentSessionStatus?: (newStatus: StudySession['status']) => Promise<void>;
+}
+
+export const SessionProvider: React.FC<SessionProviderProps> = ({ 
+  children, 
+  initialCurrentSession = null, 
+  updateCurrentSessionStatus: mockUpdateCurrentSessionStatus 
+}) => {
+  const [currentSession, setCurrentSession] = useState<StudySession | null>(initialCurrentSession);
   const [completedSessions, setCompletedSessions] = useState<StudySession[]>([]);
   const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([]);
   const { user: authUser } = useAuth();
@@ -177,6 +189,35 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   }, [authUser]);
 
+  const realUpdateCurrentSessionStatus = async (newStatus: StudySession['status']) => {
+    if (!currentSession || !authUser) {
+      console.error("Cannot update status: No current session or user.");
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('studysessions')
+        .update({ status: newStatus })
+        .eq('sessionid', currentSession.id)
+        .eq('userid', authUser.id);
+
+      if (error) {
+        console.error('Error updating session status in DB:', error);
+        return;
+      }
+
+      setCurrentSession(prevSession => {
+        if (!prevSession) return null;
+        return { ...prevSession, status: newStatus };
+      });
+    } catch (error) {
+      console.error('Error in realUpdateCurrentSessionStatus:', error);
+    }
+  };
+  
+  const updateStatusFunc = mockUpdateCurrentSessionStatus || realUpdateCurrentSessionStatus;
+
+
   return (
     <SessionContext.Provider 
       value={{
@@ -186,9 +227,10 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         setCompletedSessions,
         pendingReviews,
         setPendingReviews,
-        completeSession,
-        loadCompletedSessions,
-        createNewSession
+        completeSession, // This would be the real one, mock if needed for specific tests
+        loadCompletedSessions, // Real one
+        createNewSession, // Real one
+        updateCurrentSessionStatus: updateStatusFunc 
       }}
     >
       {children}

@@ -5,31 +5,41 @@ import { Camera, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ImageUploadProps {
-  currentImageUrl?: string | null;
-  onImageChange: (imageUrl: string) => void;
+  currentImageUrl?: string | null; // This will be the URL from Supabase or a local preview URL
+  onFileSelect: (file: File | null) => void; // Changed to pass File object
+  isLoading?: boolean; // Controlled by parent for actual upload
   className?: string;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({ 
   currentImageUrl, 
-  onImageChange, 
+  onFileSelect, 
+  isLoading = false,
   className = "" 
 }) => {
-  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  // Local state for previewing the image before it's uploaded
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      onFileSelect(null);
+      setPreviewUrl(null);
+      return;
+    }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
         title: "Error",
-        description: "Please select an image file.",
+        description: "Please select an image file (e.g., PNG, JPG).",
         variant: "destructive"
       });
+      onFileSelect(null);
+      setPreviewUrl(null);
+      if (fileInputRef.current) fileInputRef.current.value = ""; // Reset file input
       return;
     }
 
@@ -40,72 +50,68 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         description: "Image size should be less than 5MB.",
         variant: "destructive"
       });
+      onFileSelect(null);
+      setPreviewUrl(null);
+      if (fileInputRef.current) fileInputRef.current.value = ""; // Reset file input
       return;
     }
 
-    setIsUploading(true);
+    onFileSelect(file); // Pass the file to the parent
 
-    try {
-      // Create a data URL for the image
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target?.result as string;
-        onImageChange(dataUrl);
-        toast({
-          title: "Success",
-          description: "Profile picture updated successfully!"
-        });
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      toast({
-        title: "Error",
-        description: "Failed to upload image. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUploading(false);
-    }
+    // Create a data URL for local preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleClick = () => {
-    fileInputRef.current?.click();
+    if (!isLoading && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
+  // Determine what image to display: preview, current URL from DB, or placeholder
+  const displayUrl = previewUrl || currentImageUrl || '/placeholder.svg';
+  const showPlaceholderIcon = !previewUrl && !currentImageUrl;
+
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} data-testid="profile-image-upload"> {/* Added data-testid */}
       <div 
-        className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer relative overflow-hidden border-2 border-gray-300 hover:border-orange-500 transition-colors"
+        className={`w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center relative overflow-hidden border-2 border-gray-300 transition-colors ${!isLoading ? 'cursor-pointer hover:border-orange-500' : 'cursor-default'}`}
         onClick={handleClick}
+        title={isLoading ? "Uploading..." : "Change profile picture"}
       >
-        {currentImageUrl ? (
+        {showPlaceholderIcon ? (
+          <Camera size={32} className="text-gray-400" />
+        ) : (
           <img 
-            src={currentImageUrl} 
+            src={displayUrl} 
             alt="Profile" 
             className="w-full h-full object-cover"
           />
-        ) : (
-          <Camera size={32} className="text-gray-400" />
         )}
         
-        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
-          <Upload size={20} className="text-white opacity-0 hover:opacity-100 transition-opacity" />
-        </div>
+        {!isLoading && (
+          <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+            <Upload size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+        )}
       </div>
       
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        onChange={handleImageUpload}
+        onChange={handleFileChange} // Changed handler
         className="hidden"
-        disabled={isUploading}
+        disabled={isLoading}
       />
       
-      {isUploading && (
+      {isLoading && (
         <div className="absolute inset-0 bg-white bg-opacity-75 rounded-full flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
     </div>

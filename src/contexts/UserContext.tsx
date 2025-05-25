@@ -16,18 +16,21 @@ interface User {
   email: string;
   studentCategory: StudentCategory | null;
   profilePictureURL: string | null;
-  preferredStudyWeekdays: string | null;
+  preferredStudyWeekdays: string[] | null; // Changed to string array
   preferredStudyStartTime: string | null;
   isSubscribed: boolean;
   subscriptionPlan: 'free' | 'premium' | null;
+  lastLoginAt?: string | null; // Added lastLoginAt
+  currentSubscriptionId?: string | null; // Added currentSubscriptionId
 }
 
 export interface UpdateUserPayload {
   displayName?: string;
   studentCategory?: StudentCategory | null;
   profilePictureURL?: string | null;
-  preferredStudyWeekdays?: string | null;
+  preferredStudyWeekdays?: string[] | null; // Changed to string array
   preferredStudyStartTime?: string | null;
+  currentSubscriptionId?: string | null; // Added currentSubscriptionId
 }
 
 interface UserContextType {
@@ -72,10 +75,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           email: userData.email,
           studentCategory: userData.studentcategory as StudentCategory,
           profilePictureURL: userData.profilepictureurl,
-          preferredStudyWeekdays: userData.preferredstudyweekdays,
+          preferredStudyWeekdays: userData.preferredstudyweekdays as string[] | null, // Cast to string array
           preferredStudyStartTime: userData.preferredstudystarttime,
           isSubscribed: false, // This would be calculated based on UserSubscriptions
-          subscriptionPlan: 'free'
+          subscriptionPlan: 'free', // Assuming default, might need actual logic
+          lastLoginAt: userData.last_login_at || null,
+          currentSubscriptionId: userData.current_subscription_id || null
         });
         setIsAuthenticated(true);
       } else {
@@ -98,6 +103,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (updates.profilePictureURL !== undefined) supabasePayload.profilepictureurl = updates.profilePictureURL;
     if (updates.preferredStudyWeekdays !== undefined) supabasePayload.preferredstudyweekdays = updates.preferredStudyWeekdays;
     if (updates.preferredStudyStartTime !== undefined) supabasePayload.preferredstudystarttime = updates.preferredStudyStartTime;
+    if (updates.currentSubscriptionId !== undefined) supabasePayload.current_subscription_id = updates.currentSubscriptionId; // Added
 
     if (Object.keys(supabasePayload).length === 0) {
       return { success: true }; // No actual updates to make
@@ -122,8 +128,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (updates.displayName !== undefined) updatedUser.displayName = updates.displayName;
         if (updates.studentCategory !== undefined) updatedUser.studentCategory = updates.studentCategory;
         if (updates.profilePictureURL !== undefined) updatedUser.profilePictureURL = updates.profilePictureURL;
-        if (updates.preferredStudyWeekdays !== undefined) updatedUser.preferredStudyWeekdays = updates.preferredStudyWeekdays;
+        if (updates.preferredStudyWeekdays !== undefined) updatedUser.preferredStudyWeekdays = updates.preferredStudyWeekdays as string[] | null; // Cast to string array
         if (updates.preferredStudyStartTime !== undefined) updatedUser.preferredStudyStartTime = updates.preferredStudyStartTime;
+        if (updates.currentSubscriptionId !== undefined) updatedUser.currentSubscriptionId = updates.currentSubscriptionId; // Added
         return updatedUser;
       });
 
