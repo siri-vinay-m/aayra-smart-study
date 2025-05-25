@@ -32,7 +32,7 @@ const ProfilePage = () => {
       setProfilePictureURL(user.profilePictureURL || '');
       if (Array.isArray(user.preferredStudyWeekdays)) {
         setPreferredStudyWeekdays(user.preferredStudyWeekdays);
-      } else if (typeof user.preferredStudyWeekdays === 'string' && user.preferredStudyWeekdays.trim() !== '') {
+      } else if (user.preferredStudyWeekdays && typeof user.preferredStudyWeekdays === 'string' && user.preferredStudyWeekdays.trim() !== '') {
         const parsedDays = user.preferredStudyWeekdays.split(',').map(day => day.trim()).filter(day => day);
         const validWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
         setPreferredStudyWeekdays(parsedDays.filter(day => validWeekdays.includes(day)));
@@ -46,7 +46,6 @@ const ProfilePage = () => {
     }
   }, [user, authUser]);
 
-  // Update last login time when component mounts
   useEffect(() => {
     const updateLastLogin = async () => {
       if (authUser) {
