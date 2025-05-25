@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import CircularTimer from './CircularTimer';
@@ -15,9 +16,9 @@ const renderWithTimerContext = (
   { providerProps, showControls = true }: { providerProps?: any, showControls?: boolean } = {}
 ) => {
   const defaultTimerContextValue = {
-    timerType: 'focus',
+    timerType: 'focus' as const,
     timeLeft: 1500, // 25 minutes
-    status: 'idle',
+    status: 'idle' as const,
     startTimer: mockStartTimer,
     pauseTimer: mockPauseTimer,
     resetTimer: mockResetTimer,

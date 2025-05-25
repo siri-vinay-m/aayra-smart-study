@@ -2,71 +2,66 @@
 import React, { useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import CircularTimer from '@/components/timer/CircularTimer';
-import { useSession } from '@/contexts/SessionContext';
 import { useTimer } from '@/contexts/TimerContext';
-import { useNavigate } from 'react-router-dom';
+import { useSession } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 const BreakTimerPage = () => {
+  const { setTimerType, startTimer, skipTimer } = useTimer();
   const { currentSession } = useSession();
-  const { setTimerType, startTimer, status, timeLeft, skipTimer } = useTimer(); // Added skipTimer
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    setTimerType('break');
-    // Auto-start the break timer
-    setTimeout(() => {
-      if (status === 'idle') { // Only start if it's idle, to prevent multiple starts
-        startTimer();
-      }
-    }, 100);
-  }, [setTimerType, startTimer, status]); // Added status to dependency array
 
-  // Navigate to home when break timer completes (This might be superseded by logic in TimerContext if skipTimer also navigates)
-  // For now, let's keep it, but be mindful of potential double navigation or conflicting logic.
-  // The TimerContext's useEffect for timeLeft === 0 already handles navigation for completed timers.
-  // This specific effect might be redundant if skipTimer also sets status to 'completed'.
   useEffect(() => {
-    if (status === 'completed' && timeLeft === 0 && timerType === 'break') { // Added timerType check for safety
-      // navigate('/home'); // This navigation is now handled by TimerContext
-    }
-  }, [status, timeLeft, navigate, timerType]); // Added timerType
-  
-  const handleSkip = () => {
-    skipTimer(); // Use skipTimer from TimerContext
-  };
-  
+    // Set timer type to break and auto-start when component mounts
+    setTimerType('break');
+    
+    // Auto-start the break timer with a small delay
+    const timer = setTimeout(() => {
+      startTimer();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [setTimerType, startTimer]);
+
   if (!currentSession) {
     return (
       <MainLayout>
-        <div className="px-4 text-center">
-          <p className="text-lg text-gray-600">No active session found.</p>
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-lg text-gray-600">No active session found</p>
         </div>
       </MainLayout>
     );
   }
-  
+
+  const getInitialTime = () => {
+    if (currentSession) {
+      return currentSession.breakDurationMinutes * 60;
+    }
+    return 5 * 60; // Default 5 minutes
+  };
+
   return (
     <MainLayout>
-      <div className="px-4 flex flex-col items-center">
-        <h1 className="text-xl font-semibold mb-8 text-center">Break Time</h1>
-        
-        <CircularTimer showControls={false} />
-        
-        <div className="mt-8 text-center text-gray-600">
-          <p>Take a short break to rest your mind.</p>
-          <p className="mt-2">You'll return to the home screen when the timer ends.</p>
-        </div>
-
-        <div className="mt-6">
-          <Button
-            onClick={handleSkip}
-            variant="outline"
-            className="px-6 py-3"
-          >
-            Skip
-          </Button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen px-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6">
+            <h1 className="text-2xl font-semibold text-center mb-6">Break Time</h1>
+            
+            <div className="flex justify-center mb-6">
+              <CircularTimer showControls={false} />
+            </div>
+            
+            <div className="space-y-3">
+              <Button 
+                onClick={skipTimer}
+                variant="outline" 
+                className="w-full"
+              >
+                Skip Break
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </MainLayout>
   );

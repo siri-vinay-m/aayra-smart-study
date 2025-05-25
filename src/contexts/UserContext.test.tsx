@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { render, act, waitFor } from '@testing-library/react';
+import { render, act, waitFor, fireEvent } from '@testing-library/react';
 import { UserProvider, useUser, User } from './UserContext';
 import { AuthContext } from './AuthContext'; // To mock AuthContext values
 import { supabase } from '@/integrations/supabase/client'; // To mock Supabase client
@@ -92,7 +93,7 @@ describe('UserContext', () => {
       await act(async () => {
          // Allow useEffect in UserProvider to run if it didn't complete due to async nature
          // Or, if loadUserData is not called on mount anymore, click the button:
-         // fireEvent.click(getByText('Load User Data'));
+         fireEvent.click(getByText('Load User Data'));
       });
 
       await waitFor(() => {
@@ -153,7 +154,6 @@ describe('UserContext', () => {
       // Ensure initial user is loaded
       await act(async () => {});
       await waitFor(() => expect(getByText('Update Profile')).toBeInTheDocument());
-
 
       await act(async () => {
         fireEvent.click(getByText('Update Profile'));

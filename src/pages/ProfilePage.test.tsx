@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import ProfilePage from './ProfilePage';
@@ -5,6 +6,7 @@ import { UserContext, User, StudentCategory } from '@/contexts/UserContext';
 import { BrowserRouter } from 'react-router-dom';
 import { ToastProvider } from '@/components/ui/toast'; // Assuming ToastProvider is used by useToast
 import { AuthProvider } from '@/contexts/AuthContext'; // AuthProvider is needed for UserProvider
+import { vi } from 'vitest';
 
 // --- Mocks ---
 const mockNavigate = vi.fn();
@@ -170,7 +172,7 @@ describe('ProfilePage', () => {
       await act(async () => { fireEvent.click(saveButton); });
       await waitFor(() => {
         expect(mockSupabaseUpdate).toHaveBeenCalledWith(
-          expect.objectContaining({ preferredstudyweekdays: ['Monday', 'Wednesday'] })
+          expect.objectContaining({ preferredstudyweekdays: 'Monday,Wednesday' })
         );
       });
     });
@@ -190,7 +192,7 @@ describe('ProfilePage', () => {
       await act(async () => { fireEvent.click(saveButton); });
       await waitFor(() => {
         expect(mockSupabaseUpdate).toHaveBeenCalledWith(
-          expect.objectContaining({ preferredstudyweekdays: weekdays })
+          expect.objectContaining({ preferredstudyweekdays: weekdays.join(',') })
         );
       });
 

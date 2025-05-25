@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import BreakTimerPage from './BreakTimerPage';
@@ -38,9 +39,9 @@ const mockCurrentSession: StudySession = {
 
 const renderBreakTimerPage = (currentSessionOverride?: StudySession | null) => {
   const timerContextValue = {
-    timerType: 'break', // Assuming it's already set or will be set
+    timerType: 'break' as const, // Assuming it's already set or will be set
     timeLeft: 300, 
-    status: 'idle',
+    status: 'idle' as const,
     startTimer: mockStartTimer,
     pauseTimer: vi.fn(),
     resetTimer: vi.fn(),

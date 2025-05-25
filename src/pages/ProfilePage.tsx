@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
-import { useUser, UpdateUserPayload, StudentCategory } from '@/contexts/UserContext';
+import { useUser, StudentCategory } from '@/contexts/UserContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
