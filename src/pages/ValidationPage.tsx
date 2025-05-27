@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -200,7 +199,7 @@ const ValidationPage = () => {
                 onClick={handleCompleteQuiz}
                 className="bg-green-500 hover:bg-green-600 px-6 py-3"
               >
-                Complete Session
+                Take a Break
               </Button>
             </div>
           </CardContent>

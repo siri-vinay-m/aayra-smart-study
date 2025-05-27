@@ -18,7 +18,11 @@ const BottomTaskBar = () => {
   };
   
   const handleBack = () => {
-    if (location.pathname === '/home') {
+    // Special handling for completed sessions and pending reviews pages
+    if (location.pathname === '/completed-sessions' || 
+        location.pathname === '/pending-reviews') {
+      navigate('/home');
+    } else if (location.pathname === '/home') {
       // Navigate to login page when on home page
       navigate('/login');
     } else {
