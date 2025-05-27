@@ -81,7 +81,7 @@ const ValidationPage = () => {
   const handleCompleteQuiz = () => {
     if (currentSession) {
       if (setCurrentSession) {
-         setCurrentSession(prev => prev ? ({ ...prev, status: 'break_pending' }) : null);
+        setCurrentSession({...currentSession, status: 'break_pending'});
       }
       completeSession(currentSession.id);
     }
@@ -91,7 +91,7 @@ const ValidationPage = () => {
   const handleSkip = () => {
     if (currentSession) {
       if (setCurrentSession) {
-        setCurrentSession(prev => prev ? ({ ...prev, status: 'break_pending' }) : null);
+        setCurrentSession({...currentSession, status: 'break_pending'});
       }
     }
     navigate('/break');

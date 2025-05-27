@@ -24,18 +24,25 @@ export interface StudySession {
   topicName: string;
   focusDuration: number;
   breakDuration: number;
+  focusDurationMinutes: number;
+  breakDurationMinutes: number;
   status: SessionStatus;
   startTime: Date;
   completedAt?: Date;
+  createdAt: Date;
+  isFavorite?: boolean;
   aiGeneratedContent?: AIGeneratedContent;
 }
 
 export interface PendingReview {
+  id: string;
   sessionId: string;
   sessionName: string;
   subjectName: string;
   topicName: string;
   completedAt: Date;
+  dueDate: Date;
+  reviewStage: string;
   aiGeneratedContent?: AIGeneratedContent;
 }
 
@@ -47,6 +54,8 @@ interface SessionContextType {
   setCurrentSession: (session: StudySession | null) => void;
   completeSession: (sessionId: string) => void;
   setPendingReviews: React.Dispatch<React.SetStateAction<PendingReview[]>>;
+  setCompletedSessions: React.Dispatch<React.SetStateAction<StudySession[]>>;
+  updateCurrentSessionStatus: (status: SessionStatus) => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -73,14 +82,24 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         topicName,
         focusDuration,
         breakDuration,
+        focusDurationMinutes: focusDuration,
+        breakDurationMinutes: breakDuration,
         status: 'focus_inprogress',
         startTime: new Date(),
+        createdAt: new Date(),
+        isFavorite: false,
       };
 
       return newSession;
     } catch (error) {
       console.error('Error creating session:', error);
       return null;
+    }
+  };
+
+  const updateCurrentSessionStatus = async (status: SessionStatus): Promise<void> => {
+    if (currentSession) {
+      setCurrentSession(prev => prev ? { ...prev, status } : null);
     }
   };
 
@@ -95,11 +114,14 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       setCompletedSessions(prev => [...prev, completedSession]);
 
       const pendingReview: PendingReview = {
+        id: `review_${sessionId}`,
         sessionId: completedSession.id,
         sessionName: completedSession.sessionName,
         subjectName: completedSession.subjectName,
         topicName: completedSession.topicName,
         completedAt: completedSession.completedAt!,
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+        reviewStage: 'initial',
         aiGeneratedContent: completedSession.aiGeneratedContent,
       };
 
@@ -118,6 +140,8 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         setCurrentSession,
         completeSession,
         setPendingReviews,
+        setCompletedSessions,
+        updateCurrentSessionStatus,
       }}
     >
       {children}
@@ -132,3 +156,6 @@ export const useSession = () => {
   }
   return context;
 };
+
+// Export SessionContext for testing
+export { SessionContext };

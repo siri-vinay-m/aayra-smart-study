@@ -34,8 +34,8 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const getInitialTime = (type: TimerType) => {
     if (currentSession) {
       return type === 'focus' 
-        ? currentSession.focusDurationMinutes * 60
-        : currentSession.breakDurationMinutes * 60;
+        ? currentSession.focusDuration * 60
+        : currentSession.breakDuration * 60;
     }
     return type === 'focus' ? FOCUS_TIME : BREAK_TIME;
   };
@@ -120,10 +120,10 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setStatus('completed');
 
     if (timerType === 'focus') {
-      await updateCurrentSessionStatus('upload_pending');
+      await updateCurrentSessionStatus('validating');
       navigate('/upload');
     } else {
-      await updateCurrentSessionStatus('focus_pending');
+      await updateCurrentSessionStatus('focus_inprogress');
       navigate('/');
     }
   };
