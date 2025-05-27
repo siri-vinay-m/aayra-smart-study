@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { render, act } from '@testing-library/react';
 import { screen, fireEvent } from '@testing-library/dom';
@@ -21,6 +20,7 @@ vi.mock('react-router-dom', async () => {
 // Mock SessionContext values
 const mockCompleteSession = vi.fn();
 const mockSetCurrentSession = vi.fn();
+const mockUpdateCurrentSessionStatus = vi.fn();
 
 const mockCurrentSession: StudySession = {
   id: 'session1',
@@ -48,7 +48,9 @@ const renderValidationPage = (currentSessionOverride?: StudySession | null) => {
     pendingReviews: [],
     setPendingReviews: vi.fn(),
     createNewSession: vi.fn(),
-    updateCurrentSessionStatus: vi.fn(),
+    updateCurrentSessionStatus: mockUpdateCurrentSessionStatus,
+    loadCompletedSessions: vi.fn(),
+    loadPendingReviews: vi.fn(),
   };
   
   // ValidationPage uses MainLayout which might have NavLinks or other router-dependent components
@@ -72,7 +74,7 @@ describe('ValidationPage Screen Flow', () => {
     renderValidationPage();
     expect(screen.getByText(/Review Flashcards/i)).toBeInTheDocument(); // Page title for flashcards
     expect(screen.getByText(/Flashcard 1 of 3/i)).toBeInTheDocument(); // Flashcard counter
-    expect(screen.getByRole('button', { name: /Next Card/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Next/i })).toBeInTheDocument();
   });
 
   it('transitions to quiz view after completing flashcards', async () => {
@@ -80,10 +82,10 @@ describe('ValidationPage Screen Flow', () => {
     
     // Click through flashcards
     // Flashcards are mocked to have 3 items
-    let nextButton = screen.getByRole('button', { name: /Next Card/i });
+    let nextButton = screen.getByRole('button', { name: /Next/i });
     await act(async () => { fireEvent.click(nextButton); }); // Card 1 -> Card 2
     
-    nextButton = screen.getByRole('button', { name: /Next Card/i });
+    nextButton = screen.getByRole('button', { name: /Next/i });
     await act(async () => { fireEvent.click(nextButton); }); // Card 2 -> Card 3
     
     // Now on the last flashcard, button should say "Start Quiz"
@@ -96,57 +98,68 @@ describe('ValidationPage Screen Flow', () => {
 
     // Verify transition to quiz view
     expect(screen.getByText(/Knowledge Check/i)).toBeInTheDocument(); // Page title for quiz
-    expect(screen.getByText(/Quiz Time!/i)).toBeInTheDocument(); // Quiz section title
-    expect(screen.getByRole('button', { name: /Submit Quiz & Finish/i })).toBeInTheDocument();
-    expect(screen.queryByText(/Flashcard/i)).not.toBeInTheDocument(); // Flashcard counter should be gone
+    expect(screen.getByText(/Question 1 of 1/i)).toBeInTheDocument(); // Quiz question counter
+    expect(screen.getByRole('button', { name: /Submit Answer/i })).toBeInTheDocument();
   });
 
-  it('handles "Skip Review" button correctly during flashcards', async () => {
+  it('handles answer submission in quiz view', async () => {
     renderValidationPage();
-    const skipButton = screen.getByRole('button', { name: /Skip Review/i });
-    await act(async () => {
-      fireEvent.click(skipButton);
-    });
-    expect(mockSetCurrentSession).toHaveBeenCalled(); // Checks if session status update was attempted
-    expect(mockNavigate).toHaveBeenCalledWith('/break');
+    
+    // Skip to quiz view
+    let nextButton = screen.getByRole('button', { name: /Next/i });
+    await act(async () => { fireEvent.click(nextButton); }); // Card 1 -> Card 2
+    nextButton = screen.getByRole('button', { name: /Next/i });
+    await act(async () => { fireEvent.click(nextButton); }); // Card 2 -> Card 3
+    const startQuizButton = screen.getByRole('button', { name: /Start Quiz/i });
+    await act(async () => { fireEvent.click(startQuizButton); });
+    
+    // Select an answer
+    const answerOption = screen.getByText(/Topic A/i);
+    await act(async () => { fireEvent.click(answerOption); });
+    
+    // Submit the answer
+    const submitButton = screen.getByRole('button', { name: /Submit Answer/i });
+    await act(async () => { fireEvent.click(submitButton); });
+    
+    // Check for explanation
+    expect(screen.getByText(/Explanation:/i)).toBeInTheDocument();
+    
+    // Now there should be a "View Summary" button (last question)
+    const viewSummaryButton = screen.getByRole('button', { name: /View Summary/i });
+    expect(viewSummaryButton).toBeInTheDocument();
+    
+    // Click to view summary
+    await act(async () => { fireEvent.click(viewSummaryButton); });
+    
+    // Verify transition to summary view
+    expect(screen.getByText(/Session Summary/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Take a Break/i })).toBeInTheDocument();
   });
   
-  it('handles "Skip Quiz" button correctly during quiz', async () => {
+  it('completes the session when "Take a Break" is clicked', async () => {
     renderValidationPage();
-    // Transition to quiz view first
-    let nextButton = screen.getByRole('button', { name: /Next Card/i });
-    await act(async () => { fireEvent.click(nextButton); });
-    nextButton = screen.getByRole('button', { name: /Next Card/i });
-    await act(async () => { fireEvent.click(nextButton); });
+    
+    // Skip to summary view
+    let nextButton = screen.getByRole('button', { name: /Next/i });
+    await act(async () => { fireEvent.click(nextButton); }); // Card 1 -> Card 2
+    nextButton = screen.getByRole('button', { name: /Next/i });
+    await act(async () => { fireEvent.click(nextButton); }); // Card 2 -> Card 3
     const startQuizButton = screen.getByRole('button', { name: /Start Quiz/i });
     await act(async () => { fireEvent.click(startQuizButton); });
-
-    // Now in quiz view
-    const skipQuizButton = screen.getByRole('button', { name: /Skip Quiz/i });
-    await act(async () => {
-      fireEvent.click(skipQuizButton);
-    });
-    expect(mockSetCurrentSession).toHaveBeenCalled(); // Called again for skip quiz
-    expect(mockNavigate).toHaveBeenCalledWith('/break');
-  });
-
-  it('"Submit Quiz & Finish" button completes the session and navigates', async () => {
-    renderValidationPage();
-    // Transition to quiz view
-    let nextButton = screen.getByRole('button', { name: /Next Card/i });
-    await act(async () => { fireEvent.click(nextButton); });
-    nextButton = screen.getByRole('button', { name: /Next Card/i });
-    await act(async () => { fireEvent.click(nextButton); });
-    const startQuizButton = screen.getByRole('button', { name: /Start Quiz/i });
-    await act(async () => { fireEvent.click(startQuizButton); });
-
-    // In quiz view
-    const submitQuizButton = screen.getByRole('button', { name: /Submit Quiz & Finish/i });
-    await act(async () => {
-      fireEvent.click(submitQuizButton);
-    });
-
-    expect(mockSetCurrentSession).toHaveBeenCalled(); // Status update attempt
+    const answerOption = screen.getByText(/Topic A/i);
+    await act(async () => { fireEvent.click(answerOption); });
+    const submitButton = screen.getByRole('button', { name: /Submit Answer/i });
+    await act(async () => { fireEvent.click(submitButton); });
+    const viewSummaryButton = screen.getByRole('button', { name: /View Summary/i });
+    await act(async () => { fireEvent.click(viewSummaryButton); });
+    
+    // Click "Take a Break" button
+    const takeBreakButton = screen.getByRole('button', { name: /Take a Break/i });
+    await act(async () => { fireEvent.click(takeBreakButton); });
+    
+    // Verify session completion and navigation
+    expect(mockSetCurrentSession).toHaveBeenCalledWith({...mockCurrentSession, status: 'break_pending'});
+    expect(mockUpdateCurrentSessionStatus).toHaveBeenCalledWith('break_pending');
     expect(mockCompleteSession).toHaveBeenCalledWith(mockCurrentSession.id);
     expect(mockNavigate).toHaveBeenCalledWith('/break');
   });

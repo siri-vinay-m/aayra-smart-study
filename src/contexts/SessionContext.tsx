@@ -93,23 +93,25 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         return;
       }
 
-      const formattedSessions: StudySession[] = sessions.map(session => ({
-        id: session.sessionid,
-        sessionName: session.sessionname,
-        subjectName: session.subjectname,
-        topicName: session.topicname,
-        focusDuration: session.focusdurationminutes,
-        breakDuration: session.breakdurationminutes,
-        focusDurationMinutes: session.focusdurationminutes,
-        breakDurationMinutes: session.breakdurationminutes,
-        status: session.status as SessionStatus,
-        startTime: new Date(session.createdat),
-        completedAt: session.lastreviewedat ? new Date(session.lastreviewedat) : undefined,
-        createdAt: new Date(session.createdat),
-        isFavorite: session.isfavorite || false,
-      }));
+      if (sessions) {
+        const formattedSessions: StudySession[] = sessions.map(session => ({
+          id: session.sessionid,
+          sessionName: session.sessionname,
+          subjectName: session.subjectname,
+          topicName: session.topicname,
+          focusDuration: session.focusdurationminutes * 60,
+          breakDuration: session.breakdurationminutes * 60,
+          focusDurationMinutes: session.focusdurationminutes,
+          breakDurationMinutes: session.breakdurationminutes,
+          status: session.status as SessionStatus,
+          startTime: new Date(session.createdat),
+          completedAt: session.lastreviewedat ? new Date(session.lastreviewedat) : undefined,
+          createdAt: new Date(session.createdat),
+          isFavorite: session.isfavorite || false,
+        }));
 
-      setCompletedSessions(formattedSessions);
+        setCompletedSessions(formattedSessions);
+      }
     } catch (error) {
       console.error('Error in loadCompletedSessions:', error);
     }
@@ -140,18 +142,20 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         return;
       }
 
-      const formattedReviews: PendingReview[] = reviews.map(review => ({
-        id: review.entryid,
-        sessionId: review.sessionid,
-        sessionName: review.studysessions?.sessionname || 'Unknown Session',
-        subjectName: review.studysessions?.subjectname || 'Unknown Subject',
-        topicName: review.studysessions?.topicname || 'Unknown Topic',
-        completedAt: new Date(review.initialappearancedate),
-        dueDate: new Date(review.currentreviewduedate),
-        reviewStage: `Stage ${review.reviewstage}`,
-      }));
+      if (reviews) {
+        const formattedReviews: PendingReview[] = reviews.map(review => ({
+          id: review.entryid,
+          sessionId: review.sessionid,
+          sessionName: review.studysessions?.sessionname || 'Unknown Session',
+          subjectName: review.studysessions?.subjectname || 'Unknown Subject',
+          topicName: review.studysessions?.topicname || 'Unknown Topic',
+          completedAt: new Date(review.initialappearancedate),
+          dueDate: new Date(review.currentreviewduedate),
+          reviewStage: `Stage ${review.reviewstage}`,
+        }));
 
-      setPendingReviews(formattedReviews);
+        setPendingReviews(formattedReviews);
+      }
     } catch (error) {
       console.error('Error in loadPendingReviews:', error);
     }
@@ -172,6 +176,17 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
       const sessionName = `${subjectName} - ${topicName}`;
 
+      // Get the next sequence number
+      const { data: lastSession } = await supabase
+        .from('studysessions')
+        .select('sequencenumber')
+        .eq('userid', authUser.user.id)
+        .order('sequencenumber', { ascending: false })
+        .limit(1)
+        .single();
+
+      const nextSequenceNumber = (lastSession?.sequencenumber || 0) + 1;
+
       const { data: session, error } = await supabase
         .from('studysessions')
         .insert({
@@ -182,6 +197,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
           focusdurationminutes: focusDuration,
           breakdurationminutes: breakDuration,
           status: 'focus_inprogress',
+          sequencenumber: nextSequenceNumber,
         })
         .select()
         .single();
@@ -196,8 +212,8 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         sessionName,
         subjectName,
         topicName,
-        focusDuration,
-        breakDuration,
+        focusDuration: focusDuration * 60,
+        breakDuration: breakDuration * 60,
         focusDurationMinutes: focusDuration,
         breakDurationMinutes: breakDuration,
         status: 'focus_inprogress',
@@ -216,10 +232,15 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
   const updateCurrentSessionStatus = async (status: SessionStatus): Promise<void> => {
     if (currentSession) {
       try {
-        await supabase
+        const { error } = await supabase
           .from('studysessions')
           .update({ status })
           .eq('sessionid', currentSession.id);
+
+        if (error) {
+          console.error('Error updating session status:', error);
+          return;
+        }
 
         setCurrentSession(prev => prev ? { ...prev, status } : null);
       } catch (error) {
@@ -231,8 +252,11 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
   const completeSession = async (sessionId: string) => {
     if (currentSession && currentSession.id === sessionId) {
       try {
+        const { data: authUser } = await supabase.auth.getUser();
+        if (!authUser.user) return;
+
         // Update session status to completed
-        await supabase
+        const { error: sessionError } = await supabase
           .from('studysessions')
           .update({ 
             status: 'completed',
@@ -240,12 +264,17 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
           })
           .eq('sessionid', sessionId);
 
+        if (sessionError) {
+          console.error('Error completing session:', sessionError);
+          return;
+        }
+
         // Create review cycle entry for spaced repetition
         const { error: reviewError } = await supabase
           .from('reviewcycleentries')
           .insert({
             sessionid: sessionId,
-            userid: currentSession.id, // This should be the user ID
+            userid: authUser.user.id,
             initialappearancedate: new Date().toISOString().split('T')[0],
             currentreviewduedate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 24 hours from now
             reviewstage: 1,

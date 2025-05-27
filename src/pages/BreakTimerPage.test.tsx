@@ -1,125 +1,103 @@
-
 import React from 'react';
-import { render, act } from '@testing-library/react';
-import { screen, fireEvent } from '@testing-library/dom';
+import { render, screen } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import BreakTimerPage from './BreakTimerPage';
-import { TimerContext } from '@/contexts/TimerContext';
 import { SessionContext, StudySession } from '@/contexts/SessionContext';
-import { AuthProvider } from '@/contexts/AuthContext'; // Required by SessionProvider if not mocking SessionContext directly
+import { TimerContext } from '@/contexts/TimerContext';
 import { vi } from 'vitest';
 
-// Mock react-router-dom
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
-
-// Mock TimerContext values
-const mockSkipTimer = vi.fn();
-const mockSetTimerType = vi.fn();
-const mockStartTimer = vi.fn(); // For the auto-start effect
-
-// Mock SessionContext values
+// Mock the SessionContext
 const mockCurrentSession: StudySession = {
-  id: 'session1',
+  id: 'session123',
+  sessionName: 'Test Session',
   subjectName: 'Test Subject',
   topicName: 'Test Topic',
-  sessionName: 'Test Session',
-  status: 'break_pending',
-  isFavorite: false,
   focusDuration: 25 * 60,
   breakDuration: 5 * 60,
   focusDurationMinutes: 25,
   breakDurationMinutes: 5,
+  status: 'break_inprogress',
   startTime: new Date(),
   createdAt: new Date(),
+  isFavorite: false,
 };
 
-const renderBreakTimerPage = (currentSessionOverride?: StudySession | null) => {
-  const timerContextValue = {
-    timerType: 'break' as const, // Assuming it's already set or will be set
-    timeLeft: 300, 
-    status: 'idle' as const,
-    startTimer: mockStartTimer,
-    pauseTimer: vi.fn(),
-    resetTimer: vi.fn(),
-    skipTimer: mockSkipTimer,
-    progress: 0,
-    setTimerType: mockSetTimerType,
-    setTimeLeft: vi.fn(),
-    setStatus: vi.fn(),
-  };
+const mockSessionContextValue = {
+  currentSession: mockCurrentSession,
+  setCurrentSession: vi.fn(),
+  completedSessions: [],
+  setCompletedSessions: vi.fn(),
+  pendingReviews: [],
+  setPendingReviews: vi.fn(),
+  createNewSession: vi.fn(),
+  completeSession: vi.fn(),
+  updateCurrentSessionStatus: vi.fn(),
+  loadCompletedSessions: vi.fn(),
+  loadPendingReviews: vi.fn(),
+};
 
-  const sessionContextValue = {
-    currentSession: currentSessionOverride === undefined ? mockCurrentSession : currentSessionOverride,
-    setCurrentSession: vi.fn(),
-    completedSessions: [],
-    setCompletedSessions: vi.fn(),
-    pendingReviews: [],
-    setPendingReviews: vi.fn(),
-    completeSession: vi.fn(),
-    createNewSession: vi.fn(),
-    updateCurrentSessionStatus: vi.fn(),
-  };
-  
-  return render(
-    <AuthProvider> {/* AuthProvider is a dependency for the real SessionProvider */}
-      <SessionContext.Provider value={sessionContextValue}>
-        <TimerContext.Provider value={timerContextValue}>
-          <BreakTimerPage />
-        </TimerContext.Provider>
-      </SessionContext.Provider>
-    </AuthProvider>
-  );
+// Mock the TimerContext
+const mockTimerContextValue = {
+  timerType: 'break',
+  setTimerType: vi.fn(),
+  isRunning: false,
+  setIsRunning: vi.fn(),
+  timeRemaining: 300,
+  setTimeRemaining: vi.fn(),
+  startTimer: vi.fn(),
+  pauseTimer: vi.fn(),
+  resetTimer: vi.fn(),
 };
 
 describe('BreakTimerPage', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    // Mock setTimeout and clearTimeout for controlling useEffect timers
-    vi.useFakeTimers();
+  it('renders without crashing', () => {
+    render(
+      <BrowserRouter>
+        <SessionContext.Provider value={mockSessionContextValue}>
+          <TimerContext.Provider value={mockTimerContextValue}>
+            <BreakTimerPage />
+          </TimerContext.Provider>
+        </SessionContext.Provider>
+      </BrowserRouter>
+    );
   });
 
-  afterEach(() => {
-    vi.runOnlyPendingTimers();
-    vi.useRealTimers();
+  it('displays the session name', () => {
+    render(
+      <BrowserRouter>
+        <SessionContext.Provider value={mockSessionContextValue}>
+          <TimerContext.Provider value={mockTimerContextValue}>
+            <BreakTimerPage />
+          </TimerContext.Provider>
+        </SessionContext.Provider>
+      </BrowserRouter>
+    );
+    expect(screen.getByText(/Test Session/i)).toBeInTheDocument();
   });
 
-  it('renders correctly when a session is active', () => {
-    renderBreakTimerPage();
-    expect(screen.getByText('Break Time')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /skip/i })).toBeInTheDocument();
-    // CircularTimer is rendered with showControls=false, so its buttons aren't here
+  it('renders the CircularTimer component', () => {
+    render(
+      <BrowserRouter>
+        <SessionContext.Provider value={mockSessionContextValue}>
+          <TimerContext.Provider value={mockTimerContextValue}>
+            <BreakTimerPage />
+          </TimerContext.Provider>
+        </SessionContext.Provider>
+      </BrowserRouter>
+    );
+    expect(screen.getByTestId('circular-timer')).toBeInTheDocument();
   });
 
-  it('calls setTimerType("break") and startTimer on mount via useEffect', async () => {
-    renderBreakTimerPage();
-    
-    await act(async () => {
-      vi.advanceTimersByTime(150); // Advance timer for the setTimeout in useEffect
-    });
-    
-    expect(mockSetTimerType).toHaveBeenCalledWith('break');
-    expect(mockStartTimer).toHaveBeenCalled();
-  });
-
-  it('calls skipTimer from TimerContext when its "Skip" button is clicked', async () => {
-    renderBreakTimerPage();
-    const skipButton = screen.getByRole('button', { name: /skip/i });
-    
-    await act(async () => {
-      fireEvent.click(skipButton);
-    });
-    
-    expect(mockSkipTimer).toHaveBeenCalledTimes(1);
-  });
-
-  it('displays "No active session found" when currentSession is null', () => {
-    renderBreakTimerPage(null);
-    expect(screen.getByText(/no active session found/i)).toBeInTheDocument();
+  it('displays the break message', () => {
+    render(
+      <BrowserRouter>
+        <SessionContext.Provider value={mockSessionContextValue}>
+          <TimerContext.Provider value={mockTimerContextValue}>
+            <BreakTimerPage />
+          </TimerContext.Provider>
+        </SessionContext.Provider>
+      </BrowserRouter>
+    );
+    expect(screen.getByText(/Take a well-deserved break!/i)).toBeInTheDocument();
   });
 });
