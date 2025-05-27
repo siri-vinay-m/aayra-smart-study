@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import ValidationPage from './ValidationPage';
@@ -25,13 +26,14 @@ const mockCurrentSession: StudySession = {
   subjectName: 'Validation Test',
   topicName: 'Flow Control',
   sessionName: 'Validation Test - Flow Control #1',
-  sequenceNumber: 1,
   status: 'validating', // Initial status for this page
   isFavorite: false,
+  focusDuration: 25 * 60,
+  breakDuration: 5 * 60,
   focusDurationMinutes: 25,
   breakDurationMinutes: 5,
-  createdAt: new Date().toISOString(),
-  lastReviewedAt: null,
+  startTime: new Date(),
+  createdAt: new Date(),
 };
 
 const renderValidationPage = (currentSessionOverride?: StudySession | null) => {
@@ -44,7 +46,6 @@ const renderValidationPage = (currentSessionOverride?: StudySession | null) => {
     setCompletedSessions: vi.fn(),
     pendingReviews: [],
     setPendingReviews: vi.fn(),
-    loadCompletedSessions: vi.fn(),
     createNewSession: vi.fn(),
     updateCurrentSessionStatus: vi.fn(),
   };

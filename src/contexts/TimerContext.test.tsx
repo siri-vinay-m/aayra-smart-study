@@ -27,13 +27,14 @@ const mockCurrentSession: StudySession = {
   subjectName: 'Test Subject',
   topicName: 'Test Topic',
   sessionName: 'Test Session',
-  sequenceNumber: 1,
-  status: 'focus_pending',
+  status: 'focus_inprogress',
   isFavorite: false,
+  focusDuration: 30 * 60,
+  breakDuration: 10 * 60,
   focusDurationMinutes: 30,
   breakDurationMinutes: 10,
-  createdAt: new Date().toISOString(),
-  lastReviewedAt: null,
+  startTime: new Date(),
+  createdAt: new Date(),
 };
 
 const mockUpdateCurrentSessionStatus = vi.fn();
@@ -62,7 +63,6 @@ const renderWithProviders = (currentSession = mockCurrentSession) => {
     pendingReviews: [],
     setPendingReviews: vi.fn(),
     completeSession: vi.fn(),
-    loadCompletedSessions: vi.fn(),
     createNewSession: vi.fn(),
     updateCurrentSessionStatus: mockUpdateCurrentSessionStatus,
   };

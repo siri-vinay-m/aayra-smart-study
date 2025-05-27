@@ -28,13 +28,14 @@ const mockCurrentSession: StudySession = {
   subjectName: 'Test Subject',
   topicName: 'Test Topic',
   sessionName: 'Test Session',
-  sequenceNumber: 1,
   status: 'break_pending',
   isFavorite: false,
+  focusDuration: 25 * 60,
+  breakDuration: 5 * 60,
   focusDurationMinutes: 25,
   breakDurationMinutes: 5,
-  createdAt: new Date().toISOString(),
-  lastReviewedAt: null,
+  startTime: new Date(),
+  createdAt: new Date(),
 };
 
 const renderBreakTimerPage = (currentSessionOverride?: StudySession | null) => {
@@ -60,7 +61,6 @@ const renderBreakTimerPage = (currentSessionOverride?: StudySession | null) => {
     pendingReviews: [],
     setPendingReviews: vi.fn(),
     completeSession: vi.fn(),
-    loadCompletedSessions: vi.fn(),
     createNewSession: vi.fn(),
     updateCurrentSessionStatus: vi.fn(),
   };
