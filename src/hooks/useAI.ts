@@ -35,11 +35,14 @@ export const useAI = () => {
 
     try {
       console.log('Starting AI processing with materials:', materials.length);
+      console.log('Materials:', materials);
       
-      const response = await fetch('/functions/v1/process-study-materials', {
+      // Use the correct Supabase edge function URL
+      const response = await fetch('https://ouyilgvqbwcekkajrrug.supabase.co/functions/v1/process-study-materials', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91eWlsZ3ZxYndjZWtrYWpycnVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5NzU4MzgsImV4cCI6MjA2MzU1MTgzOH0.HPv36VVU0WpAXidt2ZrjzUSuiNPCMaXk2tI8SryitbE`,
         },
         body: JSON.stringify({
           materials,
@@ -56,7 +59,7 @@ export const useAI = () => {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
         } catch {
-          errorMessage = `Server error: ${response.status}`;
+          errorMessage = `Server error: ${response.status} - ${response.statusText}`;
         }
         throw new Error(errorMessage);
       }
@@ -64,6 +67,7 @@ export const useAI = () => {
       // Check if response has content
       const responseText = await response.text();
       console.log('Response text length:', responseText.length);
+      console.log('Response text preview:', responseText.substring(0, 200));
       
       if (!responseText || responseText.trim() === '') {
         throw new Error('Empty response from server');
@@ -76,6 +80,12 @@ export const useAI = () => {
         console.error('JSON parse error:', parseError);
         console.error('Response text:', responseText);
         throw new Error('Invalid response format from server');
+      }
+
+      // Validate the response structure
+      if (!result.flashcards || !result.quizQuestions || !result.summary) {
+        console.error('Invalid response structure:', result);
+        throw new Error('Invalid response structure from server');
       }
 
       console.log('AI processing completed successfully');

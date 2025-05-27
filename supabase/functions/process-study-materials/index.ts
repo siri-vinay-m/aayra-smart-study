@@ -37,25 +37,27 @@ serve(async (req) => {
 
   try {
     console.log('Processing study materials request...');
+    console.log('Request method:', req.method);
+    console.log('Request URL:', req.url);
     
     // Check if Google API key is available
     if (!googleApiKey) {
       console.error('Google API key not found');
       return new Response(
-        JSON.stringify({ error: 'Google API key not configured' }),
+        JSON.stringify({ error: 'Google API key not configured. Please set the GOOGLE_API_KEY environment variable.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const requestBody = await req.json();
-    console.log('Request body received:', requestBody);
+    console.log('Request body received:', JSON.stringify(requestBody, null, 2));
     
     const { materials, sessionName } = requestBody;
 
     if (!materials || !Array.isArray(materials)) {
       console.error('Invalid materials provided:', materials);
       return new Response(
-        JSON.stringify({ error: 'Invalid materials provided' }),
+        JSON.stringify({ error: 'Invalid materials provided. Expected an array.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -68,30 +70,44 @@ serve(async (req) => {
       );
     }
 
-    // Combine all study materials into a single text
-    const combinedContent = materials.map((material: StudyMaterial) => {
-      let content = '';
-      switch (material.type) {
-        case 'text':
-          content = `Text Note: ${material.content}`;
-          break;
-        case 'file':
-          content = `File (${material.filename || 'unknown'}): ${material.content}`;
-          break;
-        case 'url':
-          content = `URL Reference: ${material.content}`;
-          break;
-        case 'voice':
-          content = `Voice Recording: ${material.content}`;
-          break;
-        default:
-          content = `Content: ${material.content}`;
-      }
-      return content;
-    }).join('\n\n');
+    // Process each material and extract meaningful content
+    const processedContent = await Promise.all(
+      materials.map(async (material: StudyMaterial) => {
+        console.log(`Processing material ${material.id} of type ${material.type}`);
+        
+        let content = '';
+        switch (material.type) {
+          case 'text':
+            content = `Text Note: ${material.content}`;
+            break;
+          case 'file':
+            // For file materials, we expect the content to be a description or text extract
+            content = `File (${material.filename || 'unknown'}): This is a study material file. Since file content extraction is not yet implemented, please generate educational content based on the filename and context.`;
+            break;
+          case 'url':
+            // For URL materials, extract domain and provide context
+            try {
+              const url = new URL(material.content);
+              content = `URL Reference: ${material.content} (Domain: ${url.hostname}). This is an educational resource link. Please generate relevant study content.`;
+            } catch {
+              content = `URL Reference: ${material.content}. This is an educational resource link.`;
+            }
+            break;
+          case 'voice':
+            content = `Voice Recording: This is a voice recording transcription. Please generate educational content based on this audio material.`;
+            break;
+          default:
+            content = `Study Material: ${material.content}`;
+        }
+        return content;
+      })
+    );
+
+    const combinedContent = processedContent.join('\n\n');
 
     console.log('Processing study materials for session:', sessionName);
     console.log('Combined content length:', combinedContent.length);
+    console.log('Combined content preview:', combinedContent.substring(0, 300));
 
     // Generate AI content using Google Gemini
     const aiResponse = await generateAIContent(combinedContent, sessionName);
@@ -106,7 +122,10 @@ serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ 
+        error: errorMessage,
+        details: error instanceof Error ? error.stack : 'No additional details available'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -135,7 +154,7 @@ Please respond in the following JSON format:
   ],
   "quizQuestions": [
     {
-      "question": "Question text",
+      "question": "Question text", 
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correctAnswer": "Option A",
       "explanation": "Explanation text"
@@ -144,10 +163,11 @@ Please respond in the following JSON format:
   "summary": "Comprehensive summary text"
 }
 
-Make sure the content is educational, accurate, and directly related to the study materials provided. Return only valid JSON.
+Make sure the content is educational, accurate, and directly related to the study materials provided. If the materials are limited or unclear, create general educational content that would be helpful for studying. Return only valid JSON.
 `;
 
   try {
+    console.log('Making request to Gemini API...');
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${googleApiKey}`, {
       method: 'POST',
       headers: {
@@ -168,6 +188,8 @@ Make sure the content is educational, accurate, and directly related to the stud
       }),
     });
 
+    console.log('Gemini API response status:', response.status);
+
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Gemini API error:', response.status, errorData);
@@ -184,6 +206,7 @@ Make sure the content is educational, accurate, and directly related to the stud
 
     const generatedText = data.candidates[0].content.parts[0].text;
     console.log('Generated text received, length:', generatedText.length);
+    console.log('Generated text preview:', generatedText.substring(0, 200));
     
     try {
       // Extract JSON from the response (remove any markdown formatting)
@@ -202,38 +225,51 @@ Make sure the content is educational, accurate, and directly related to the stud
       }
       
       console.log('AI response parsed successfully');
+      console.log('Flashcards count:', aiResponse.flashcards.length);
+      console.log('Quiz questions count:', aiResponse.quizQuestions.length);
+      
       return aiResponse;
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError);
       console.error('Generated text:', generatedText);
       
-      // Fallback response if parsing fails
+      // Enhanced fallback response
       return {
         flashcards: [
           {
-            question: "What was the main topic of this study session?",
-            answer: "Based on the materials provided, this session covered key concepts that were studied."
+            question: `What is the main topic covered in the "${sessionName}" session?`,
+            answer: "This session covers key educational concepts. Review the materials to understand the main ideas and practice applying them."
           },
           {
-            question: "What are the important points to remember?",
-            answer: "Review the key concepts and practice applying them in different contexts."
+            question: "What are the important points to remember from this study session?",
+            answer: "Focus on understanding the core concepts, practice problem-solving techniques, and review regularly to reinforce learning."
+          },
+          {
+            question: "How should you approach studying this material?",
+            answer: "Break down complex topics into smaller parts, use active recall techniques, and connect new information to what you already know."
           }
         ],
         quizQuestions: [
           {
-            question: "What was covered in this study session?",
-            options: ["The main concepts", "Unrelated topics", "Nothing specific", "Random information"],
-            correctAnswer: "The main concepts",
-            explanation: "This session focused on the main concepts from the study materials."
+            question: `What was the focus of the "${sessionName}" study session?`,
+            options: ["Core educational concepts", "Unrelated topics", "Random information", "No specific focus"],
+            correctAnswer: "Core educational concepts",
+            explanation: "This session was designed to cover important educational concepts relevant to your studies."
           },
           {
-            question: "How should you approach reviewing this material?",
-            options: ["Skip reviewing", "Review once quickly", "Practice regularly", "Memorize everything"],
-            correctAnswer: "Practice regularly",
-            explanation: "Regular practice helps reinforce learning and improve retention."
+            question: "What is the best approach to reviewing study materials?",
+            options: ["Skip reviewing", "Review once quickly", "Regular practice and review", "Memorize everything"],
+            correctAnswer: "Regular practice and review",
+            explanation: "Regular practice and review helps reinforce learning and improve long-term retention of information."
+          },
+          {
+            question: "How can you make your study sessions more effective?",
+            options: ["Study for long hours without breaks", "Use active learning techniques", "Only read materials passively", "Avoid taking notes"],
+            correctAnswer: "Use active learning techniques",
+            explanation: "Active learning techniques like summarizing, questioning, and applying concepts help improve understanding and retention."
           }
         ],
-        summary: "This study session covered important concepts. The AI processed the materials but encountered some formatting issues. Please review the flashcards and quiz questions for the key points covered."
+        summary: `This study session on "${sessionName}" covered important educational concepts. While the AI processing encountered some formatting issues, the key focus was on providing you with study materials and learning opportunities. The session included various types of content to help reinforce your understanding. Continue to review the materials regularly and practice applying the concepts to improve your learning outcomes.`
       };
     }
   } catch (error) {

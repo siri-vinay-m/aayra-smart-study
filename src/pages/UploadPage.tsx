@@ -171,14 +171,31 @@ const UploadPage = () => {
     setIsLoading(true);
     
     try {
-      // Process materials with AI
-      const aiResponse = await processStudyMaterials(
-        uploadedItems.map(item => ({
+      console.log('Preparing materials for AI processing...');
+      console.log('Uploaded items:', uploadedItems);
+      
+      // Convert uploadedItems to the format expected by the AI
+      const processedMaterials = uploadedItems.map(item => {
+        let content = item.content;
+        
+        // For file types, provide more descriptive content
+        if (item.type === 'file' && item.filename) {
+          content = `File uploaded: ${item.filename}. This is a study material document that needs to be processed for educational content.`;
+        }
+        
+        return {
           id: item.id,
           type: item.type,
-          content: item.content,
+          content: content,
           filename: item.filename
-        })),
+        };
+      });
+      
+      console.log('Processed materials:', processedMaterials);
+      
+      // Process materials with AI
+      const aiResponse = await processStudyMaterials(
+        processedMaterials,
         currentSession?.sessionName || 'Study Session'
       );
 
@@ -199,13 +216,13 @@ const UploadPage = () => {
         
         navigate('/validation');
       } else {
-        throw new Error('Failed to process study materials');
+        throw new Error('Failed to process study materials - no response received');
       }
     } catch (error) {
       console.error('Error processing materials:', error);
       toast({
         title: "Error",
-        description: "Failed to process study materials. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to process study materials. Please try again.",
         variant: "destructive"
       });
     } finally {
