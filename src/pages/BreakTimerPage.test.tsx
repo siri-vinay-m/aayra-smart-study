@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/dom';
 import BreakTimerPage from './BreakTimerPage';
 import { TimerContext } from '@/contexts/TimerContext';
 import { SessionContext, StudySession } from '@/contexts/SessionContext';

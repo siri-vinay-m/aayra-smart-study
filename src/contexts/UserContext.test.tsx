@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { render, act, waitFor, fireEvent } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
+import { waitFor, fireEvent } from '@testing-library/dom';
 import { UserProvider, useUser, User } from './UserContext';
 import { AuthContext } from './AuthContext'; // To mock AuthContext values
 import { supabase } from '@/integrations/supabase/client'; // To mock Supabase client

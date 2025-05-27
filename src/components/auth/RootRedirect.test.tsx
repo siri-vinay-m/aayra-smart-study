@@ -1,5 +1,6 @@
 
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
+import { screen } from "@testing-library/dom";
 import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
 import RootRedirect from "./RootRedirect";
 import { useUser } from "@/contexts/UserContext";

@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/dom';
 import ValidationPage from './ValidationPage';
 import { SessionContext, StudySession } from '@/contexts/SessionContext';
 import { AuthProvider } from '@/contexts/AuthContext'; // Required by SessionProvider if not mocking SessionContext directly

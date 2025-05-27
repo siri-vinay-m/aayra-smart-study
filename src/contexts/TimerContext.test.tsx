@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/dom';
 import { TimerContext, TimerProvider, useTimer, FOCUS_TIME, BREAK_TIME } from './TimerContext';
 import { SessionContext, StudySession } from '@/contexts/SessionContext';
 import { vi } from 'vitest';
