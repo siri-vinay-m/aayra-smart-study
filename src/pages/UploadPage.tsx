@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Mic, Upload, Link, FileText, CircleStop, Play, Trash, Save } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { useAI } from '@/hooks/useAI';
+import { useToast } from '@/hooks/use-toast';
 
 interface UploadItem {
   id: string;
@@ -21,6 +23,9 @@ interface UploadItem {
 const UploadPage = () => {
   const { currentSession, setCurrentSession } = useSession();
   const navigate = useNavigate();
+  const { processStudyMaterials, isProcessing } = useAI();
+  const { toast } = useToast();
+  
   const [activeTab, setActiveTab] = useState('text');
   const [text, setText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -54,7 +59,6 @@ const UploadPage = () => {
   
   const handleRecordVoice = async () => {
     if (!isRecording) {
-      // Start recording
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorderRef.current = new MediaRecorder(stream);
@@ -68,14 +72,12 @@ const UploadPage = () => {
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
           setRecordedAudio(audioBlob);
           
-          // Stop all tracks to release the microphone
           stream.getTracks().forEach(track => track.stop());
         };
         
         mediaRecorderRef.current.start();
         setIsRecording(true);
         
-        // Start timer
         let seconds = 0;
         timerRef.current = window.setInterval(() => {
           seconds++;
@@ -87,12 +89,10 @@ const UploadPage = () => {
         alert("Could not access microphone. Please check your permissions.");
       }
     } else {
-      // Stop recording
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         mediaRecorderRef.current.stop();
       }
       
-      // Clear timer
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -158,27 +158,59 @@ const UploadPage = () => {
     setUploadedItems(uploadedItems.filter(item => item.id !== id));
   };
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (uploadedItems.length === 0) {
-      alert('Please upload at least one type of content');
+      toast({
+        title: "Error",
+        description: "Please upload at least one type of content",
+        variant: "destructive"
+      });
       return;
     }
     
     setIsLoading(true);
     
-    // Simulate AI processing
-    setTimeout(() => {
-      // Update session status
-      if (currentSession) {
-        setCurrentSession({
-          ...currentSession,
-          status: 'validating'
+    try {
+      // Process materials with AI
+      const aiResponse = await processStudyMaterials(
+        uploadedItems.map(item => ({
+          id: item.id,
+          type: item.type,
+          content: item.content,
+          filename: item.filename
+        })),
+        currentSession?.sessionName || 'Study Session'
+      );
+
+      if (aiResponse) {
+        // Store AI response in session context for validation page
+        if (currentSession && setCurrentSession) {
+          setCurrentSession({
+            ...currentSession,
+            status: 'validating',
+            aiGeneratedContent: aiResponse
+          });
+        }
+        
+        toast({
+          title: "Success",
+          description: "Study materials processed successfully!",
         });
+        
+        navigate('/validation');
+      } else {
+        throw new Error('Failed to process study materials');
       }
-      
+    } catch (error) {
+      console.error('Error processing materials:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process study materials. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-      navigate('/validation');
-    }, 2000);
+    }
   };
   
   return (
@@ -368,9 +400,9 @@ const UploadPage = () => {
           <Button 
             onClick={handleSubmit} 
             className="w-full bg-primary hover:bg-primary-dark"
-            disabled={isLoading || uploadedItems.length === 0}
+            disabled={isLoading || isProcessing || uploadedItems.length === 0}
           >
-            {isLoading ? 'Processing...' : 'Submit to AI'}
+            {isLoading || isProcessing ? 'Processing with AI...' : 'Submit to AI'}
           </Button>
         </div>
       </div>
