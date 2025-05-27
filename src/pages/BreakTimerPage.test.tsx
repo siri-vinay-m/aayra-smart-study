@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
@@ -36,17 +37,19 @@ const mockSessionContextValue = {
   loadPendingReviews: vi.fn(),
 };
 
-// Mock the TimerContext
+// Mock the TimerContext - updated to match the actual TimerContextType interface
 const mockTimerContextValue = {
-  timerType: 'break',
+  timerType: 'break' as const,
   setTimerType: vi.fn(),
-  isRunning: false,
-  setIsRunning: vi.fn(),
-  timeRemaining: 300,
-  setTimeRemaining: vi.fn(),
+  timeLeft: 300,
+  setTimeLeft: vi.fn(),
+  status: 'idle' as const,
+  setStatus: vi.fn(),
   startTimer: vi.fn(),
   pauseTimer: vi.fn(),
   resetTimer: vi.fn(),
+  skipTimer: vi.fn(),
+  progress: 0,
 };
 
 describe('BreakTimerPage', () => {
