@@ -35,6 +35,7 @@ export const useAI = () => {
 
     try {
       console.log('Starting AI processing with materials:', materials.length);
+      console.log('Session name:', sessionName);
       console.log('Materials:', materials);
       
       // Use the correct Supabase edge function URL
@@ -51,13 +52,14 @@ export const useAI = () => {
       });
 
       console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        let errorMessage = 'Failed to process study materials';
+        let errorMessage = `Failed to process study materials (${response.status})`;
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
+          console.error('Server error response:', errorData);
         } catch {
           errorMessage = `Server error: ${response.status} - ${response.statusText}`;
         }
@@ -67,7 +69,7 @@ export const useAI = () => {
       // Check if response has content
       const responseText = await response.text();
       console.log('Response text length:', responseText.length);
-      console.log('Response text preview:', responseText.substring(0, 200));
+      console.log('Response text preview:', responseText.substring(0, 300));
       
       if (!responseText || responseText.trim() === '') {
         throw new Error('Empty response from server');
@@ -89,9 +91,12 @@ export const useAI = () => {
       }
 
       console.log('AI processing completed successfully');
+      console.log('Generated flashcards:', result.flashcards.length);
+      console.log('Generated quiz questions:', result.quizQuestions.length);
+      
       return result;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred while processing study materials';
       setError(errorMessage);
       console.error('Error processing study materials:', err);
       return null;

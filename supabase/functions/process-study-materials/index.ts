@@ -49,6 +49,8 @@ serve(async (req) => {
       );
     }
 
+    console.log('Google API key is available');
+
     const requestBody = await req.json();
     console.log('Request body received:', JSON.stringify(requestBody, null, 2));
     
@@ -81,20 +83,18 @@ serve(async (req) => {
             content = `Text Note: ${material.content}`;
             break;
           case 'file':
-            // For file materials, we expect the content to be a description or text extract
-            content = `File (${material.filename || 'unknown'}): This is a study material file. Since file content extraction is not yet implemented, please generate educational content based on the filename and context.`;
+            content = `File Content (${material.filename || 'unknown'}): ${material.content}`;
             break;
           case 'url':
-            // For URL materials, extract domain and provide context
             try {
               const url = new URL(material.content);
-              content = `URL Reference: ${material.content} (Domain: ${url.hostname}). This is an educational resource link. Please generate relevant study content.`;
+              content = `Educational Resource from ${url.hostname}: ${material.content}. This appears to be an educational document or resource that should be used to generate relevant study materials.`;
             } catch {
-              content = `URL Reference: ${material.content}. This is an educational resource link.`;
+              content = `Educational Resource: ${material.content}. This appears to be an educational document or resource.`;
             }
             break;
           case 'voice':
-            content = `Voice Recording: This is a voice recording transcription. Please generate educational content based on this audio material.`;
+            content = `Voice Recording Content: ${material.content}. This is educational content from an audio recording.`;
             break;
           default:
             content = `Study Material: ${material.content}`;
@@ -107,7 +107,7 @@ serve(async (req) => {
 
     console.log('Processing study materials for session:', sessionName);
     console.log('Combined content length:', combinedContent.length);
-    console.log('Combined content preview:', combinedContent.substring(0, 300));
+    console.log('Combined content preview:', combinedContent.substring(0, 500));
 
     // Generate AI content using Google Gemini
     const aiResponse = await generateAIContent(combinedContent, sessionName);
@@ -135,14 +135,17 @@ async function generateAIContent(content: string, sessionName: string): Promise<
   console.log('Calling Gemini API...');
   
   const prompt = `
-You are an educational AI assistant. Based on the following study materials from a session called "${sessionName}", generate:
-
-1. 5-7 flashcards with questions and answers
-2. 6-8 multiple choice quiz questions with 4 options each, correct answer, and explanations
-3. A comprehensive summary of the key concepts
+You are an educational AI assistant. Based on the following study materials from a session called "${sessionName}", generate comprehensive educational content.
 
 Study Materials:
 ${content}
+
+Please create:
+1. 5-7 flashcards with clear questions and detailed answers
+2. 6-8 multiple choice quiz questions with 4 options each, correct answer, and explanations
+3. A comprehensive summary of the key concepts
+
+Focus on the actual educational content provided. If the materials mention specific topics, subjects, or concepts, create relevant questions and content around those topics.
 
 Please respond in the following JSON format:
 {
@@ -163,7 +166,7 @@ Please respond in the following JSON format:
   "summary": "Comprehensive summary text"
 }
 
-Make sure the content is educational, accurate, and directly related to the study materials provided. If the materials are limited or unclear, create general educational content that would be helpful for studying. Return only valid JSON.
+Make sure the content is educational, accurate, and directly related to the study materials provided. Return only valid JSON without any markdown formatting.
 `;
 
   try {
@@ -197,7 +200,7 @@ Make sure the content is educational, accurate, and directly related to the stud
     }
 
     const data = await response.json();
-    console.log('Gemini API response received');
+    console.log('Gemini API response received successfully');
 
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
       console.error('Invalid response structure from Gemini API:', data);
@@ -206,7 +209,7 @@ Make sure the content is educational, accurate, and directly related to the stud
 
     const generatedText = data.candidates[0].content.parts[0].text;
     console.log('Generated text received, length:', generatedText.length);
-    console.log('Generated text preview:', generatedText.substring(0, 200));
+    console.log('Generated text preview:', generatedText.substring(0, 300));
     
     try {
       // Extract JSON from the response (remove any markdown formatting)
@@ -219,12 +222,14 @@ Make sure the content is educational, accurate, and directly related to the stud
       const aiResponse: AIResponse = JSON.parse(jsonMatch[0]);
       
       // Validate the response structure
-      if (!aiResponse.flashcards || !aiResponse.quizQuestions || !aiResponse.summary) {
+      if (!aiResponse.flashcards || !Array.isArray(aiResponse.flashcards) ||
+          !aiResponse.quizQuestions || !Array.isArray(aiResponse.quizQuestions) ||
+          !aiResponse.summary) {
         console.error('Invalid AI response structure:', aiResponse);
         throw new Error('Invalid AI response structure');
       }
       
-      console.log('AI response parsed successfully');
+      console.log('AI response parsed and validated successfully');
       console.log('Flashcards count:', aiResponse.flashcards.length);
       console.log('Quiz questions count:', aiResponse.quizQuestions.length);
       
@@ -233,43 +238,63 @@ Make sure the content is educational, accurate, and directly related to the stud
       console.error('Error parsing AI response:', parseError);
       console.error('Generated text:', generatedText);
       
-      // Enhanced fallback response
+      // Enhanced fallback response with more relevant content
       return {
         flashcards: [
           {
             question: `What is the main topic covered in the "${sessionName}" session?`,
-            answer: "This session covers key educational concepts. Review the materials to understand the main ideas and practice applying them."
+            answer: "This session covers important educational concepts. Review the uploaded materials to understand the main ideas and practice applying them to reinforce your learning."
           },
           {
-            question: "What are the important points to remember from this study session?",
-            answer: "Focus on understanding the core concepts, practice problem-solving techniques, and review regularly to reinforce learning."
+            question: "How should you approach studying this material effectively?",
+            answer: "Break down complex topics into smaller parts, use active recall techniques, and connect new information to what you already know. Regular practice and review are key to mastering the content."
           },
           {
-            question: "How should you approach studying this material?",
-            answer: "Break down complex topics into smaller parts, use active recall techniques, and connect new information to what you already know."
+            question: "What are the key learning objectives for this study session?",
+            answer: "Focus on understanding the core concepts, identifying important relationships between ideas, and practicing problem-solving techniques related to the material."
+          },
+          {
+            question: "How can you apply the concepts from this session?",
+            answer: "Look for real-world applications of the concepts, create your own examples, and practice explaining the ideas to others to deepen your understanding."
+          },
+          {
+            question: "What study strategies work best for this type of material?",
+            answer: "Use a combination of reading, note-taking, visual aids, and practice exercises. Spaced repetition and active testing will help with long-term retention."
           }
         ],
         quizQuestions: [
           {
-            question: `What was the focus of the "${sessionName}" study session?`,
-            options: ["Core educational concepts", "Unrelated topics", "Random information", "No specific focus"],
-            correctAnswer: "Core educational concepts",
-            explanation: "This session was designed to cover important educational concepts relevant to your studies."
+            question: `What was the primary focus of the "${sessionName}" study session?`,
+            options: ["Core educational concepts from uploaded materials", "Unrelated general knowledge", "Random information", "No specific focus"],
+            correctAnswer: "Core educational concepts from uploaded materials",
+            explanation: "This session was designed to process and learn from the specific educational materials you uploaded, creating targeted study content."
           },
           {
-            question: "What is the best approach to reviewing study materials?",
-            options: ["Skip reviewing", "Review once quickly", "Regular practice and review", "Memorize everything"],
-            correctAnswer: "Regular practice and review",
-            explanation: "Regular practice and review helps reinforce learning and improve long-term retention of information."
+            question: "What is the most effective approach to reviewing study materials?",
+            options: ["Skip reviewing entirely", "Review once quickly", "Regular practice with active recall", "Memorize everything word-for-word"],
+            correctAnswer: "Regular practice with active recall",
+            explanation: "Regular practice combined with active recall techniques helps reinforce learning and improve long-term retention of information."
           },
           {
-            question: "How can you make your study sessions more effective?",
-            options: ["Study for long hours without breaks", "Use active learning techniques", "Only read materials passively", "Avoid taking notes"],
+            question: "How can you make your study sessions more productive?",
+            options: ["Study for long hours without breaks", "Use active learning techniques", "Only read materials passively", "Avoid taking any notes"],
             correctAnswer: "Use active learning techniques",
-            explanation: "Active learning techniques like summarizing, questioning, and applying concepts help improve understanding and retention."
+            explanation: "Active learning techniques like summarizing, questioning, and applying concepts help improve understanding and retention more than passive reading."
+          },
+          {
+            question: "What role do flashcards play in effective studying?",
+            options: ["They replace the need for other study methods", "They help with spaced repetition and recall", "They are only useful for memorization", "They are not effective for learning"],
+            correctAnswer: "They help with spaced repetition and recall",
+            explanation: "Flashcards are excellent tools for spaced repetition and active recall, helping to strengthen memory and identify areas that need more attention."
+          },
+          {
+            question: "Why is it important to create summaries of study materials?",
+            options: ["To make the content shorter", "To identify and reinforce key concepts", "To avoid reading the original material", "To impress others with knowledge"],
+            correctAnswer: "To identify and reinforce key concepts",
+            explanation: "Creating summaries helps you identify the most important concepts, organize information logically, and reinforce understanding through active processing."
           }
         ],
-        summary: `This study session on "${sessionName}" covered important educational concepts. While the AI processing encountered some formatting issues, the key focus was on providing you with study materials and learning opportunities. The session included various types of content to help reinforce your understanding. Continue to review the materials regularly and practice applying the concepts to improve your learning outcomes.`
+        summary: `This study session on "${sessionName}" focused on processing and learning from your uploaded educational materials. While the AI encountered some formatting challenges in processing the specific content, the session successfully created a framework for effective studying. The materials you uploaded contain valuable educational content that can be studied using various techniques including flashcards for active recall, quiz questions for self-testing, and summary reviews for concept reinforcement. To maximize your learning from these materials, continue to engage with them actively through regular review, practice application of concepts, and connection to related knowledge you already possess. The combination of the uploaded materials and these study tools provides a comprehensive foundation for mastering the subject matter.`
       };
     }
   } catch (error) {
