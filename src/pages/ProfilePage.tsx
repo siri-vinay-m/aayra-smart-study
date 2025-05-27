@@ -85,9 +85,10 @@ const ProfilePage = () => {
     }
     
     setIsLoading(true);
-    let newProfilePictureUrl = profilePictureURL || null;
+    let newProfilePictureUrl = profilePictureURL;
 
     try {
+      // Only upload image if a new file is selected
       if (selectedFile) {
         const fileExt = selectedFile.name.split('.').pop();
         const fileName = `${authUser.id}-${Date.now()}.${fileExt}`;
@@ -109,10 +110,9 @@ const ProfilePage = () => {
           .from('profile-pictures')
           .getPublicUrl(filePath);
         
-        if (!urlData || !urlData.publicUrl) {
-          throw new Error("Could not get public URL for uploaded image.");
+        if (urlData?.publicUrl) {
+          newProfilePictureUrl = urlData.publicUrl;
         }
-        newProfilePictureUrl = urlData.publicUrl;
       }
 
       // Convert array to comma-separated string for database storage
@@ -121,7 +121,7 @@ const ProfilePage = () => {
       const userDataToSave = {
         displayname: displayName,
         studentcategory: studentCategory,
-        profilepictureurl: newProfilePictureUrl,
+        profilepictureurl: newProfilePictureUrl || null,
         preferredstudyweekdays: weekdaysForDb,
         preferredstudystarttime: preferredStudyStartTime || null,
         lastloginat: new Date().toISOString()

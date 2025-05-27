@@ -3,12 +3,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
+import { useTimer } from '@/contexts/TimerContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 const ValidationPage = () => {
   const navigate = useNavigate();
-  const { currentSession, completeSession, setCurrentSession } = useSession();
+  const { currentSession, completeSession, setCurrentSession, updateCurrentSessionStatus } = useSession();
+  const { setTimerType } = useTimer();
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [currentStep, setCurrentStep] = useState<'flashcards' | 'quiz' | 'summary'>('flashcards');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -78,21 +80,18 @@ const ValidationPage = () => {
     }
   };
   
-  const handleCompleteQuiz = () => {
+  const handleCompleteQuiz = async () => {
     if (currentSession) {
+      // Update session status to break pending
       if (setCurrentSession) {
         setCurrentSession({...currentSession, status: 'break_pending'});
       }
+      await updateCurrentSessionStatus('break_pending');
+      
+      // Set timer type to break for the next page
+      setTimerType('break');
+      
       completeSession(currentSession.id);
-    }
-    navigate('/break');
-  };
-
-  const handleSkip = () => {
-    if (currentSession) {
-      if (setCurrentSession) {
-        setCurrentSession({...currentSession, status: 'break_pending'});
-      }
     }
     navigate('/break');
   };
@@ -117,10 +116,7 @@ const ValidationPage = () => {
             </div>
           </CardContent>
         </Card>
-        <div className="flex gap-4 justify-center">
-          <Button onClick={handleSkip} variant="outline" className="px-6 py-3">
-            Skip Review
-          </Button>
+        <div className="flex justify-center">
           <Button
             onClick={handleNextCard}
             className="bg-orange-500 hover:bg-orange-600 px-6 py-3"
@@ -174,10 +170,7 @@ const ValidationPage = () => {
               </div>
             )}
             
-            <div className="flex justify-between">
-              <Button onClick={handleSkip} variant="outline" className="px-6 py-3">
-                Skip Quiz
-              </Button>
+            <div className="flex justify-center">
               {!isAnswerSubmitted ? (
                 <Button onClick={handleSubmitAnswer} disabled={!selectedAnswer}>
                   Submit Answer

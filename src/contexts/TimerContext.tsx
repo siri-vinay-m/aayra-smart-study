@@ -46,8 +46,10 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const navigate = useNavigate();
 
   useEffect(() => {
-    setTimeLeft(getInitialTime(timerType));
+    const newTime = getInitialTime(timerType);
+    setTimeLeft(newTime);
     setStatus('idle');
+    setProgress(0);
   }, [timerType, currentSession]);
 
   useEffect(() => {
@@ -109,6 +111,7 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const resetTimer = () => {
     setTimeLeft(getInitialTime(timerType));
     setStatus('idle');
+    setProgress(0);
   };
 
   const skipTimer = async () => {
