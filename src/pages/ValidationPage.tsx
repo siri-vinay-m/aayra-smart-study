@@ -129,6 +129,7 @@ const ValidationPage = () => {
       <SummaryView
         summary={summary}
         onFinish={handleStartBreak}
+        isReviewSession={false}
       />
     );
   }

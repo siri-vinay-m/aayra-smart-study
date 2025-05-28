@@ -156,11 +156,13 @@ const ReviewSessionPage = () => {
       setPendingReviews(prevReviews => prevReviews.filter(review => review.sessionId !== sessionId));
     }
     
-    // Navigate back to the appropriate page
-    if (pendingReviews.find(review => review.sessionId === sessionId)) {
-      navigate('/pending-reviews');
-    } else {
-      navigate('/completed-sessions');
+    // Navigate to home instead of back to the list
+    navigate('/home');
+  };
+
+  const handleAnswerSelect = (answer: string) => {
+    if (!isAnswerSubmitted) {
+      setSelectedAnswer(answer);
     }
   };
   
@@ -197,7 +199,7 @@ const ReviewSessionPage = () => {
         currentQuestionIndex={currentQuestionIndex}
         selectedAnswer={selectedAnswer}
         isAnswerSubmitted={isAnswerSubmitted}
-        onAnswerSelect={setSelectedAnswer}
+        onAnswerSelect={handleAnswerSelect}
         onSubmitAnswer={handleSubmitAnswer}
         onNext={handleNextQuestion}
       />
@@ -207,6 +209,7 @@ const ReviewSessionPage = () => {
       <SummaryView
         summary={summary}
         onFinish={handleFinishReview}
+        isReviewSession={true}
       />
     );
   }

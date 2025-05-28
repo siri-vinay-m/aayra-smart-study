@@ -6,11 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 interface SummaryViewProps {
   summary: string;
   onFinish: () => void;
+  isReviewSession?: boolean;
 }
 
 const SummaryView: React.FC<SummaryViewProps> = ({
   summary,
-  onFinish
+  onFinish,
+  isReviewSession = false
 }) => {
   return (
     <Card className="mb-6 min-h-[300px]">
@@ -25,7 +27,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             onClick={onFinish}
             className="bg-green-500 hover:bg-green-600 px-6 py-3"
           >
-            Take a Break
+            {isReviewSession ? 'Complete' : 'Take a Break'}
           </Button>
         </div>
       </CardContent>
