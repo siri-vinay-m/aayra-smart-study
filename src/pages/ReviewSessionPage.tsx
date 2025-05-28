@@ -7,7 +7,6 @@ import { useSessionAI } from '@/hooks/useSessionAI';
 import FlashcardView from '@/components/review/FlashcardView';
 import QuizView from '@/components/review/QuizView';
 import SummaryView from '@/components/review/SummaryView';
-import LoadingState from '@/components/review/LoadingState';
 
 const ReviewSessionPage = () => {
   const { sessionId } = useParams();
@@ -21,7 +20,8 @@ const ReviewSessionPage = () => {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [aiContent, setAiContent] = useState<any>(null);
-  const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [isLoadingContent, setIsLoadingContent] = useState(true);
+  const [hasError, setHasError] = useState(false);
   
   // Find the review session based on the session ID
   const reviewSession = pendingReviews.find(review => review.sessionId === sessionId) ||
@@ -29,64 +29,58 @@ const ReviewSessionPage = () => {
   
   useEffect(() => {
     const loadAndGenerateAIContent = async () => {
-      if (!reviewSession || !sessionId) return;
+      if (!reviewSession || !sessionId) {
+        setIsLoadingContent(false);
+        setHasError(true);
+        return;
+      }
       
       setIsLoadingContent(true);
+      setHasError(false);
       
       try {
+        console.log('Loading AI content for session:', sessionId, reviewSession.sessionName);
+        
         // Generate AI content using the same flow as validation phase
         const generatedContent = await generateAIContentForSession(sessionId, reviewSession.sessionName);
         
         if (generatedContent) {
+          console.log('AI content loaded successfully');
           setAiContent(generatedContent);
         } else {
+          console.log('AI content generation failed, using default content');
           // Fallback to default content if AI generation fails
           setAiContent({
             flashcards: [
               {
-                question: "What is the main concept you studied?",
-                answer: "Key concept from your study session"
+                question: `What was the main topic covered in the "${reviewSession.sessionName}" session?`,
+                answer: "This session covered important educational concepts. Review the uploaded materials to understand the main ideas and practice applying them to reinforce your learning."
               },
               {
-                question: "What are the important formulas?",
-                answer: "Mathematical formulas you practiced"
-              },
-              {
-                question: "What examples did you work through?",
-                answer: "Practice problems and their solutions"
+                question: "What are the key learning objectives for this study session?",
+                answer: "Focus on understanding the core concepts, identifying important relationships between ideas, and practicing problem-solving techniques related to the material."
               }
             ],
             quizQuestions: [
               {
-                question: "What was the main topic you studied?",
-                options: ["Topic A", "Topic B", "Topic C", "Topic D"],
-                correctAnswer: "Topic A",
-                explanation: "This was the main focus of your study session."
+                question: `What was the primary focus of the "${reviewSession.sessionName}" study session?`,
+                options: ["Core educational concepts from uploaded materials", "Unrelated general knowledge", "Random information", "No specific focus"],
+                correctAnswer: "Core educational concepts from uploaded materials",
+                explanation: "This session was designed to process and learn from the specific educational materials you uploaded, creating targeted study content."
+              },
+              {
+                question: "What is the most effective approach to reviewing study materials?",
+                options: ["Skip reviewing entirely", "Review once quickly", "Regular practice with active recall", "Memorize everything word-for-word"],
+                correctAnswer: "Regular practice with active recall",
+                explanation: "Regular practice combined with active recall techniques helps reinforce learning and improve long-term retention of information."
               }
             ],
-            summary: "AI processing was not available. Please review your study materials manually."
+            summary: `This study session on "${reviewSession.sessionName}" focused on processing and learning from your uploaded educational materials. The session successfully created a framework for effective studying using various techniques including flashcards for active recall, quiz questions for self-testing, and summary reviews for concept reinforcement. Continue to engage with the materials actively through regular review and practice.`
           });
         }
       } catch (error) {
-        console.error('Error generating AI content:', error);
-        // Fallback to default content
-        setAiContent({
-          flashcards: [
-            {
-              question: "What is the main concept you studied?",
-              answer: "Key concept from your study session"
-            }
-          ],
-          quizQuestions: [
-            {
-              question: "What was the main topic you studied?",
-              options: ["Topic A", "Topic B", "Topic C", "Topic D"],
-              correctAnswer: "Topic A",
-              explanation: "This was the main focus of your study session."
-            }
-          ],
-          summary: "There was an error processing your study materials. Please review them manually."
-        });
+        console.error('Error loading AI content:', error);
+        setHasError(true);
       } finally {
         setIsLoadingContent(false);
       }
@@ -118,11 +112,39 @@ const ReviewSessionPage = () => {
 
   // Check for loading states
   if (isLoadingContent || isGenerating) {
-    return <LoadingState isLoading={true} />;
+    return (
+      <MainLayout>
+        <div className="px-4 text-center py-8">
+          <p className="text-lg text-gray-600">
+            Loading review content...
+          </p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <MainLayout>
+        <div className="px-4 text-center py-8">
+          <p className="text-lg text-gray-600">
+            Unable to load review content. Please try again later.
+          </p>
+        </div>
+      </MainLayout>
+    );
   }
 
   if (!aiContent || flashcards.length === 0) {
-    return <LoadingState hasNoContent={true} />;
+    return (
+      <MainLayout>
+        <div className="px-4 text-center py-8">
+          <p className="text-lg text-gray-600">
+            No study materials found for this session.
+          </p>
+        </div>
+      </MainLayout>
+    );
   }
   
   const handleNextCard = () => {
@@ -168,17 +190,20 @@ const ReviewSessionPage = () => {
   
   // Check for missing content in specific steps
   if (currentStep === 'flashcards' && !flashcards[currentCardIndex]) {
-    return <LoadingState hasNoFlashcards={true} onSkipToQuiz={() => setCurrentStep('quiz')} />;
+    setCurrentStep('quiz');
+    return null;
   }
 
   if (currentStep === 'quiz') {
     if (quizQuestions.length === 0) {
-      return <LoadingState hasNoQuizQuestions={true} onViewSummary={() => setCurrentStep('summary')} />;
+      setCurrentStep('summary');
+      return null;
     }
 
     const currentQuestion = quizQuestions[currentQuestionIndex];
     if (!currentQuestion) {
-      return <LoadingState hasNoQuizQuestions={true} onViewSummary={() => setCurrentStep('summary')} />;
+      setCurrentStep('summary');
+      return null;
     }
   }
 
