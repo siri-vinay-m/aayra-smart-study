@@ -95,7 +95,7 @@ const ReviewSessionPage = () => {
     loadAndGenerateAIContent();
   }, [sessionId, reviewSession, generateAIContentForSession]);
 
-  // Use AI generated content if available, otherwise fallback to default content
+  // Use AI generated content if available, otherwise fallback to empty arrays
   const flashcards = aiContent?.flashcards || [];
   const quizQuestions = aiContent?.quizQuestions || [];
   const summary = aiContent?.summary || "Loading summary...";
@@ -123,6 +123,25 @@ const ReviewSessionPage = () => {
           <p className="text-lg text-gray-600">
             Generating AI content...
           </p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Add safety check for empty content
+  if (!aiContent || flashcards.length === 0) {
+    return (
+      <MainLayout>
+        <div className="px-4 text-center py-8">
+          <p className="text-lg text-gray-600">
+            No study materials found for this session.
+          </p>
+          <Button 
+            onClick={() => navigate('/completed-sessions')}
+            className="mt-4"
+          >
+            Back to Sessions
+          </Button>
         </div>
       </MainLayout>
     );
@@ -171,6 +190,23 @@ const ReviewSessionPage = () => {
 
   if (currentStep === 'flashcards') {
     const currentCard = flashcards[currentCardIndex];
+    
+    // Add safety check for currentCard
+    if (!currentCard) {
+      return (
+        <MainLayout>
+          <div className="px-4 text-center py-8">
+            <p className="text-lg text-gray-600">
+              No flashcards available for this session.
+            </p>
+            <Button onClick={() => setCurrentStep('quiz')} className="mt-4">
+              Skip to Quiz
+            </Button>
+          </div>
+        </MainLayout>
+      );
+    }
+
     const isLastFlashcard = currentCardIndex === flashcards.length - 1;
     pageContent = (
       <>
@@ -198,7 +234,40 @@ const ReviewSessionPage = () => {
       </>
     );
   } else if (currentStep === 'quiz') {
+    // Add safety check for quiz questions
+    if (quizQuestions.length === 0) {
+      return (
+        <MainLayout>
+          <div className="px-4 text-center py-8">
+            <p className="text-lg text-gray-600">
+              No quiz questions available for this session.
+            </p>
+            <Button onClick={() => setCurrentStep('summary')} className="mt-4">
+              View Summary
+            </Button>
+          </div>
+        </MainLayout>
+      );
+    }
+
     const currentQuestion = quizQuestions[currentQuestionIndex];
+    
+    // Add safety check for currentQuestion
+    if (!currentQuestion) {
+      return (
+        <MainLayout>
+          <div className="px-4 text-center py-8">
+            <p className="text-lg text-gray-600">
+              Quiz question not available.
+            </p>
+            <Button onClick={() => setCurrentStep('summary')} className="mt-4">
+              View Summary
+            </Button>
+          </div>
+        </MainLayout>
+      );
+    }
+
     pageContent = (
       <>
         <div className="text-center mb-4">
@@ -211,7 +280,7 @@ const ReviewSessionPage = () => {
             <h3 className="text-lg font-medium mb-4">{currentQuestion.question}</h3>
             
             <div className="space-y-3 mb-6">
-              {currentQuestion.options.map((option, index) => (
+              {currentQuestion.options?.map((option, index) => (
                 <div 
                   key={index} 
                   className={`p-3 border rounded-md cursor-pointer transition-colors ${
@@ -240,10 +309,10 @@ const ReviewSessionPage = () => {
                     )}
                   </div>
                 </div>
-              ))}
+              )) || <p>No options available</p>}
             </div>
 
-            {isAnswerSubmitted && (
+            {isAnswerSubmitted && currentQuestion.explanation && (
               <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-md">
                 <p className="font-medium mb-1">Explanation:</p>
                 <p>{currentQuestion.explanation}</p>
