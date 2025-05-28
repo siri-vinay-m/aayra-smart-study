@@ -3,17 +3,25 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
-import { useSessionAI } from '@/hooks/useSessionAI';
+import { useAI } from '@/hooks/useAI';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Check, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface StudyMaterial {
+  id: string;
+  type: 'text' | 'file' | 'url' | 'voice';
+  content: string;
+  filename?: string;
+}
 
 const ReviewSessionPage = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { pendingReviews, completedSessions, setPendingReviews } = useSession();
-  const { generateAIContentForSession, isGenerating } = useSessionAI();
+  const { processStudyMaterials, isProcessing } = useAI();
   const [currentTab, setCurrentTab] = useState('flashcards');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -27,51 +35,121 @@ const ReviewSessionPage = () => {
     completedSessions.find(session => session.id === sessionId);
   
   useEffect(() => {
-    const loadAIContent = async () => {
+    const loadAndGenerateAIContent = async () => {
       if (!reviewSession || !sessionId) return;
       
       setIsLoadingContent(true);
       
-      // Generate AI content based on uploaded materials for this session
-      const generatedContent = await generateAIContentForSession(sessionId, reviewSession.sessionName);
-      
-      if (generatedContent) {
-        setAiContent(generatedContent);
+      try {
+        // Fetch uploaded materials for this session
+        const { data: materials, error } = await supabase
+          .from('uploadedmaterials')
+          .select('*')
+          .eq('sessionid', sessionId);
+
+        if (error) {
+          console.error('Error fetching materials:', error);
+          setIsLoadingContent(false);
+          return;
+        }
+
+        if (!materials || materials.length === 0) {
+          console.log('No materials found for session:', sessionId);
+          // Use default content if no materials found
+          setAiContent({
+            flashcards: [
+              {
+                question: "What is the main concept you studied?",
+                answer: "Key concept from your study session"
+              },
+              {
+                question: "What are the important formulas?",
+                answer: "Mathematical formulas you practiced"
+              },
+              {
+                question: "What examples did you work through?",
+                answer: "Practice problems and their solutions"
+              }
+            ],
+            quizQuestions: [
+              {
+                question: "What was the main topic you studied?",
+                options: ["Topic A", "Topic B", "Topic C", "Topic D"],
+                correctAnswer: "Topic A",
+                explanation: "This was the main focus of your study session."
+              }
+            ],
+            summary: "This study session covered important concepts. A detailed summary will be available after AI processing."
+          });
+          setIsLoadingContent(false);
+          return;
+        }
+
+        // Convert database materials to AI processing format
+        const studyMaterials: StudyMaterial[] = materials.map(material => ({
+          id: material.materialid,
+          type: material.materialtype as 'text' | 'file' | 'url' | 'voice',
+          content: material.contenttext || material.voicetranscript || `File uploaded: ${material.originalfilename}. This is a study material document that needs to be processed for educational content.`,
+          filename: material.originalfilename || undefined,
+        }));
+
+        // Process materials with AI
+        const aiResponse = await processStudyMaterials(studyMaterials, reviewSession.sessionName);
+        
+        if (aiResponse) {
+          setAiContent(aiResponse);
+        } else {
+          // Fallback to default content if AI processing fails
+          setAiContent({
+            flashcards: [
+              {
+                question: "What is the main concept you studied?",
+                answer: "Key concept from your study session"
+              }
+            ],
+            quizQuestions: [
+              {
+                question: "What was the main topic you studied?",
+                options: ["Topic A", "Topic B", "Topic C", "Topic D"],
+                correctAnswer: "Topic A",
+                explanation: "This was the main focus of your study session."
+              }
+            ],
+            summary: "AI processing was not available. Please review your study materials manually."
+          });
+        }
+      } catch (error) {
+        console.error('Error generating AI content:', error);
+        // Fallback to default content
+        setAiContent({
+          flashcards: [
+            {
+              question: "What is the main concept you studied?",
+              answer: "Key concept from your study session"
+            }
+          ],
+          quizQuestions: [
+            {
+              question: "What was the main topic you studied?",
+              options: ["Topic A", "Topic B", "Topic C", "Topic D"],
+              correctAnswer: "Topic A",
+              explanation: "This was the main focus of your study session."
+            }
+          ],
+          summary: "There was an error processing your study materials. Please review them manually."
+        });
+      } finally {
+        setIsLoadingContent(false);
       }
-      
-      setIsLoadingContent(false);
     };
 
-    loadAIContent();
-  }, [sessionId, reviewSession, generateAIContentForSession]);
+    loadAndGenerateAIContent();
+  }, [sessionId, reviewSession, processStudyMaterials]);
 
   // Use AI generated content if available, otherwise fallback to default content
-  const flashcards = aiContent?.flashcards || [
-    {
-      question: "What is the main concept you studied?",
-      answer: "Key concept from your study session"
-    },
-    {
-      question: "What are the important formulas?",
-      answer: "Mathematical formulas you practiced"
-    },
-    {
-      question: "What examples did you work through?",
-      answer: "Practice problems and their solutions"
-    }
-  ];
-  
-  const quizQuestions = aiContent?.quizQuestions || [
-    {
-      question: "What was the main topic you studied?",
-      options: ["Topic A", "Topic B", "Topic C", "Topic D"],
-      correctAnswer: "Topic A",
-      explanation: "This was the main focus of your study session."
-    }
-  ];
-  
-  const summary = aiContent?.summary || 
-    "This study session covered important concepts. A detailed summary will be available after AI processing.";
+  const flashcards = aiContent?.flashcards || [];
+  const quizQuestions = aiContent?.quizQuestions || [];
+  const summary = aiContent?.summary || "Loading summary...";
   
   useEffect(() => {
     if (!reviewSession) {
@@ -94,7 +172,7 @@ const ReviewSessionPage = () => {
       <MainLayout>
         <div className="px-4 text-center py-8">
           <p className="text-lg text-gray-600">
-            {isGenerating ? 'Generating AI content...' : 'Loading AI-generated content...'}
+            {isProcessing ? 'Generating AI content...' : 'Loading AI-generated content...'}
           </p>
         </div>
       </MainLayout>
@@ -155,8 +233,8 @@ const ReviewSessionPage = () => {
             <Card className="mb-6 min-h-[150px] flex flex-col justify-center">
               <CardContent className="p-6">
                 <div className="text-center">
-                  <h3 className="text-lg font-medium mb-4">{flashcards[currentCardIndex].question}</h3>
-                  <p className="text-gray-700">{flashcards[currentCardIndex].answer}</p>
+                  <h3 className="text-lg font-medium mb-4">{flashcards[currentCardIndex]?.question}</h3>
+                  <p className="text-gray-700">{flashcards[currentCardIndex]?.answer}</p>
                 </div>
               </CardContent>
             </Card>
@@ -178,10 +256,10 @@ const ReviewSessionPage = () => {
             </div>
             <Card className="mb-6 min-h-[300px]">
               <CardContent className="p-6">
-                <h3 className="text-lg font-medium mb-4">{quizQuestions[currentQuestionIndex].question}</h3>
+                <h3 className="text-lg font-medium mb-4">{quizQuestions[currentQuestionIndex]?.question}</h3>
                 
                 <div className="space-y-3 mb-6">
-                  {quizQuestions[currentQuestionIndex].options.map((option, index) => (
+                  {quizQuestions[currentQuestionIndex]?.options.map((option, index) => (
                     <div 
                       key={index} 
                       className={`p-3 border rounded-md cursor-pointer transition-colors ${
@@ -216,7 +294,7 @@ const ReviewSessionPage = () => {
                 {isAnswerSubmitted && (
                   <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-md">
                     <p className="font-medium mb-1">Explanation:</p>
-                    <p>{quizQuestions[currentQuestionIndex].explanation}</p>
+                    <p>{quizQuestions[currentQuestionIndex]?.explanation}</p>
                   </div>
                 )}
                 

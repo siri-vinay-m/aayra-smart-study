@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useTimer } from '@/contexts/TimerContext';
+import { useSession } from '@/contexts/SessionContext';
 
 interface CircularTimerProps {
   showControls?: boolean;
@@ -17,6 +18,8 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
     skipTimer,
     progress 
   } = useTimer();
+  
+  const { currentSession, completeSession } = useSession();
 
   // Convert seconds to minutes and seconds
   const minutes = Math.floor(timeLeft / 60);
@@ -28,10 +31,23 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - progress);
 
-  const handleSkip = () => {
-    // Complete current phase and proceed to next
-    skipTimer();
+  const handleSkip = async () => {
+    if (timerType === 'break' && currentSession) {
+      // Complete the session when break is skipped
+      await completeSession(currentSession.id);
+    } else {
+      // For focus timer, use the existing skip logic
+      skipTimer();
+    }
   };
+
+  // Handle timer completion - this will be called when timer reaches 0
+  React.useEffect(() => {
+    if (timeLeft === 0 && status === 'completed' && timerType === 'break' && currentSession) {
+      // Complete the session when break timer ends
+      completeSession(currentSession.id);
+    }
+  }, [timeLeft, status, timerType, currentSession, completeSession]);
 
   return (
     <div className="flex flex-col items-center justify-center">
@@ -97,7 +113,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
             onClick={handleSkip}
             className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors"
           >
-            Skip {timerType === 'focus' ? 'to Upload' : 'to Focus'}
+            {timerType === 'break' ? 'Complete Session' : 'Skip to Upload'}
           </button>
         </div>
       )}

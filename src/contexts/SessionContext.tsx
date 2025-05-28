@@ -123,29 +123,39 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       const { data: authUser } = await supabase.auth.getUser();
       if (!authUser.user) return;
 
-      // Load all completed sessions as pending reviews
-      const { data: sessions, error } = await supabase
-        .from('studysessions')
-        .select('*')
+      // Load pending review cycle entries
+      const { data: reviewEntries, error } = await supabase
+        .from('reviewcycleentries')
+        .select(`
+          *,
+          studysessions (
+            sessionid,
+            sessionname,
+            subjectname,
+            topicname,
+            lastreviewedat,
+            createdat
+          )
+        `)
         .eq('userid', authUser.user.id)
-        .eq('status', 'completed')
-        .order('createdat', { ascending: false });
+        .eq('status', 'pending')
+        .order('currentreviewduedate', { ascending: true });
 
       if (error) {
         console.error('Error loading pending reviews:', error);
         return;
       }
 
-      if (sessions) {
-        const formattedReviews: PendingReview[] = sessions.map(session => ({
-          id: session.sessionid,
-          sessionId: session.sessionid,
-          sessionName: session.sessionname,
-          subjectName: session.subjectname,
-          topicName: session.topicname,
-          completedAt: new Date(session.lastreviewedat || session.createdat),
-          dueDate: new Date(session.lastreviewedat || session.createdat),
-          reviewStage: 'Review Available',
+      if (reviewEntries) {
+        const formattedReviews: PendingReview[] = reviewEntries.map(entry => ({
+          id: entry.entryid,
+          sessionId: entry.sessionid,
+          sessionName: entry.studysessions.sessionname,
+          subjectName: entry.studysessions.subjectname,
+          topicName: entry.studysessions.topicname,
+          completedAt: new Date(entry.studysessions.lastreviewedat || entry.studysessions.createdat),
+          dueDate: new Date(entry.currentreviewduedate),
+          reviewStage: `Stage ${entry.reviewstage}`,
         }));
 
         setPendingReviews(formattedReviews);
