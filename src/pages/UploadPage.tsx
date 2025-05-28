@@ -10,6 +10,7 @@ import { Mic, Upload, Link, FileText, CircleStop, Play, Trash, Save } from 'luci
 import { Card, CardContent } from '@/components/ui/card';
 import { useAI } from '@/hooks/useAI';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UploadItem {
   id: string;
@@ -157,6 +158,49 @@ const UploadPage = () => {
   const deleteItem = (id: string) => {
     setUploadedItems(uploadedItems.filter(item => item.id !== id));
   };
+
+  const saveUploadedMaterialToDatabase = async (item: UploadItem) => {
+    try {
+      const { data: authUser } = await supabase.auth.getUser();
+      if (!authUser.user || !currentSession) return;
+
+      let materialData: any = {
+        sessionid: currentSession.id,
+        materialtype: item.type,
+        uploadedat: new Date().toISOString(),
+      };
+
+      switch (item.type) {
+        case 'text':
+          materialData.contenttext = item.content;
+          break;
+        case 'file':
+          materialData.originalfilename = item.filename;
+          materialData.filesize = item.fileSize;
+          materialData.contenttext = `File uploaded: ${item.filename}. This is a study material document.`;
+          break;
+        case 'url':
+          materialData.contenttext = item.content;
+          break;
+        case 'voice':
+          materialData.voicetranscript = 'Voice recording uploaded for transcription.';
+          materialData.filesize = item.duration ? item.duration * 1000 : 0; // Convert seconds to milliseconds
+          break;
+      }
+
+      const { error } = await supabase
+        .from('uploadedmaterials')
+        .insert(materialData);
+
+      if (error) {
+        console.error('Error saving material to database:', error);
+      } else {
+        console.log('Material saved to database successfully');
+      }
+    } catch (error) {
+      console.error('Error in saveUploadedMaterialToDatabase:', error);
+    }
+  };
   
   const handleSubmit = async () => {
     if (uploadedItems.length === 0) {
@@ -171,6 +215,13 @@ const UploadPage = () => {
     setIsLoading(true);
     
     try {
+      console.log('Saving materials to database...');
+      
+      // Save each uploaded item to the database
+      for (const item of uploadedItems) {
+        await saveUploadedMaterialToDatabase(item);
+      }
+      
       console.log('Preparing materials for AI processing...');
       console.log('Uploaded items:', uploadedItems);
       
@@ -211,7 +262,7 @@ const UploadPage = () => {
         
         toast({
           title: "Success",
-          description: "Study materials processed successfully!",
+          description: "Study materials processed and saved successfully!",
         });
         
         navigate('/validation');

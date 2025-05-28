@@ -204,7 +204,9 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         return null;
       }
 
-      const sessionName = `${subjectName} - ${topicName}`;
+      // Create a unique session name with timestamp to avoid duplicates
+      const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      const sessionName = `${subjectName} - ${topicName} (${timestamp})`;
 
       // Get the next sequence number
       const { data: lastSession } = await supabase
