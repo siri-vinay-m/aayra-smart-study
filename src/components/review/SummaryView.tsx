@@ -25,7 +25,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             onClick={onFinish}
             className="bg-green-500 hover:bg-green-600 px-6 py-3"
           >
-            Complete Review
+            Take a Break
           </Button>
         </div>
       </CardContent>

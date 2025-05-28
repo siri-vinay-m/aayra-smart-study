@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTimer } from '@/contexts/TimerContext';
 import { useSession } from '@/contexts/SessionContext';
 
@@ -20,6 +20,13 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
   } = useTimer();
   
   const { currentSession, completeSession } = useSession();
+
+  // Auto-start break timer when component mounts during break
+  useEffect(() => {
+    if (timerType === 'break' && status === 'idle') {
+      startTimer();
+    }
+  }, [timerType, status, startTimer]);
 
   // Convert seconds to minutes and seconds
   const minutes = Math.floor(timeLeft / 60);
@@ -86,35 +93,48 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
 
       {showControls && (
         <div className="flex items-center justify-center gap-6 mt-8">
-          <button
-            onClick={resetTimer}
-            className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors"
-          >
-            Reset
-          </button>
-
-          {status === 'running' ? (
+          {timerType === 'break' ? (
+            // Only show skip button during break
             <button
-              onClick={pauseTimer}
-              className="px-6 py-3 rounded-lg bg-primary hover:bg-primary-dark text-white font-medium transition-colors"
+              onClick={handleSkip}
+              className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors"
             >
-              Pause
+              Complete Session
             </button>
           ) : (
-            <button
-              onClick={startTimer}
-              className="px-6 py-3 rounded-lg bg-primary hover:bg-primary-dark text-white font-medium transition-colors"
-            >
-              {status === 'paused' ? 'Resume' : 'Start'}
-            </button>
-          )}
+            // Show full controls during focus timer
+            <>
+              <button
+                onClick={resetTimer}
+                className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors"
+              >
+                Reset
+              </button>
 
-          <button
-            onClick={handleSkip}
-            className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors"
-          >
-            {timerType === 'break' ? 'Complete Session' : 'Skip to Upload'}
-          </button>
+              {status === 'running' ? (
+                <button
+                  onClick={pauseTimer}
+                  className="px-6 py-3 rounded-lg bg-primary hover:bg-primary-dark text-white font-medium transition-colors"
+                >
+                  Pause
+                </button>
+              ) : (
+                <button
+                  onClick={startTimer}
+                  className="px-6 py-3 rounded-lg bg-primary hover:bg-primary-dark text-white font-medium transition-colors"
+                >
+                  {status === 'paused' ? 'Resume' : 'Start'}
+                </button>
+              )}
+
+              <button
+                onClick={handleSkip}
+                className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors"
+              >
+                Skip to Upload
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

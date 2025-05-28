@@ -28,7 +28,7 @@ export const BREAK_TIME = 5 * 60; // 5 minutes in seconds (fallback)
 export const WARNING_TIME = 5 * 60; // 5 minutes warning in seconds (at 20 minutes)
 
 export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { currentSession, updateCurrentSessionStatus } = useSession();
+  const { currentSession, updateCurrentSessionStatus, completeSession } = useSession();
   const [timerType, setTimerType] = useState<TimerType>('focus');
   
   const getInitialTime = (type: TimerType) => {
@@ -86,19 +86,23 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         });
         navigate('/upload');
       } else {
+        // Break timer completed - complete the session
         toast({
           title: "Break completed!",
-          description: "Ready to start another productive session?",
+          description: "Session completed successfully!",
           variant: "default",
         });
-        navigate('/');
+        if (currentSession && completeSession) {
+          completeSession(currentSession.id);
+        }
+        navigate('/home');
       }
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [status, timeLeft, timerType, navigate]);
+  }, [status, timeLeft, timerType, navigate, currentSession, completeSession]);
 
   const startTimer = () => {
     setStatus('running');
@@ -126,8 +130,11 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       await updateCurrentSessionStatus('validating');
       navigate('/upload');
     } else {
-      await updateCurrentSessionStatus('focus_inprogress');
-      navigate('/');
+      // Break timer skipped - complete the session
+      if (completeSession) {
+        await completeSession(currentSession.id);
+      }
+      navigate('/home');
     }
   };
 
