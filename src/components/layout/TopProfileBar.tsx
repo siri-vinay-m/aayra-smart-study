@@ -2,6 +2,7 @@
 import React from 'react';
 import { useUser } from '@/contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User } from 'lucide-react';
 
 const TopProfileBar = () => {
@@ -12,26 +13,43 @@ const TopProfileBar = () => {
     navigate('/profile');
   };
   
+  // Get user initials for fallback
+  const getUserInitials = () => {
+    if (user?.displayName) {
+      return user.displayName
+        .split(' ')
+        .map(name => name.charAt(0))
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return 'U';
+  };
+  
   return (
     <div className="top-profile-bar flex justify-between items-center px-4 py-2 border-b">
       <div className="text-lg font-semibold">
         {user?.displayName || 'User'}
       </div>
       
-      <div 
-        className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors"
+      <Avatar 
+        className="cursor-pointer hover:opacity-80 transition-opacity"
         onClick={handleProfileClick}
       >
-        {user?.profilePictureURL ? (
-          <img 
+        {user?.profilePictureURL && (
+          <AvatarImage 
             src={user.profilePictureURL} 
-            alt="Profile" 
-            className="w-full h-full rounded-full object-cover"
+            alt="Profile"
           />
-        ) : (
-          <User size={20} className="text-gray-600" />
         )}
-      </div>
+        <AvatarFallback className="bg-gray-200 text-gray-600">
+          {user?.profilePictureURL ? (
+            <User size={20} />
+          ) : (
+            getUserInitials()
+          )}
+        </AvatarFallback>
+      </Avatar>
     </div>
   );
 };
