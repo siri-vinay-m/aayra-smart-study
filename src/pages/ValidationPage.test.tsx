@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { render, act } from '@testing-library/react';
 import { screen, fireEvent } from '@testing-library/dom';
@@ -51,6 +52,7 @@ const renderValidationPage = (currentSessionOverride?: StudySession | null) => {
     updateCurrentSessionStatus: mockUpdateCurrentSessionStatus,
     loadCompletedSessions: vi.fn(),
     loadPendingReviews: vi.fn(),
+    toggleFavorite: vi.fn(),
   };
   
   // ValidationPage uses MainLayout which might have NavLinks or other router-dependent components
