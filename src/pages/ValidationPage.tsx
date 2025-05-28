@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const ValidationPage = () => {
   const navigate = useNavigate();
-  const { currentSession, completeSession, setCurrentSession, updateCurrentSessionStatus } = useSession();
+  const { currentSession, setCurrentSession, updateCurrentSessionStatus, completeSession } = useSession();
   const { setTimerType } = useTimer();
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [currentStep, setCurrentStep] = useState<'flashcards' | 'quiz' | 'summary'>('flashcards');
@@ -81,8 +81,10 @@ const ValidationPage = () => {
   
   const handleCompleteQuiz = async () => {
     if (currentSession) {
-      // Complete the session first
-      completeSession(currentSession.id);
+      // Update session status to break_pending but keep the session active
+      const updatedSession = { ...currentSession, status: 'break_pending' as const };
+      setCurrentSession(updatedSession);
+      await updateCurrentSessionStatus('break_pending');
       
       // Set timer type to break for the next page
       setTimerType('break');
