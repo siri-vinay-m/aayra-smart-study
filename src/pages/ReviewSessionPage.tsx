@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
@@ -23,18 +23,24 @@ const ReviewSessionPage = () => {
   const [isLoadingContent, setIsLoadingContent] = useState(true);
   const [hasError, setHasError] = useState(false);
   
+  // Use ref to prevent duplicate API calls
+  const hasAttemptedLoad = useRef(false);
+  
   // Find the review session based on the session ID
   const reviewSession = pendingReviews.find(review => review.sessionId === sessionId) ||
     completedSessions.find(session => session.id === sessionId);
   
   useEffect(() => {
     const loadAndGenerateAIContent = async () => {
-      if (!reviewSession || !sessionId) {
-        setIsLoadingContent(false);
-        setHasError(true);
+      if (!reviewSession || !sessionId || hasAttemptedLoad.current) {
+        if (!reviewSession) {
+          setIsLoadingContent(false);
+          setHasError(true);
+        }
         return;
       }
       
+      hasAttemptedLoad.current = true;
       setIsLoadingContent(true);
       setHasError(false);
       
@@ -87,7 +93,7 @@ const ReviewSessionPage = () => {
     };
 
     loadAndGenerateAIContent();
-  }, [sessionId, reviewSession, generateAIContentForSession]);
+  }, [sessionId, reviewSession?.sessionName]); // Remove generateAIContentForSession from deps to prevent re-calls
 
   // Use AI generated content if available, otherwise fallback to empty arrays
   const flashcards = aiContent?.flashcards || [];
@@ -115,9 +121,12 @@ const ReviewSessionPage = () => {
     return (
       <MainLayout>
         <div className="px-4 text-center py-8">
-          <p className="text-lg text-gray-600">
-            Loading review content...
-          </p>
+          <div className="flex flex-col items-center space-y-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-lg text-gray-600">
+              Preparing your review content...
+            </p>
+          </div>
         </div>
       </MainLayout>
     );
@@ -127,9 +136,15 @@ const ReviewSessionPage = () => {
     return (
       <MainLayout>
         <div className="px-4 text-center py-8">
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-gray-600 mb-4">
             Unable to load review content. Please try again later.
           </p>
+          <button 
+            onClick={() => navigate('/home')}
+            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
+          >
+            Go to Home
+          </button>
         </div>
       </MainLayout>
     );
@@ -139,9 +154,15 @@ const ReviewSessionPage = () => {
     return (
       <MainLayout>
         <div className="px-4 text-center py-8">
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-gray-600 mb-4">
             No study materials found for this session.
           </p>
+          <button 
+            onClick={() => navigate('/home')}
+            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90"
+          >
+            Go to Home
+          </button>
         </div>
       </MainLayout>
     );

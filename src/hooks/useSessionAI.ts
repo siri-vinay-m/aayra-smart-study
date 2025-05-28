@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAI } from '@/hooks/useAI';
 import { supabase } from '@/integrations/supabase/client';
 import { AIGeneratedContent } from '@/contexts/SessionContext';
@@ -14,11 +14,19 @@ interface StudyMaterial {
 export const useSessionAI = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { processStudyMaterials } = useAI();
+  const generatingSessionsRef = useRef<Set<string>>(new Set());
 
   const generateAIContentForSession = async (
     sessionId: string,
     sessionName: string
   ): Promise<AIGeneratedContent | null> => {
+    // Prevent duplicate calls for the same session
+    if (generatingSessionsRef.current.has(sessionId)) {
+      console.log('Already generating content for session:', sessionId);
+      return null;
+    }
+
+    generatingSessionsRef.current.add(sessionId);
     setIsGenerating(true);
     
     try {
@@ -32,7 +40,6 @@ export const useSessionAI = () => {
 
       if (error) {
         console.error('Error fetching materials:', error);
-        setIsGenerating(false);
         return null;
       }
 
@@ -62,7 +69,6 @@ export const useSessionAI = () => {
           ],
           summary: `This study session "${sessionName}" was designed to help you practice effective learning techniques. Continue to use active study methods and regular review to maximize your learning potential.`
         };
-        setIsGenerating(false);
         return defaultContent;
       }
 
@@ -99,17 +105,17 @@ export const useSessionAI = () => {
           ],
           summary: `The "${sessionName}" session included your uploaded study materials. Continue to review and practice with these materials for better learning outcomes.`
         };
-        setIsGenerating(false);
         return fallbackContent;
       }
 
       console.log('AI content generated successfully');
-      setIsGenerating(false);
       return aiResponse;
     } catch (error) {
       console.error('Error in generateAIContentForSession:', error);
-      setIsGenerating(false);
       return null;
+    } finally {
+      generatingSessionsRef.current.delete(sessionId);
+      setIsGenerating(false);
     }
   };
 
