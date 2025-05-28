@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
+import { useSessionAI } from '@/hooks/useSessionAI';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,17 +12,40 @@ const ReviewSessionPage = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { pendingReviews, completedSessions, setPendingReviews } = useSession();
+  const { generateAIContentForSession, isGenerating } = useSessionAI();
   const [currentTab, setCurrentTab] = useState('flashcards');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+  const [aiContent, setAiContent] = useState<any>(null);
+  const [isLoadingContent, setIsLoadingContent] = useState(true);
   
   // Find the review session based on the session ID
-  const reviewSession = pendingReviews.find(review => review.sessionId === sessionId);
+  const reviewSession = pendingReviews.find(review => review.sessionId === sessionId) ||
+    completedSessions.find(session => session.id === sessionId);
   
-  // Simulated content from AI - these would be key points
-  const flashcards = [
+  useEffect(() => {
+    const loadAIContent = async () => {
+      if (!reviewSession || !sessionId) return;
+      
+      setIsLoadingContent(true);
+      
+      // Try to generate AI content based on uploaded materials
+      const generatedContent = await generateAIContentForSession(sessionId, reviewSession.sessionName);
+      
+      if (generatedContent) {
+        setAiContent(generatedContent);
+      }
+      
+      setIsLoadingContent(false);
+    };
+
+    loadAIContent();
+  }, [sessionId, reviewSession, generateAIContentForSession]);
+
+  // Use AI generated content if available, otherwise fallback to default content
+  const flashcards = aiContent?.flashcards || [
     { keyPoint: 'The principle of conservation of energy states that energy cannot be created or destroyed, only converted from one form to another.' },
     { keyPoint: 'Kinetic energy is the energy possessed by an object due to its motion, calculated as KE = 0.5mv².' },
     { keyPoint: 'Potential energy is the stored energy an object has due to its position or state, such as gravitational potential energy (PE = mgh).' },
@@ -30,7 +54,7 @@ const ReviewSessionPage = () => {
   ];
   
   // Simulated quiz questions
-  const quizQuestions = [
+  const quizQuestions = aiContent?.quizQuestions || [
     {
       question: 'What does the principle of conservation of energy state?',
       options: [
@@ -99,7 +123,7 @@ const ReviewSessionPage = () => {
     },
   ];
   
-  const summary = `
+  const summary = aiContent?.summary || `
     This study session focused on energy principles in physics. We covered the conservation of energy, which states that energy cannot be created or destroyed, only converted from one form to another. We examined different types of energy, primarily kinetic energy (due to motion) and potential energy (due to position or state).
     
     The First Law of Thermodynamics was introduced as an extension of energy conservation. We also discussed work in physics as the product of force and displacement in the direction of force.
@@ -123,6 +147,16 @@ const ReviewSessionPage = () => {
       <MainLayout>
         <div className="px-4 text-center">
           <p className="text-lg text-gray-600">Review session not found.</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (isLoadingContent) {
+    return (
+      <MainLayout>
+        <div className="px-4 text-center py-8">
+          <p className="text-lg text-gray-600">Loading AI-generated content...</p>
         </div>
       </MainLayout>
     );
@@ -177,7 +211,9 @@ const ReviewSessionPage = () => {
             <Card className="min-h-[300px] mb-6">
               <CardContent className="p-6">
                 <div className="p-4 flex items-center justify-center min-h-[200px]">
-                  <p className="text-lg font-medium text-center">{flashcards[currentCardIndex].keyPoint}</p>
+                  <p className="text-lg font-medium text-center">
+                    {flashcards[currentCardIndex]?.keyPoint || flashcards[currentCardIndex]?.answer}
+                  </p>
                 </div>
                 
                 <div className="text-center mt-4">
@@ -194,6 +230,7 @@ const ReviewSessionPage = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          
           
           <TabsContent value="quiz">
             <Card className="min-h-[300px] mb-6">

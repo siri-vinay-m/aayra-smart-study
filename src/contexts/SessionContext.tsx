@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAI } from '@/hooks/useAI';
@@ -59,6 +60,7 @@ interface SessionContextType {
   updateCurrentSessionStatus: (status: SessionStatus) => Promise<void>;
   loadCompletedSessions: () => Promise<void>;
   loadPendingReviews: () => Promise<void>;
+  toggleFavorite: (sessionId: string) => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -121,42 +123,71 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       const { data: authUser } = await supabase.auth.getUser();
       if (!authUser.user) return;
 
-      const { data: reviews, error } = await supabase
-        .from('reviewcycleentries')
-        .select(`
-          *,
-          studysessions (
-            sessionname,
-            subjectname,
-            topicname
-          )
-        `)
+      // Load all completed sessions as pending reviews
+      const { data: sessions, error } = await supabase
+        .from('studysessions')
+        .select('*')
         .eq('userid', authUser.user.id)
-        .eq('status', 'pending')
-        .lte('currentreviewduedate', new Date().toISOString().split('T')[0])
-        .order('currentreviewduedate', { ascending: true });
+        .eq('status', 'completed')
+        .order('createdat', { ascending: false });
 
       if (error) {
         console.error('Error loading pending reviews:', error);
         return;
       }
 
-      if (reviews) {
-        const formattedReviews: PendingReview[] = reviews.map(review => ({
-          id: review.entryid,
-          sessionId: review.sessionid,
-          sessionName: review.studysessions?.sessionname || 'Unknown Session',
-          subjectName: review.studysessions?.subjectname || 'Unknown Subject',
-          topicName: review.studysessions?.topicname || 'Unknown Topic',
-          completedAt: new Date(review.initialappearancedate),
-          dueDate: new Date(review.currentreviewduedate),
-          reviewStage: `Stage ${review.reviewstage}`,
+      if (sessions) {
+        const formattedReviews: PendingReview[] = sessions.map(session => ({
+          id: session.sessionid,
+          sessionId: session.sessionid,
+          sessionName: session.sessionname,
+          subjectName: session.subjectname,
+          topicName: session.topicname,
+          completedAt: new Date(session.lastreviewedat || session.createdat),
+          dueDate: new Date(session.lastreviewedat || session.createdat),
+          reviewStage: 'Review Available',
         }));
 
         setPendingReviews(formattedReviews);
       }
     } catch (error) {
       console.error('Error in loadPendingReviews:', error);
+    }
+  };
+
+  const toggleFavorite = async (sessionId: string) => {
+    try {
+      const { data: authUser } = await supabase.auth.getUser();
+      if (!authUser.user) return;
+
+      // Find the current session to get its favorite status
+      const sessionToUpdate = completedSessions.find(s => s.id === sessionId);
+      if (!sessionToUpdate) return;
+
+      const newFavoriteStatus = !sessionToUpdate.isFavorite;
+
+      // Update in database
+      const { error } = await supabase
+        .from('studysessions')
+        .update({ isfavorite: newFavoriteStatus })
+        .eq('sessionid', sessionId)
+        .eq('userid', authUser.user.id);
+
+      if (error) {
+        console.error('Error updating favorite status:', error);
+        return;
+      }
+
+      // Update local state
+      setCompletedSessions(prevSessions =>
+        prevSessions.map(session =>
+          session.id === sessionId
+            ? { ...session, isFavorite: newFavoriteStatus }
+            : session
+        )
+      );
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
     }
   };
 
@@ -309,6 +340,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         updateCurrentSessionStatus,
         loadCompletedSessions,
         loadPendingReviews,
+        toggleFavorite,
       }}
     >
       {children}

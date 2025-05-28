@@ -7,18 +7,16 @@ import { format } from 'date-fns';
 import { Heart } from 'lucide-react';
 
 const CompletedSessionsPage = () => {
-  const { completedSessions, setCompletedSessions } = useSession();
+  const { completedSessions, toggleFavorite } = useSession();
   const navigate = useNavigate();
   
   const handleToggleFavorite = (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    setCompletedSessions(completedSessions.map(session => {
-      if (session.id === sessionId) {
-        return { ...session, isFavorite: !session.isFavorite };
-      }
-      return session;
-    }));
+    toggleFavorite(sessionId);
+  };
+  
+  const handleSessionClick = (sessionId: string) => {
+    navigate(`/review/${sessionId}`);
   };
   
   return (
@@ -36,7 +34,7 @@ const CompletedSessionsPage = () => {
               <div 
                 key={session.id}
                 className="bg-white shadow-sm rounded-lg p-4 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => navigate(`/session/${session.id}`)}
+                onClick={() => handleSessionClick(session.id)}
               >
                 <div className="flex justify-between items-start">
                   <div>

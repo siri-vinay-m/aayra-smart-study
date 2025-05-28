@@ -81,18 +81,15 @@ const ValidationPage = () => {
   
   const handleCompleteQuiz = async () => {
     if (currentSession) {
-      // Update session status to break pending
-      if (setCurrentSession) {
-        setCurrentSession({...currentSession, status: 'break_pending'});
-      }
-      await updateCurrentSessionStatus('break_pending');
+      // Complete the session first
+      completeSession(currentSession.id);
       
       // Set timer type to break for the next page
       setTimerType('break');
       
-      completeSession(currentSession.id);
+      // Navigate to break timer page
+      navigate('/break');
     }
-    navigate('/break');
   };
   
   let pageContent;

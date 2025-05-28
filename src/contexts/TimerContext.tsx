@@ -34,8 +34,8 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const getInitialTime = (type: TimerType) => {
     if (currentSession) {
       return type === 'focus' 
-        ? currentSession.focusDuration * 60
-        : currentSession.breakDuration * 60;
+        ? currentSession.focusDurationMinutes * 60
+        : currentSession.breakDurationMinutes * 60;
     }
     return type === 'focus' ? FOCUS_TIME : BREAK_TIME;
   };
