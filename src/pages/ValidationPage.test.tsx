@@ -22,6 +22,7 @@ vi.mock('react-router-dom', async () => {
 const mockCompleteSession = vi.fn();
 const mockSetCurrentSession = vi.fn();
 const mockUpdateCurrentSessionStatus = vi.fn();
+const mockMarkSessionAsIncomplete = vi.fn();
 
 const mockCurrentSession: StudySession = {
   id: 'session1',
@@ -52,7 +53,7 @@ const renderValidationPage = (currentSessionOverride?: StudySession | null) => {
     setPendingReviews: vi.fn(),
     createNewSession: vi.fn(),
     updateCurrentSessionStatus: mockUpdateCurrentSessionStatus,
-    markSessionAsIncomplete: vi.fn(),
+    markSessionAsIncomplete: mockMarkSessionAsIncomplete,
     loadCompletedSessions: vi.fn(),
     loadIncompleteSessions: vi.fn(),
     loadPendingReviews: vi.fn(),
@@ -76,11 +77,25 @@ describe('ValidationPage Screen Flow', () => {
     vi.clearAllMocks();
   });
 
-  it('initially renders the flashcards view', () => {
+  it('initially renders the flashcards view with back button', () => {
     renderValidationPage();
     expect(screen.getByText(/Review Flashcards/i)).toBeInTheDocument(); // Page title for flashcards
     expect(screen.getByText(/Flashcard 1 of 3/i)).toBeInTheDocument(); // Flashcard counter
     expect(screen.getByRole('button', { name: /Next/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Back/i })).toBeInTheDocument();
+  });
+
+  it('handles back button click during flashcards', async () => {
+    renderValidationPage();
+    
+    const backButton = screen.getByRole('button', { name: /Back/i });
+    await act(async () => {
+      fireEvent.click(backButton);
+    });
+
+    expect(mockMarkSessionAsIncomplete).toHaveBeenCalledWith(mockCurrentSession.id);
+    expect(mockSetCurrentSession).toHaveBeenCalledWith(null);
+    expect(mockNavigate).toHaveBeenCalledWith('/home');
   });
 
   it('transitions to quiz view after completing flashcards', async () => {
@@ -142,7 +157,7 @@ describe('ValidationPage Screen Flow', () => {
     expect(screen.getByRole('button', { name: /Take a Break/i })).toBeInTheDocument();
   });
   
-  it('completes the session when "Take a Break" is clicked', async () => {
+  it('completes the session when "Take a Break" is clicked from regular session', async () => {
     renderValidationPage();
     
     // Skip to summary view
@@ -168,6 +183,34 @@ describe('ValidationPage Screen Flow', () => {
     expect(mockUpdateCurrentSessionStatus).toHaveBeenCalledWith('break_pending');
     expect(mockCompleteSession).toHaveBeenCalledWith(mockCurrentSession.id);
     expect(mockNavigate).toHaveBeenCalledWith('/break');
+  });
+
+  it('completes the session and goes to home when finishing incomplete session', async () => {
+    const incompleteSession = { ...mockCurrentSession, status: 'incomplete' as const };
+    renderValidationPage(incompleteSession);
+    
+    // Skip to summary view
+    let nextButton = screen.getByRole('button', { name: /Next/i });
+    await act(async () => { fireEvent.click(nextButton); }); // Card 1 -> Card 2
+    nextButton = screen.getByRole('button', { name: /Next/i });
+    await act(async () => { fireEvent.click(nextButton); }); // Card 2 -> Card 3
+    const startQuizButton = screen.getByRole('button', { name: /Start Quiz/i });
+    await act(async () => { fireEvent.click(startQuizButton); });
+    const answerOption = screen.getByText(/Topic A/i);
+    await act(async () => { fireEvent.click(answerOption); });
+    const submitButton = screen.getByRole('button', { name: /Submit Answer/i });
+    await act(async () => { fireEvent.click(submitButton); });
+    const viewSummaryButton = screen.getByRole('button', { name: /View Summary/i });
+    await act(async () => { fireEvent.click(viewSummaryButton); });
+    
+    // Click "Complete" button (for incomplete sessions)
+    const completeButton = screen.getByRole('button', { name: /Complete/i });
+    await act(async () => { fireEvent.click(completeButton); });
+    
+    // Verify session completion and navigation to home
+    expect(mockCompleteSession).toHaveBeenCalledWith(incompleteSession.id);
+    expect(mockSetCurrentSession).toHaveBeenCalledWith(null);
+    expect(mockNavigate).toHaveBeenCalledWith('/home');
   });
   
   it('displays "No active session found" if currentSession is null', () => {

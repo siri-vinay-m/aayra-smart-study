@@ -35,6 +35,13 @@ const SummaryView: React.FC<SummaryViewProps> = ({
     }
   };
 
+  // Determine button text based on session type
+  const getButtonText = () => {
+    if (isCompleting) return 'Completing...';
+    if (isReviewSession) return 'Complete';
+    return 'Take a Break';
+  };
+
   return (
     <Card className="mb-6 min-h-[300px]">
       <CardContent className="p-6">
@@ -49,7 +56,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             disabled={isCompleting}
             className="bg-green-500 hover:bg-green-600 px-6 py-3"
           >
-            {isCompleting ? 'Completing...' : (isReviewSession ? 'Complete' : 'Take a Break')}
+            {getButtonText()}
           </Button>
         </div>
       </CardContent>

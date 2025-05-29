@@ -7,10 +7,12 @@ import { useTimer } from '@/contexts/TimerContext';
 import FlashcardView from '@/components/review/FlashcardView';
 import QuizView from '@/components/review/QuizView';
 import SummaryView from '@/components/review/SummaryView';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const ValidationPage = () => {
   const navigate = useNavigate();
-  const { currentSession, setCurrentSession, updateCurrentSessionStatus, completeSession } = useSession();
+  const { currentSession, setCurrentSession, updateCurrentSessionStatus, completeSession, markSessionAsIncomplete } = useSession();
   const { setTimerType } = useTimer();
   const [currentStep, setCurrentStep] = useState<'flashcards' | 'quiz' | 'summary'>('flashcards');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -56,6 +58,14 @@ const ValidationPage = () => {
   const summary = currentSession.aiGeneratedContent?.summary || 
     "This study session covered important concepts. A detailed summary will be available after AI processing.";
   
+  const handleBackButton = async () => {
+    if (currentSession) {
+      await markSessionAsIncomplete(currentSession.id);
+      setCurrentSession(null);
+      navigate('/home');
+    }
+  };
+
   const handleNextCard = () => {
     if (currentCardIndex < flashcards.length - 1) {
       setCurrentCardIndex(currentCardIndex + 1);
@@ -87,13 +97,14 @@ const ValidationPage = () => {
       if (currentSession.status === 'incomplete') {
         // Complete the session and go to home
         completeSession(currentSession.id);
+        setCurrentSession(null);
         navigate('/home');
       } else {
         // Regular flow - go to break
-        const updatedSession = { ...currentSession, status: 'break_inprogress' as const };
+        const updatedSession = { ...currentSession, status: 'break_pending' as const };
         setCurrentSession(updatedSession);
-        await updateCurrentSessionStatus('break_inprogress');
-        setTimerType('break');
+        await updateCurrentSessionStatus('break_pending');
+        completeSession(currentSession.id);
         navigate('/break');
       }
     }
@@ -132,7 +143,7 @@ const ValidationPage = () => {
       <SummaryView
         summary={summary}
         onFinish={handleFinishValidation}
-        isReviewSession={false}
+        isReviewSession={currentSession.status === 'incomplete'}
       />
     );
   }
@@ -140,10 +151,21 @@ const ValidationPage = () => {
   return (
     <MainLayout>
       <div className="px-4">
-        <h1 className="text-2xl font-semibold mb-6 text-center">
-          {currentStep === 'flashcards' ? 'Review Flashcards' : 
-           currentStep === 'quiz' ? 'Knowledge Check' : 'Session Summary'}
-        </h1>
+        <div className="flex items-center justify-between mb-6">
+          <Button
+            variant="ghost"
+            onClick={handleBackButton}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+          >
+            <ArrowLeft size={20} />
+            Back
+          </Button>
+          <h1 className="text-2xl font-semibold text-center flex-1">
+            {currentStep === 'flashcards' ? 'Review Flashcards' : 
+             currentStep === 'quiz' ? 'Knowledge Check' : 'Session Summary'}
+          </h1>
+          <div className="w-16" /> {/* Spacer for centering */}
+        </div>
         {pageContent}
       </div>
     </MainLayout>
