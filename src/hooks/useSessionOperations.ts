@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { StudySession, SessionStatus } from '@/types/session';
@@ -20,20 +19,21 @@ export const useSessionOperations = () => {
         return null;
       }
 
-      // Create a unique session name with timestamp to avoid duplicates
-      const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
-      const sessionName = `${subjectName} - ${topicName} (${timestamp})`;
-
-      // Get the next sequence number
+      // Get the next sequence number for this specific subject-topic combination
       const { data: lastSession } = await supabase
         .from('studysessions')
         .select('sequencenumber')
         .eq('userid', authUser.user.id)
+        .eq('subjectname', subjectName)
+        .eq('topicname', topicName)
         .order('sequencenumber', { ascending: false })
         .limit(1)
         .single();
 
       const nextSequenceNumber = (lastSession?.sequencenumber || 0) + 1;
+
+      // Create session name with the new format: "Subject Name - Topic Name - Sequence Number"
+      const sessionName = `${subjectName} - ${topicName} - ${nextSequenceNumber}`;
 
       const { data: session, error } = await supabase
         .from('studysessions')
