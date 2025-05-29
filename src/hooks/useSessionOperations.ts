@@ -195,7 +195,6 @@ export const useSessionOperations = () => {
           startTime: new Date(session.createdat),
           createdAt: new Date(session.createdat),
           isFavorite: session.isfavorite || false,
-          aiGeneratedContent: session.aigeneratedcontent || undefined,
         }));
 
         setIncompleteSessions(formattedSessions);
