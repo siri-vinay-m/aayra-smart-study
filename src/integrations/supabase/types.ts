@@ -656,7 +656,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_next_review_date: {
+        Args: { current_stage: number }
+        Returns: string
+      }
+      complete_review_cycle: {
+        Args: { entry_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
