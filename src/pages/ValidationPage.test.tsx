@@ -46,11 +46,15 @@ const renderValidationPage = (currentSessionOverride?: StudySession | null) => {
     // Other SessionContext values if needed by ValidationPage directly or its children
     completedSessions: [],
     setCompletedSessions: vi.fn(),
+    incompleteSessions: [],
+    setIncompleteSessions: vi.fn(),
     pendingReviews: [],
     setPendingReviews: vi.fn(),
     createNewSession: vi.fn(),
     updateCurrentSessionStatus: mockUpdateCurrentSessionStatus,
+    markSessionAsIncomplete: vi.fn(),
     loadCompletedSessions: vi.fn(),
+    loadIncompleteSessions: vi.fn(),
     loadPendingReviews: vi.fn(),
     toggleFavorite: vi.fn(),
   };
