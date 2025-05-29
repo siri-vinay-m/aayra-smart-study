@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { StudySession, SessionStatus } from '@/types/session';
@@ -100,6 +101,7 @@ export const useSessionOperations = () => {
 
   const markSessionAsIncomplete = async (sessionId: string): Promise<void> => {
     try {
+      console.log('Marking session as incomplete in database:', sessionId);
       const { error } = await supabase
         .from('studysessions')
         .update({ status: 'incomplete' })
@@ -110,8 +112,9 @@ export const useSessionOperations = () => {
         return;
       }
 
-      // Reload incomplete sessions
-      loadIncompleteSessions();
+      console.log('Session marked as incomplete successfully');
+      // Reload incomplete sessions to reflect the change
+      await loadIncompleteSessions();
     } catch (error) {
       console.error('Error marking session as incomplete:', error);
     }
@@ -163,6 +166,8 @@ export const useSessionOperations = () => {
       const { data: authUser } = await supabase.auth.getUser();
       if (!authUser.user) return;
 
+      console.log('Loading incomplete sessions for user:', authUser.user.id);
+
       const { data: sessions, error } = await supabase
         .from('studysessions')
         .select('*')
@@ -176,6 +181,7 @@ export const useSessionOperations = () => {
       }
 
       if (sessions) {
+        console.log('Found incomplete sessions:', sessions.length);
         const formattedSessions: StudySession[] = sessions.map(session => ({
           id: session.sessionid,
           sessionName: session.sessionname,
@@ -189,6 +195,7 @@ export const useSessionOperations = () => {
           startTime: new Date(session.createdat),
           createdAt: new Date(session.createdat),
           isFavorite: session.isfavorite || false,
+          aiGeneratedContent: session.aigeneratedcontent || undefined,
         }));
 
         setIncompleteSessions(formattedSessions);

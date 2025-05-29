@@ -60,6 +60,7 @@ const ValidationPage = () => {
   
   const handleBackButton = async () => {
     if (currentSession) {
+      console.log('Marking session as incomplete:', currentSession.id);
       await markSessionAsIncomplete(currentSession.id);
       setCurrentSession(null);
       navigate('/home');
@@ -93,13 +94,15 @@ const ValidationPage = () => {
   
   const handleFinishValidation = async () => {
     if (currentSession) {
-      // Check if this is from incomplete sessions or regular flow
+      console.log('Finishing validation, session status:', currentSession.status);
+      // For incomplete sessions, complete and go to home
       if (currentSession.status === 'incomplete') {
-        // Complete the session and go to home
+        console.log('Completing incomplete session');
         completeSession(currentSession.id);
         setCurrentSession(null);
         navigate('/home');
       } else {
+        console.log('Regular session flow - going to break');
         // Regular flow - go to break
         const updatedSession = { ...currentSession, status: 'break_pending' as const };
         setCurrentSession(updatedSession);

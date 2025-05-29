@@ -11,8 +11,10 @@ const IncompleteSessionsPage = () => {
   const navigate = useNavigate();
   
   const handleSessionClick = (session: any) => {
-    // Set the session as current and navigate to validation page to start from flashcards
-    setCurrentSession(session);
+    console.log('Resuming incomplete session:', session.id);
+    // Set the session as current with incomplete status and navigate to validation page
+    const sessionWithIncompleteStatus = { ...session, status: 'incomplete' as const };
+    setCurrentSession(sessionWithIncompleteStatus);
     navigate('/validation');
   };
   
