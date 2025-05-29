@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { useTimer } from '@/contexts/TimerContext';
 import { useSession } from '@/contexts/SessionContext';
+import { useNavigate } from 'react-router-dom';
 
 interface CircularTimerProps {
   showControls?: boolean;
@@ -20,6 +21,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
   } = useTimer();
   
   const { currentSession, completeSession } = useSession();
+  const navigate = useNavigate();
 
   // Auto-start break timer when component mounts during break
   useEffect(() => {
@@ -42,6 +44,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
     if (timerType === 'break' && currentSession) {
       // Complete the session when break is skipped
       await completeSession(currentSession.id);
+      navigate('/home');
     } else {
       // For focus timer, use the existing skip logic
       skipTimer();
@@ -53,8 +56,9 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
     if (timeLeft === 0 && status === 'completed' && timerType === 'break' && currentSession) {
       // Complete the session when break timer ends
       completeSession(currentSession.id);
+      navigate('/home');
     }
-  }, [timeLeft, status, timerType, currentSession, completeSession]);
+  }, [timeLeft, status, timerType, currentSession, completeSession, navigate]);
 
   return (
     <div className="flex flex-col items-center justify-center">
