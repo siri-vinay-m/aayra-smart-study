@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +22,7 @@ import BreakTimerPage from "./pages/BreakTimerPage";
 import PendingReviewsPage from "./pages/PendingReviewsPage";
 import ReviewSessionPage from "./pages/ReviewSessionPage";
 import CompletedSessionsPage from "./pages/CompletedSessionsPage";
+import IncompleteSessionsPage from "./pages/IncompleteSessionsPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
@@ -84,6 +86,11 @@ const App = () => {
                     <Route path="/completed-sessions" element={
                       <ProtectedRoute>
                         <CompletedSessionsPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/incomplete-sessions" element={
+                      <ProtectedRoute>
+                        <IncompleteSessionsPage />
                       </ProtectedRoute>
                     } />
                     <Route path="/favorites" element={

@@ -10,7 +10,7 @@ import SummaryView from '@/components/review/SummaryView';
 
 const ValidationPage = () => {
   const navigate = useNavigate();
-  const { currentSession, setCurrentSession, updateCurrentSessionStatus } = useSession();
+  const { currentSession, setCurrentSession, updateCurrentSessionStatus, completeSession } = useSession();
   const { setTimerType } = useTimer();
   const [currentStep, setCurrentStep] = useState<'flashcards' | 'quiz' | 'summary'>('flashcards');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -81,18 +81,21 @@ const ValidationPage = () => {
     }
   };
   
-  const handleStartBreak = async () => {
+  const handleFinishValidation = async () => {
     if (currentSession) {
-      // Update session status to break_pending and then immediately to break_inprogress
-      const updatedSession = { ...currentSession, status: 'break_inprogress' as const };
-      setCurrentSession(updatedSession);
-      await updateCurrentSessionStatus('break_inprogress');
-      
-      // Set timer type to break for the next page
-      setTimerType('break');
-      
-      // Navigate to break timer page
-      navigate('/break');
+      // Check if this is from incomplete sessions or regular flow
+      if (currentSession.status === 'incomplete') {
+        // Complete the session and go to home
+        completeSession(currentSession.id);
+        navigate('/home');
+      } else {
+        // Regular flow - go to break
+        const updatedSession = { ...currentSession, status: 'break_inprogress' as const };
+        setCurrentSession(updatedSession);
+        await updateCurrentSessionStatus('break_inprogress');
+        setTimerType('break');
+        navigate('/break');
+      }
     }
   };
 
@@ -128,7 +131,7 @@ const ValidationPage = () => {
     pageContent = (
       <SummaryView
         summary={summary}
-        onFinish={handleStartBreak}
+        onFinish={handleFinishValidation}
         isReviewSession={false}
       />
     );

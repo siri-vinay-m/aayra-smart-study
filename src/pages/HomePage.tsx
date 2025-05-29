@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import FeatureBlock from '@/components/ui/feature-block';
 import { useSession } from '@/contexts/SessionContext';
-import { Clock, Plus, List } from 'lucide-react';
+import { Clock, Plus, List, AlertCircle } from 'lucide-react';
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { pendingReviews, completedSessions } = useSession();
+  const { pendingReviews, completedSessions, incompleteSessions } = useSession();
   
   return (
     <MainLayout>
@@ -31,6 +31,14 @@ const HomePage = () => {
           description="Begin a focused study session"
           icon={<Plus size={24} />}
           onClick={() => navigate('/new-session')}
+        />
+        
+        <FeatureBlock
+          title="Incomplete Sessions"
+          description="Continue your unfinished sessions"
+          icon={<AlertCircle size={24} />}
+          count={incompleteSessions.length}
+          onClick={() => navigate('/incomplete-sessions')}
         />
         
         <FeatureBlock

@@ -5,6 +5,7 @@ import { StudySession, SessionStatus } from '@/types/session';
 export const useSessionOperations = () => {
   const [currentSession, setCurrentSession] = useState<StudySession | null>(null);
   const [completedSessions, setCompletedSessions] = useState<StudySession[]>([]);
+  const [incompleteSessions, setIncompleteSessions] = useState<StudySession[]>([]);
 
   const createNewSession = async (
     subjectName: string,
@@ -97,6 +98,25 @@ export const useSessionOperations = () => {
     }
   };
 
+  const markSessionAsIncomplete = async (sessionId: string): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('studysessions')
+        .update({ status: 'incomplete' })
+        .eq('sessionid', sessionId);
+
+      if (error) {
+        console.error('Error marking session as incomplete:', error);
+        return;
+      }
+
+      // Reload incomplete sessions
+      loadIncompleteSessions();
+    } catch (error) {
+      console.error('Error marking session as incomplete:', error);
+    }
+  };
+
   const loadCompletedSessions = async () => {
     try {
       const { data: authUser } = await supabase.auth.getUser();
@@ -135,6 +155,46 @@ export const useSessionOperations = () => {
       }
     } catch (error) {
       console.error('Error in loadCompletedSessions:', error);
+    }
+  };
+
+  const loadIncompleteSessions = async () => {
+    try {
+      const { data: authUser } = await supabase.auth.getUser();
+      if (!authUser.user) return;
+
+      const { data: sessions, error } = await supabase
+        .from('studysessions')
+        .select('*')
+        .eq('userid', authUser.user.id)
+        .eq('status', 'incomplete')
+        .order('createdat', { ascending: false });
+
+      if (error) {
+        console.error('Error loading incomplete sessions:', error);
+        return;
+      }
+
+      if (sessions) {
+        const formattedSessions: StudySession[] = sessions.map(session => ({
+          id: session.sessionid,
+          sessionName: session.sessionname,
+          subjectName: session.subjectname,
+          topicName: session.topicname,
+          focusDuration: session.focusdurationminutes * 60,
+          breakDuration: session.breakdurationminutes * 60,
+          focusDurationMinutes: session.focusdurationminutes,
+          breakDurationMinutes: session.breakdurationminutes,
+          status: session.status as SessionStatus,
+          startTime: new Date(session.createdat),
+          createdAt: new Date(session.createdat),
+          isFavorite: session.isfavorite || false,
+        }));
+
+        setIncompleteSessions(formattedSessions);
+      }
+    } catch (error) {
+      console.error('Error in loadIncompleteSessions:', error);
     }
   };
 
@@ -177,11 +237,15 @@ export const useSessionOperations = () => {
   return {
     currentSession,
     completedSessions,
+    incompleteSessions,
     setCurrentSession,
     setCompletedSessions,
+    setIncompleteSessions,
     createNewSession,
     updateCurrentSessionStatus,
+    markSessionAsIncomplete,
     loadCompletedSessions,
+    loadIncompleteSessions,
     toggleFavorite,
   };
 };

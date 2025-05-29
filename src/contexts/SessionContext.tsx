@@ -10,14 +10,18 @@ export type { StudySession, PendingReview, SessionStatus, AIGeneratedContent };
 interface SessionContextType {
   currentSession: StudySession | null;
   completedSessions: StudySession[];
+  incompleteSessions: StudySession[];
   pendingReviews: PendingReview[];
   createNewSession: (subjectName: string, topicName: string, focusDuration: number, breakDuration: number) => Promise<StudySession | null>;
   setCurrentSession: (session: StudySession | null) => void;
   completeSession: (sessionId: string) => void;
   setPendingReviews: React.Dispatch<React.SetStateAction<PendingReview[]>>;
   setCompletedSessions: React.Dispatch<React.SetStateAction<StudySession[]>>;
+  setIncompleteSessions: React.Dispatch<React.SetStateAction<StudySession[]>>;
   updateCurrentSessionStatus: (status: SessionStatus) => Promise<void>;
+  markSessionAsIncomplete: (sessionId: string) => Promise<void>;
   loadCompletedSessions: () => Promise<void>;
+  loadIncompleteSessions: () => Promise<void>;
   loadPendingReviews: () => Promise<void>;
   toggleFavorite: (sessionId: string) => Promise<void>;
 }
@@ -31,6 +35,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
   // Load data on component mount
   useEffect(() => {
     sessionOps.loadCompletedSessions();
+    sessionOps.loadIncompleteSessions();
     reviewOps.loadPendingReviews();
   }, []);
 
@@ -46,14 +51,18 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       value={{
         currentSession: sessionOps.currentSession,
         completedSessions: sessionOps.completedSessions,
+        incompleteSessions: sessionOps.incompleteSessions,
         pendingReviews: reviewOps.pendingReviews,
         createNewSession: sessionOps.createNewSession,
         setCurrentSession: sessionOps.setCurrentSession,
         completeSession,
         setPendingReviews: reviewOps.setPendingReviews,
         setCompletedSessions: sessionOps.setCompletedSessions,
+        setIncompleteSessions: sessionOps.setIncompleteSessions,
         updateCurrentSessionStatus: sessionOps.updateCurrentSessionStatus,
+        markSessionAsIncomplete: sessionOps.markSessionAsIncomplete,
         loadCompletedSessions: sessionOps.loadCompletedSessions,
+        loadIncompleteSessions: sessionOps.loadIncompleteSessions,
         loadPendingReviews: reviewOps.loadPendingReviews,
         toggleFavorite: sessionOps.toggleFavorite,
       }}
