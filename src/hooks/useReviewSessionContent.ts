@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSessionAI } from '@/hooks/useSessionAI';
-import { PendingReview, StudySession, AIGeneratedContent } from '@/contexts/SessionContext';
+import { PendingReview, StudySession, AIGeneratedContent } from '@/types/session';
 
 export const useReviewSessionContent = (
   reviewSession: PendingReview | StudySession | null,

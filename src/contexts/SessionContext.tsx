@@ -2,7 +2,10 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
 import { useSessionOperations } from '@/hooks/useSessionOperations';
 import { useReviewOperations } from '@/hooks/useReviewOperations';
-import { StudySession, PendingReview, SessionStatus } from '@/types/session';
+import { StudySession, PendingReview, SessionStatus, AIGeneratedContent } from '@/types/session';
+
+// Re-export types for backward compatibility
+export type { StudySession, PendingReview, SessionStatus, AIGeneratedContent };
 
 interface SessionContextType {
   currentSession: StudySession | null;

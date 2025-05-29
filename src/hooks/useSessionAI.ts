@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react';
 import { useAI } from '@/hooks/useAI';
 import { supabase } from '@/integrations/supabase/client';
-import { AIGeneratedContent } from '@/contexts/SessionContext';
+import { AIGeneratedContent } from '@/types/session';
 
 interface StudyMaterial {
   id: string;
