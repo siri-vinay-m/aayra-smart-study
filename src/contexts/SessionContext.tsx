@@ -123,7 +123,10 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       const { data: authUser } = await supabase.auth.getUser();
       if (!authUser.user) return;
 
-      // Load pending review cycle entries
+      // Get current date in YYYY-MM-DD format for comparison
+      const currentDate = new Date().toISOString().split('T')[0];
+
+      // Load pending review cycle entries that are due today or overdue
       const { data: reviewEntries, error } = await supabase
         .from('reviewcycleentries')
         .select(`
@@ -139,6 +142,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         `)
         .eq('userid', authUser.user.id)
         .eq('status', 'pending')
+        .lte('currentreviewduedate', currentDate) // Only reviews due today or earlier
         .order('currentreviewduedate', { ascending: true });
 
       if (error) {
