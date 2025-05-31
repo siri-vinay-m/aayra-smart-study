@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -9,6 +8,8 @@ import QuizView from '@/components/review/QuizView';
 import SummaryView from '@/components/review/SummaryView';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useSessionDiscard } from '@/hooks/useSessionDiscard';
+import DiscardSessionDialog from '@/components/dialogs/DiscardSessionDialog';
 
 const ValidationPage = () => {
   const navigate = useNavigate();
@@ -19,6 +20,14 @@ const ValidationPage = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+  
+  const {
+    showDiscardDialog,
+    isInValidationPhase,
+    handleNavigationAttempt,
+    handleDiscardSession,
+    handleCancelDiscard,
+  } = useSessionDiscard();
   
   if (!currentSession) {
     return (
@@ -58,15 +67,16 @@ const ValidationPage = () => {
   const summary = currentSession.aiGeneratedContent?.summary || 
     "This study session covered important concepts. A detailed summary will be available after AI processing.";
   
-  const handleBackButton = async () => {
-    if (currentSession) {
-      console.log('Marking session as incomplete:', currentSession.id);
-      await markSessionAsIncomplete(currentSession.id);
-      setCurrentSession(null);
+  const handleBackButton = () => {
+    // Only show discard dialog if we're in validation phase and not on summary step
+    if (currentStep !== 'summary') {
+      handleNavigationAttempt('/home');
+    } else {
+      // If on summary, just navigate back normally
       navigate('/home');
     }
   };
-
+  
   const handleNextCard = () => {
     if (currentCardIndex < flashcards.length - 1) {
       setCurrentCardIndex(currentCardIndex + 1);
@@ -170,6 +180,13 @@ const ValidationPage = () => {
         </div>
         {pageContent}
       </div>
+      
+      <DiscardSessionDialog
+        open={showDiscardDialog}
+        onOpenChange={handleCancelDiscard}
+        onConfirm={handleDiscardSession}
+        isValidationPhase={isInValidationPhase}
+      />
     </MainLayout>
   );
 };

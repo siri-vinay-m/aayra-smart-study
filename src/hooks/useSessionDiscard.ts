@@ -10,8 +10,15 @@ export const useSessionDiscard = () => {
   const { currentSession, setCurrentSession } = useSession();
   const navigate = useNavigate();
 
+  const isInValidationPhase = () => {
+    return currentSession && currentSession.status === 'validating';
+  };
+
   const handleNavigationAttempt = (destination: string) => {
     if (currentSession && (currentSession.status === 'focus_in_progress' || currentSession.status === 'uploading')) {
+      setShowDiscardDialog(true);
+      setPendingNavigation(destination);
+    } else if (isInValidationPhase()) {
       setShowDiscardDialog(true);
       setPendingNavigation(destination);
     } else {
@@ -22,18 +29,32 @@ export const useSessionDiscard = () => {
   const handleDiscardSession = async () => {
     if (currentSession) {
       try {
-        console.log('Discarding session:', currentSession.id);
+        console.log('Handling session discard:', currentSession.id, 'Status:', currentSession.status);
         
-        // Delete the session from the database completely
-        const { error } = await supabase
-          .from('studysessions')
-          .delete()
-          .eq('sessionid', currentSession.id);
+        if (isInValidationPhase()) {
+          // Mark session as incomplete for validation phase
+          const { error } = await supabase
+            .from('studysessions')
+            .update({ status: 'incomplete' })
+            .eq('sessionid', currentSession.id);
 
-        if (error) {
-          console.error('Error deleting session:', error);
+          if (error) {
+            console.error('Error marking session as incomplete:', error);
+          } else {
+            console.log('Session marked as incomplete successfully');
+          }
         } else {
-          console.log('Session deleted successfully from database');
+          // Delete the session completely for focus/upload phases
+          const { error } = await supabase
+            .from('studysessions')
+            .delete()
+            .eq('sessionid', currentSession.id);
+
+          if (error) {
+            console.error('Error deleting session:', error);
+          } else {
+            console.log('Session deleted successfully from database');
+          }
         }
 
         // Clear current session from context
@@ -44,8 +65,6 @@ export const useSessionDiscard = () => {
     }
 
     setShowDiscardDialog(false);
-    
-    // Always navigate to home when discarding a session
     setPendingNavigation(null);
     navigate('/home');
   };
@@ -57,6 +76,7 @@ export const useSessionDiscard = () => {
 
   return {
     showDiscardDialog,
+    isInValidationPhase: isInValidationPhase(),
     handleNavigationAttempt,
     handleDiscardSession,
     handleCancelDiscard,

@@ -11,6 +11,7 @@ const BottomTaskBar = () => {
   const { isAuthenticated } = useUser();
   const {
     showDiscardDialog,
+    isInValidationPhase,
     handleNavigationAttempt,
     handleDiscardSession,
     handleCancelDiscard,
@@ -67,6 +68,7 @@ const BottomTaskBar = () => {
         open={showDiscardDialog}
         onOpenChange={handleCancelDiscard}
         onConfirm={handleDiscardSession}
+        isValidationPhase={isInValidationPhase}
       />
     </>
   );
