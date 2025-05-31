@@ -5,7 +5,9 @@ import MainLayout from '@/components/layout/MainLayout';
 import ImageUpload from '@/components/ui/image-upload';
 import VoiceRecorder from '@/components/ui/voice-recorder';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Loader2, FileText, Link } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +19,8 @@ const UploadPage = () => {
   
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [uploadedVoice, setUploadedVoice] = useState<Blob | null>(null);
+  const [textContent, setTextContent] = useState('');
+  const [urlContent, setUrlContent] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -46,7 +50,7 @@ const UploadPage = () => {
 
   const saveUploadedMaterial = async (
     sessionId: string,
-    materialType: 'image' | 'voice',
+    materialType: 'image' | 'voice' | 'text' | 'url',
     originalFileName?: string,
     fileStoragePath?: string,
     contentText?: string,
@@ -99,6 +103,28 @@ const UploadPage = () => {
         );
       }
 
+      // Save text content
+      if (textContent.trim()) {
+        await saveUploadedMaterial(
+          currentSession.id,
+          'text',
+          undefined,
+          undefined,
+          textContent.trim()
+        );
+      }
+
+      // Save URL content
+      if (urlContent.trim()) {
+        await saveUploadedMaterial(
+          currentSession.id,
+          'url',
+          undefined,
+          undefined,
+          urlContent.trim()
+        );
+      }
+
       // Update session status
       await updateCurrentSessionStatus('validating');
 
@@ -138,7 +164,9 @@ const UploadPage = () => {
     );
   }
 
-  const hasUploadedContent = uploadedImages.length > 0 || uploadedVoice !== null;
+  // Check if mandatory content exists (voice or image)
+  const hasMandatoryContent = uploadedImages.length > 0 || uploadedVoice !== null;
+  const hasAnyContent = hasMandatoryContent || textContent.trim() || urlContent.trim();
 
   return (
     <MainLayout>
@@ -146,11 +174,50 @@ const UploadPage = () => {
         <div className="text-center mb-6">
           <h1 className="text-xl font-semibold mb-2">{currentSession.sessionName}</h1>
           <p className="text-gray-600">Upload your study materials to generate AI content</p>
+          <p className="text-sm text-orange-600 mt-1">
+            * Voice recording or image upload is mandatory for AI processing
+          </p>
         </div>
         
         <div className="space-y-6">
           <div>
-            <h2 className="text-lg font-medium mb-3">Upload Images</h2>
+            <h2 className="text-lg font-medium mb-3 flex items-center gap-2">
+              <FileText size={20} />
+              Add Text Content
+            </h2>
+            <Textarea
+              placeholder="Enter your study notes or text content here..."
+              value={textContent}
+              onChange={(e) => setTextContent(e.target.value)}
+              className="min-h-[100px]"
+            />
+            {textContent.trim() && (
+              <p className="text-sm text-green-600 mt-2">
+                Text content added ({textContent.length} characters)
+              </p>
+            )}
+          </div>
+
+          <div>
+            <h2 className="text-lg font-medium mb-3 flex items-center gap-2">
+              <Link size={20} />
+              Add Link/URL
+            </h2>
+            <Input
+              type="url"
+              placeholder="Enter a URL to study material (e.g., article, document, video)"
+              value={urlContent}
+              onChange={(e) => setUrlContent(e.target.value)}
+            />
+            {urlContent.trim() && (
+              <p className="text-sm text-green-600 mt-2">
+                URL link added
+              </p>
+            )}
+          </div>
+          
+          <div>
+            <h2 className="text-lg font-medium mb-3">Upload Images *</h2>
             <ImageUpload
               onFileSelect={handleImageSelect}
               isLoading={isUploading}
@@ -163,7 +230,7 @@ const UploadPage = () => {
           </div>
           
           <div>
-            <h2 className="text-lg font-medium mb-3">Record Voice Notes</h2>
+            <h2 className="text-lg font-medium mb-3">Record Voice Notes *</h2>
             <VoiceRecorder
               onRecordingComplete={handleVoiceUpload}
             />
@@ -175,11 +242,11 @@ const UploadPage = () => {
           </div>
         </div>
         
-        <div className="mt-8">
+        <div className="mt-8 flex justify-end">
           <Button
             onClick={processUploadedMaterials}
-            disabled={!hasUploadedContent || isProcessing}
-            className="w-full"
+            disabled={!hasMandatoryContent || isProcessing}
+            className="px-8"
             size="lg"
           >
             {isProcessing ? (
@@ -191,13 +258,13 @@ const UploadPage = () => {
               'Submit to AI'
             )}
           </Button>
-          
-          {!hasUploadedContent && (
-            <p className="text-sm text-gray-500 mt-2 text-center">
-              Please upload at least one image or record a voice note to continue
-            </p>
-          )}
         </div>
+        
+        {!hasMandatoryContent && (
+          <p className="text-sm text-red-500 mt-2 text-center">
+            Please upload at least one image or record a voice note to continue
+          </p>
+        )}
       </div>
     </MainLayout>
   );
