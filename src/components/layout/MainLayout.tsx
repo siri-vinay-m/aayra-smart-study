@@ -1,28 +1,21 @@
 
-import React, { ReactNode } from 'react';
+import React from 'react';
 import TopProfileBar from './TopProfileBar';
 import BottomTaskBar from './BottomTaskBar';
 
 interface MainLayoutProps {
-  children: ReactNode;
-  hideTopBar?: boolean;
-  hideBottomBar?: boolean;
+  children: React.ReactNode;
+  onNavigationAttempt?: (destination: string) => void;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ 
-  children, 
-  hideTopBar = false, 
-  hideBottomBar = false 
-}) => {
+const MainLayout: React.FC<MainLayoutProps> = ({ children, onNavigationAttempt }) => {
   return (
-    <div className="aayra-container">
-      {!hideTopBar && <TopProfileBar />}
-      
-      <div className="flex-1 py-4 pb-16">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <TopProfileBar onNavigationAttempt={onNavigationAttempt} />
+      <main className="flex-1 pb-20">
         {children}
-      </div>
-      
-      {!hideBottomBar && <BottomTaskBar />}
+      </main>
+      <BottomTaskBar onNavigationAttempt={onNavigationAttempt} />
     </div>
   );
 };

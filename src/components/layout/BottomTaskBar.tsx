@@ -1,74 +1,72 @@
 
 import React from 'react';
-import { useLocation } from 'react-router-dom';
-import { Heart, Home, ArrowLeft } from 'lucide-react';
-import { useUser } from '@/contexts/UserContext';
-import { useSessionDiscard } from '@/hooks/useSessionDiscard';
-import DiscardSessionDialog from '@/components/dialogs/DiscardSessionDialog';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Clock, Plus, AlertCircle, List } from 'lucide-react';
 
-const BottomTaskBar = () => {
+interface BottomTaskBarProps {
+  onNavigationAttempt?: (destination: string) => void;
+}
+
+const BottomTaskBar: React.FC<BottomTaskBarProps> = ({ onNavigationAttempt }) => {
+  const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated } = useUser();
-  const {
-    showDiscardDialog,
-    handleNavigationAttempt,
-    handleDiscardSession,
-    handleCancelDiscard,
-  } = useSessionDiscard();
-  
-  const handleFavorites = () => {
-    handleNavigationAttempt('/favorites');
-  };
-  
-  const handleHome = () => {
-    handleNavigationAttempt('/home');
-  };
-  
-  const handleBack = () => {
-    // Special handling for completed sessions and pending reviews pages
-    if (location.pathname === '/completed-sessions' || 
-        location.pathname === '/pending-reviews') {
-      handleNavigationAttempt('/home');
-    } else if (location.pathname === '/home') {
-      // Navigate to login page when on home page
-      handleNavigationAttempt('/login');
+
+  const handleNavigation = (destination: string) => {
+    if (onNavigationAttempt) {
+      onNavigationAttempt(destination);
     } else {
-      handleNavigationAttempt(-1 as any); // This will be handled by the browser's back functionality if no session to discard
+      navigate(destination);
     }
   };
-  
+
+  const isActive = (path: string) => location.pathname === path;
+
+  const navigationItems = [
+    {
+      path: '/pending-reviews',
+      icon: Clock,
+      label: 'Reviews',
+    },
+    {
+      path: '/new-session',
+      icon: Plus,
+      label: 'New',
+    },
+    {
+      path: '/incomplete-sessions',
+      icon: AlertCircle,
+      label: 'Incomplete',
+    },
+    {
+      path: '/completed-sessions',
+      icon: List,
+      label: 'Completed',
+    },
+  ];
+
   return (
-    <>
-      <div className="bottom-task-bar">
-        <button 
-          onClick={handleFavorites}
-          className="p-2 rounded-full hover:bg-gray-100"
-        >
-          <Heart size={24} className={location.pathname === '/favorites' ? 'text-primary' : 'text-gray-600'} />
-        </button>
-        
-        <button 
-          onClick={handleHome}
-          className="p-2 rounded-full hover:bg-gray-100"
-        >
-          <Home size={24} className={location.pathname === '/home' ? 'text-primary' : 'text-gray-600'} />
-        </button>
-        
-        <button 
-          onClick={handleBack}
-          className="p-2 rounded-full hover:bg-gray-100"
-        >
-          <ArrowLeft size={24} className="text-gray-600" />
-        </button>
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2">
+      <div className="flex justify-around">
+        {navigationItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Button
+              key={item.path}
+              variant="ghost"
+              size="sm"
+              onClick={() => handleNavigation(item.path)}
+              className={`flex flex-col items-center gap-1 h-auto py-2 ${
+                isActive(item.path) ? 'text-orange-500' : 'text-gray-600'
+              }`}
+            >
+              <Icon size={20} />
+              <span className="text-xs">{item.label}</span>
+            </Button>
+          );
+        })}
       </div>
-      <div className="bottom-task-bar-spacer" />
-      
-      <DiscardSessionDialog
-        open={showDiscardDialog}
-        onOpenChange={handleCancelDiscard}
-        onConfirm={handleDiscardSession}
-      />
-    </>
+    </div>
   );
 };
 

@@ -15,20 +15,22 @@ interface DiscardSessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
+  message?: string;
 }
 
 const DiscardSessionDialog: React.FC<DiscardSessionDialogProps> = ({
   open,
   onOpenChange,
   onConfirm,
+  message = "The session will be discarded. This action cannot be undone.",
 }) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Discard Session</AlertDialogTitle>
+          <AlertDialogTitle>Exit Session</AlertDialogTitle>
           <AlertDialogDescription>
-            The session will be discarded. This action cannot be undone.
+            {message}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

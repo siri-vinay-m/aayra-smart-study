@@ -7,6 +7,8 @@ import { useTimer } from '@/contexts/TimerContext';
 import FlashcardView from '@/components/review/FlashcardView';
 import QuizView from '@/components/review/QuizView';
 import SummaryView from '@/components/review/SummaryView';
+import DiscardSessionDialog from '@/components/dialogs/DiscardSessionDialog';
+import { useSessionDiscard } from '@/hooks/useSessionDiscard';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -14,6 +16,14 @@ const ValidationPage = () => {
   const navigate = useNavigate();
   const { currentSession, setCurrentSession, updateCurrentSessionStatus, completeSession, markSessionAsIncomplete } = useSession();
   const { setTimerType } = useTimer();
+  const { 
+    showDiscardDialog, 
+    handleNavigationAttempt, 
+    handleDiscardSession, 
+    handleCancelDiscard,
+    getDialogMessage 
+  } = useSessionDiscard();
+  
   const [currentStep, setCurrentStep] = useState<'flashcards' | 'quiz' | 'summary'>('flashcards');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -58,13 +68,8 @@ const ValidationPage = () => {
   const summary = currentSession.aiGeneratedContent?.summary || 
     "This study session covered important concepts. A detailed summary will be available after AI processing.";
   
-  const handleBackButton = async () => {
-    if (currentSession) {
-      console.log('Marking session as incomplete:', currentSession.id);
-      await markSessionAsIncomplete(currentSession.id);
-      setCurrentSession(null);
-      navigate('/home');
-    }
+  const handleBackButton = () => {
+    handleNavigationAttempt('/home');
   };
 
   const handleNextCard = () => {
@@ -96,7 +101,7 @@ const ValidationPage = () => {
     if (currentSession) {
       console.log('Finishing validation, session status:', currentSession.status);
       
-      // Check if this is a completed session being reviewed (no longer using 'incomplete' status)
+      // Check if this is a completed session being reviewed
       if (currentSession.status === 'completed') {
         console.log('Completing review of completed session');
         setCurrentSession(null);
@@ -151,7 +156,7 @@ const ValidationPage = () => {
   }
   
   return (
-    <MainLayout>
+    <MainLayout onNavigationAttempt={handleNavigationAttempt}>
       <div className="px-4">
         <div className="flex items-center justify-between mb-6">
           <Button
@@ -170,6 +175,13 @@ const ValidationPage = () => {
         </div>
         {pageContent}
       </div>
+      
+      <DiscardSessionDialog
+        open={showDiscardDialog}
+        onOpenChange={handleCancelDiscard}
+        onConfirm={handleDiscardSession}
+        message={getDialogMessage()}
+      />
     </MainLayout>
   );
 };
