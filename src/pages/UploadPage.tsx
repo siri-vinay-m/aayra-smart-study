@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import UploadHeader from '@/components/upload/UploadHeader';
-import MaterialUploadSection from '@/components/upload/MaterialUploadSection';
-import SubmitSection from '@/components/upload/SubmitSection';
+import ImageUpload from '@/components/ui/image-upload';
+import VoiceRecorder from '@/components/ui/voice-recorder';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -121,6 +122,12 @@ const UploadPage = () => {
     }
   };
 
+  const handleImageSelect = (file: File | null) => {
+    if (file) {
+      handleImageUpload([file]);
+    }
+  };
+
   if (!currentSession) {
     return (
       <MainLayout>
@@ -136,21 +143,61 @@ const UploadPage = () => {
   return (
     <MainLayout>
       <div className="px-4 max-w-2xl mx-auto">
-        <UploadHeader sessionName={currentSession.sessionName} />
+        <div className="text-center mb-6">
+          <h1 className="text-xl font-semibold mb-2">{currentSession.sessionName}</h1>
+          <p className="text-gray-600">Upload your study materials to generate AI content</p>
+        </div>
         
-        <MaterialUploadSection
-          onImageUpload={handleImageUpload}
-          onVoiceUpload={handleVoiceUpload}
-          uploadedImages={uploadedImages}
-          uploadedVoice={uploadedVoice}
-          isUploading={isUploading}
-        />
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg font-medium mb-3">Upload Images</h2>
+            <ImageUpload
+              onFileSelect={handleImageSelect}
+              isLoading={isUploading}
+            />
+            {uploadedImages.length > 0 && (
+              <p className="text-sm text-green-600 mt-2">
+                {uploadedImages.length} image(s) selected
+              </p>
+            )}
+          </div>
+          
+          <div>
+            <h2 className="text-lg font-medium mb-3">Record Voice Notes</h2>
+            <VoiceRecorder
+              onRecordingComplete={handleVoiceUpload}
+            />
+            {uploadedVoice && (
+              <p className="text-sm text-green-600 mt-2">
+                Voice recording ready
+              </p>
+            )}
+          </div>
+        </div>
         
-        <SubmitSection
-          onSubmit={processUploadedMaterials}
-          isProcessing={isProcessing}
-          hasUploadedContent={hasUploadedContent}
-        />
+        <div className="mt-8">
+          <Button
+            onClick={processUploadedMaterials}
+            disabled={!hasUploadedContent || isProcessing}
+            className="w-full"
+            size="lg"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              'Submit to AI'
+            )}
+          </Button>
+          
+          {!hasUploadedContent && (
+            <p className="text-sm text-gray-500 mt-2 text-center">
+              Please upload at least one image or record a voice note to continue
+            </p>
+          )}
+        </div>
       </div>
     </MainLayout>
   );
