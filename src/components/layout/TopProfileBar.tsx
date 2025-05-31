@@ -1,59 +1,55 @@
 
 import React from 'react';
+import { useUser } from '@/contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Home, Heart } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { User } from 'lucide-react';
 
-interface TopProfileBarProps {
-  onNavigationAttempt?: (destination: string) => void;
-}
-
-const TopProfileBar: React.FC<TopProfileBarProps> = ({ onNavigationAttempt }) => {
+const TopProfileBar = () => {
+  const { user } = useUser();
   const navigate = useNavigate();
-
-  const handleNavigation = (destination: string) => {
-    if (onNavigationAttempt) {
-      onNavigationAttempt(destination);
-    } else {
-      navigate(destination);
-    }
+  
+  const handleProfileClick = () => {
+    navigate('/profile');
   };
-
+  
+  // Get user initials for fallback
+  const getUserInitials = () => {
+    if (user?.displayName) {
+      return user.displayName
+        .split(' ')
+        .map(name => name.charAt(0))
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return 'U';
+  };
+  
   return (
-    <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
-      <div className="flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleNavigation('/home')}
-          className="flex items-center gap-2"
-        >
-          <Home size={20} />
-          <span className="hidden sm:inline">Home</span>
-        </Button>
-        
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleNavigation('/favorites')}
-            className="flex items-center gap-2"
-          >
-            <Heart size={20} />
-            <span className="hidden sm:inline">Favorites</span>
-          </Button>
-          
-          <Avatar 
-            className="h-8 w-8 cursor-pointer" 
-            onClick={() => handleNavigation('/profile')}
-          >
-            <AvatarFallback className="bg-orange-100 text-orange-600">
-              U
-            </AvatarFallback>
-          </Avatar>
-        </div>
+    <div className="top-profile-bar flex justify-between items-center px-4 py-2 border-b">
+      <div className="text-lg font-semibold">
+        {user?.displayName || 'User'}
       </div>
+      
+      <Avatar 
+        className="cursor-pointer hover:opacity-80 transition-opacity"
+        onClick={handleProfileClick}
+      >
+        {user?.profilePictureURL && (
+          <AvatarImage 
+            src={user.profilePictureURL} 
+            alt="Profile"
+          />
+        )}
+        <AvatarFallback className="bg-gray-200 text-gray-600">
+          {user?.profilePictureURL ? (
+            <User size={20} />
+          ) : (
+            getUserInitials()
+          )}
+        </AvatarFallback>
+      </Avatar>
     </div>
   );
 };
