@@ -164,9 +164,8 @@ const UploadPage = () => {
     );
   }
 
-  // Check if mandatory content exists (voice or image)
-  const hasMandatoryContent = uploadedImages.length > 0 || uploadedVoice !== null;
-  const hasAnyContent = hasMandatoryContent || textContent.trim() || urlContent.trim();
+  // Check if any content exists
+  const hasAnyContent = uploadedImages.length > 0 || uploadedVoice !== null || textContent.trim() || urlContent.trim();
 
   return (
     <MainLayout>
@@ -174,9 +173,6 @@ const UploadPage = () => {
         <div className="text-center mb-6">
           <h1 className="text-xl font-semibold mb-2">{currentSession.sessionName}</h1>
           <p className="text-gray-600">Upload your study materials to generate AI content</p>
-          <p className="text-sm text-orange-600 mt-1">
-            * Voice recording or image upload is mandatory for AI processing
-          </p>
         </div>
         
         <div className="space-y-6">
@@ -217,7 +213,7 @@ const UploadPage = () => {
           </div>
           
           <div>
-            <h2 className="text-lg font-medium mb-3">Upload Images *</h2>
+            <h2 className="text-lg font-medium mb-3">Upload Images</h2>
             <ImageUpload
               onFileSelect={handleImageSelect}
               isLoading={isUploading}
@@ -230,7 +226,7 @@ const UploadPage = () => {
           </div>
           
           <div>
-            <h2 className="text-lg font-medium mb-3">Record Voice Notes *</h2>
+            <h2 className="text-lg font-medium mb-3">Record Voice Notes</h2>
             <VoiceRecorder
               onRecordingComplete={handleVoiceUpload}
             />
@@ -245,7 +241,7 @@ const UploadPage = () => {
         <div className="mt-8 flex justify-end">
           <Button
             onClick={processUploadedMaterials}
-            disabled={!hasMandatoryContent || isProcessing}
+            disabled={!hasAnyContent || isProcessing}
             className="px-8"
             size="lg"
           >
@@ -260,9 +256,9 @@ const UploadPage = () => {
           </Button>
         </div>
         
-        {!hasMandatoryContent && (
+        {!hasAnyContent && (
           <p className="text-sm text-red-500 mt-2 text-center">
-            Please upload at least one image or record a voice note to continue
+            Please add at least one type of content to continue
           </p>
         )}
       </div>
