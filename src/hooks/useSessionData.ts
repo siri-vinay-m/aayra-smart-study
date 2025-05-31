@@ -55,11 +55,12 @@ export const useSessionData = () => {
 
       console.log('Loading incomplete sessions for user:', authUser.user.id);
 
+      // Load sessions with both 'incomplete' and 'validating' status
       const { data: sessions, error } = await supabase
         .from('studysessions')
         .select('*')
         .eq('userid', authUser.user.id)
-        .eq('status', 'incomplete')
+        .in('status', ['incomplete', 'validating'])
         .order('createdat', { ascending: false });
 
       if (error) {
@@ -68,7 +69,7 @@ export const useSessionData = () => {
       }
 
       if (sessions) {
-        console.log('Found incomplete sessions:', sessions.length);
+        console.log('Found incomplete/validating sessions:', sessions.length);
         const formattedSessions: StudySession[] = sessions.map(session => ({
           id: session.sessionid,
           sessionName: session.sessionname,

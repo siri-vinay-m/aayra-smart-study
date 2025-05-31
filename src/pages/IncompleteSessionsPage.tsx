@@ -11,11 +11,33 @@ const IncompleteSessionsPage = () => {
   const navigate = useNavigate();
   
   const handleSessionClick = (session: any) => {
-    console.log('Resuming incomplete session:', session.id);
-    // Set the session as current with incomplete status and navigate to validation page
-    const sessionWithIncompleteStatus = { ...session, status: 'incomplete' as const };
-    setCurrentSession(sessionWithIncompleteStatus);
-    navigate('/validation');
+    console.log('Resuming incomplete session:', session.id, 'Status:', session.status);
+    
+    // For sessions with 'validating' status, resume in validation page
+    if (session.status === 'validating') {
+      const sessionWithValidatingStatus = { ...session, status: 'validating' as const };
+      setCurrentSession(sessionWithValidatingStatus);
+      navigate('/validation');
+    } else {
+      // For sessions with 'incomplete' status, also resume in validation page
+      const sessionWithIncompleteStatus = { ...session, status: 'incomplete' as const };
+      setCurrentSession(sessionWithIncompleteStatus);
+      navigate('/validation');
+    }
+  };
+
+  const getStatusDisplay = (status: string) => {
+    if (status === 'validating') {
+      return 'Validating';
+    }
+    return 'Incomplete';
+  };
+
+  const getStatusColor = (status: string) => {
+    if (status === 'validating') {
+      return 'text-blue-500';
+    }
+    return 'text-orange-500';
   };
   
   return (
@@ -52,9 +74,9 @@ const IncompleteSessionsPage = () => {
                       Started: {format(new Date(session.createdAt), 'MMM d, yyyy')}
                     </p>
                   </div>
-                  <div className="flex items-center text-orange-500">
+                  <div className={`flex items-center ${getStatusColor(session.status)}`}>
                     <AlertCircle size={20} className="mr-1" />
-                    <span className="text-sm font-medium">Incomplete</span>
+                    <span className="text-sm font-medium">{getStatusDisplay(session.status)}</span>
                   </div>
                 </div>
               </div>
