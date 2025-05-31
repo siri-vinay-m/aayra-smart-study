@@ -7,7 +7,7 @@ import VoiceRecorder from '@/components/ui/voice-recorder';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Loader2, FileText, Link } from 'lucide-react';
+import { Loader2, FileText, Upload, Link, Mic } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +23,7 @@ const UploadPage = () => {
   const [urlContent, setUrlContent] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'text' | 'upload' | 'link' | 'voice'>('text');
 
   const handleImageUpload = (files: File[]) => {
     setUploadedImages(files);
@@ -154,6 +155,15 @@ const UploadPage = () => {
     }
   };
 
+  const saveTextContent = () => {
+    if (textContent.trim()) {
+      toast({
+        title: "Text Saved",
+        description: "Your text content has been saved.",
+      });
+    }
+  };
+
   if (!currentSession) {
     return (
       <MainLayout>
@@ -171,78 +181,119 @@ const UploadPage = () => {
     <MainLayout>
       <div className="px-4 max-w-2xl mx-auto">
         <div className="text-center mb-6">
-          <h1 className="text-xl font-semibold mb-2">{currentSession.sessionName}</h1>
-          <p className="text-gray-600">Upload your study materials to generate AI content</p>
+          <h1 className="text-2xl font-semibold mb-2">Upload Study Materials</h1>
+          <p className="text-gray-600">Share what you've been studying</p>
         </div>
         
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-lg font-medium mb-3 flex items-center gap-2">
-              <FileText size={20} />
-              Add Text Content
-            </h2>
-            <Textarea
-              placeholder="Enter your study notes or text content here..."
-              value={textContent}
-              onChange={(e) => setTextContent(e.target.value)}
-              className="min-h-[100px]"
-            />
-            {textContent.trim() && (
-              <p className="text-sm text-green-600 mt-2">
-                Text content added ({textContent.length} characters)
-              </p>
-            )}
-          </div>
+        {/* Tab Icons */}
+        <div className="flex justify-center gap-4 mb-6 bg-gray-100 rounded-lg p-2">
+          <button
+            onClick={() => setActiveTab('text')}
+            className={`p-4 rounded-lg transition-colors ${
+              activeTab === 'text' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+            }`}
+          >
+            <FileText size={24} className={activeTab === 'text' ? 'text-orange-500' : 'text-gray-600'} />
+          </button>
+          <button
+            onClick={() => setActiveTab('upload')}
+            className={`p-4 rounded-lg transition-colors ${
+              activeTab === 'upload' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+            }`}
+          >
+            <Upload size={24} className={activeTab === 'upload' ? 'text-orange-500' : 'text-gray-600'} />
+          </button>
+          <button
+            onClick={() => setActiveTab('link')}
+            className={`p-4 rounded-lg transition-colors ${
+              activeTab === 'link' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+            }`}
+          >
+            <Link size={24} className={activeTab === 'link' ? 'text-orange-500' : 'text-gray-600'} />
+          </button>
+          <button
+            onClick={() => setActiveTab('voice')}
+            className={`p-4 rounded-lg transition-colors ${
+              activeTab === 'voice' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+            }`}
+          >
+            <Mic size={24} className={activeTab === 'voice' ? 'text-orange-500' : 'text-gray-600'} />
+          </button>
+        </div>
 
-          <div>
-            <h2 className="text-lg font-medium mb-3 flex items-center gap-2">
-              <Link size={20} />
-              Add Link/URL
-            </h2>
-            <Input
-              type="url"
-              placeholder="Enter a URL to study material (e.g., article, document, video)"
-              value={urlContent}
-              onChange={(e) => setUrlContent(e.target.value)}
-            />
-            {urlContent.trim() && (
-              <p className="text-sm text-green-600 mt-2">
-                URL link added
-              </p>
-            )}
-          </div>
-          
-          <div>
-            <h2 className="text-lg font-medium mb-3">Upload Images</h2>
-            <ImageUpload
-              onFileSelect={handleImageSelect}
-              isLoading={isUploading}
-            />
-            {uploadedImages.length > 0 && (
-              <p className="text-sm text-green-600 mt-2">
-                {uploadedImages.length} image(s) selected
-              </p>
-            )}
-          </div>
-          
-          <div>
-            <h2 className="text-lg font-medium mb-3">Record Voice Notes</h2>
-            <VoiceRecorder
-              onRecordingComplete={handleVoiceUpload}
-            />
-            {uploadedVoice && (
-              <p className="text-sm text-green-600 mt-2">
-                Voice recording ready
-              </p>
-            )}
-          </div>
+        {/* Content Area */}
+        <div className="space-y-4">
+          {activeTab === 'text' && (
+            <div>
+              <Textarea
+                placeholder="Enter your notes or study material..."
+                value={textContent}
+                onChange={(e) => setTextContent(e.target.value)}
+                className="min-h-[200px] resize-none border-0 bg-gray-50 focus:bg-white"
+              />
+              <Button
+                onClick={saveTextContent}
+                className="w-full mt-4 bg-orange-400 hover:bg-orange-500 text-white"
+                disabled={!textContent.trim()}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Save Text
+              </Button>
+            </div>
+          )}
+
+          {activeTab === 'upload' && (
+            <div className="text-center py-8">
+              <ImageUpload
+                onFileSelect={handleImageSelect}
+                isLoading={isUploading}
+                className="mx-auto"
+              />
+              {uploadedImages.length > 0 && (
+                <p className="text-sm text-green-600 mt-4">
+                  {uploadedImages.length} image(s) uploaded
+                </p>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'link' && (
+            <div>
+              <Input
+                type="url"
+                placeholder="Paste your link here..."
+                value={urlContent}
+                onChange={(e) => setUrlContent(e.target.value)}
+                className="h-12 border-0 bg-gray-50 focus:bg-white"
+              />
+              {urlContent.trim() && (
+                <p className="text-sm text-green-600 mt-2">
+                  URL link added
+                </p>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'voice' && (
+            <div className="text-center py-8">
+              <VoiceRecorder
+                onRecordingComplete={handleVoiceUpload}
+              />
+              {uploadedVoice && (
+                <p className="text-sm text-green-600 mt-4">
+                  Voice recording ready
+                </p>
+              )}
+            </div>
+          )}
         </div>
-        
-        <div className="mt-8 flex justify-end">
+
+        {/* Submit Button */}
+        <div className="mt-8">
           <Button
             onClick={processUploadedMaterials}
             disabled={!hasAnyContent || isProcessing}
-            className="px-8"
+            className="w-full bg-orange-400 hover:bg-orange-500 text-white h-12"
             size="lg"
           >
             {isProcessing ? (
