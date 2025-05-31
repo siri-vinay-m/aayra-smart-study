@@ -64,12 +64,8 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       interval = window.setInterval(() => {
         setTimeLeft((prevTime) => {
           if (prevTime === WARNING_TIME && timerType === 'focus') {
-            playBeepSound();
-            toast({
-              title: "5 minutes remaining",
-              description: "Stay focused, you're almost there!",
-              variant: "default",
-            });
+            playAlarmSound();
+            console.log("Alarm sound played - 5 minutes remaining in focus session");
           }
           return prevTime - 1;
         });
@@ -152,7 +148,30 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const playAlarmSound = () => {
-    console.log("Alarm sound played - timer completed");
+    // Create audio context and generate alarm sound
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Set alarm sound properties
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // High frequency for attention
+      oscillator.type = 'sine';
+      
+      // Set volume
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      
+      // Play the sound for 1 second
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 1);
+      
+      console.log("Alarm sound played");
+    } catch (error) {
+      console.log("Alarm sound played - audio context not supported");
+    }
   };
 
   return (
