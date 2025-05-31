@@ -7,30 +7,132 @@ import VoiceRecorder from '@/components/ui/voice-recorder';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Loader2, FileText, Upload, Link, Mic } from 'lucide-react';
+import { Loader2, FileText, Upload, Link, Mic, X, Play, Pause, Save } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+
+interface SavedMaterial {
+  id: string;
+  type: 'text' | 'image' | 'url' | 'voice';
+  content?: string;
+  fileName?: string;
+  file?: File;
+  audioBlob?: Blob;
+  audioUrl?: string;
+}
 
 const UploadPage = () => {
   const { currentSession, updateCurrentSessionStatus } = useSession();
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
-  const [uploadedVoice, setUploadedVoice] = useState<Blob | null>(null);
+  const [savedMaterials, setSavedMaterials] = useState<SavedMaterial[]>([]);
   const [textContent, setTextContent] = useState('');
   const [urlContent, setUrlContent] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'text' | 'upload' | 'link' | 'voice'>('text');
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
 
-  const handleImageUpload = (files: File[]) => {
-    setUploadedImages(files);
+  const handleImageUpload = (file: File | null) => {
+    if (file) {
+      const newMaterial: SavedMaterial = {
+        id: Date.now().toString(),
+        type: 'image',
+        fileName: file.name,
+        file: file
+      };
+      setSavedMaterials(prev => [...prev, newMaterial]);
+      toast({
+        title: "Image Added",
+        description: `${file.name} has been added to your materials.`,
+      });
+    }
   };
 
   const handleVoiceUpload = (audioBlob: Blob) => {
-    setUploadedVoice(audioBlob);
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const newMaterial: SavedMaterial = {
+      id: Date.now().toString(),
+      type: 'voice',
+      fileName: 'voice_recording.wav',
+      audioBlob: audioBlob,
+      audioUrl: audioUrl
+    };
+    setSavedMaterials(prev => [...prev, newMaterial]);
+    toast({
+      title: "Voice Recording Added",
+      description: "Your voice recording has been added to your materials.",
+    });
+  };
+
+  const saveTextContent = () => {
+    if (textContent.trim()) {
+      const newMaterial: SavedMaterial = {
+        id: Date.now().toString(),
+        type: 'text',
+        content: textContent.trim()
+      };
+      setSavedMaterials(prev => [...prev, newMaterial]);
+      setTextContent('');
+      toast({
+        title: "Text Saved",
+        description: "Your text content has been saved to materials.",
+      });
+    }
+  };
+
+  const saveUrlContent = () => {
+    if (urlContent.trim()) {
+      const newMaterial: SavedMaterial = {
+        id: Date.now().toString(),
+        type: 'url',
+        content: urlContent.trim()
+      };
+      setSavedMaterials(prev => [...prev, newMaterial]);
+      setUrlContent('');
+      toast({
+        title: "URL Saved",
+        description: "Your URL has been saved to materials.",
+      });
+    }
+  };
+
+  const removeMaterial = (id: string) => {
+    setSavedMaterials(prev => prev.filter(material => material.id !== id));
+    toast({
+      title: "Material Removed",
+      description: "The material has been removed from your list.",
+    });
+  };
+
+  const toggleAudioPlayback = (materialId: string, audioUrl: string) => {
+    if (playingAudio === materialId) {
+      // Stop current audio
+      const audioElement = document.getElementById(`audio-${materialId}`) as HTMLAudioElement;
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+      }
+      setPlayingAudio(null);
+    } else {
+      // Stop any currently playing audio
+      if (playingAudio) {
+        const currentAudio = document.getElementById(`audio-${playingAudio}`) as HTMLAudioElement;
+        if (currentAudio) {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+        }
+      }
+      
+      // Play new audio
+      const audioElement = document.getElementById(`audio-${materialId}`) as HTMLAudioElement;
+      if (audioElement) {
+        audioElement.play();
+        setPlayingAudio(materialId);
+        audioElement.onended = () => setPlayingAudio(null);
+      }
+    }
   };
 
   const uploadToSupabase = async (file: File | Blob, fileName: string, contentType: string) => {
@@ -80,53 +182,44 @@ const UploadPage = () => {
     setIsProcessing(true);
     
     try {
-      // Upload images
-      for (const image of uploadedImages) {
-        const fileName = `${currentSession.id}/${Date.now()}_${image.name}`;
-        await uploadToSupabase(image, fileName, image.type);
-        await saveUploadedMaterial(
-          currentSession.id,
-          'image',
-          image.name,
-          fileName
-        );
+      for (const material of savedMaterials) {
+        if (material.type === 'image' && material.file) {
+          const fileName = `${currentSession.id}/${Date.now()}_${material.fileName}`;
+          await uploadToSupabase(material.file, fileName, material.file.type);
+          await saveUploadedMaterial(
+            currentSession.id,
+            'image',
+            material.fileName,
+            fileName
+          );
+        } else if (material.type === 'voice' && material.audioBlob) {
+          const fileName = `${currentSession.id}/${Date.now()}_${material.fileName}`;
+          await uploadToSupabase(material.audioBlob, fileName, 'audio/wav');
+          await saveUploadedMaterial(
+            currentSession.id,
+            'voice',
+            material.fileName,
+            fileName
+          );
+        } else if (material.type === 'text' && material.content) {
+          await saveUploadedMaterial(
+            currentSession.id,
+            'text',
+            undefined,
+            undefined,
+            material.content
+          );
+        } else if (material.type === 'url' && material.content) {
+          await saveUploadedMaterial(
+            currentSession.id,
+            'url',
+            undefined,
+            undefined,
+            material.content
+          );
+        }
       }
 
-      // Upload voice recording
-      if (uploadedVoice) {
-        const fileName = `${currentSession.id}/${Date.now()}_voice_recording.wav`;
-        await uploadToSupabase(uploadedVoice, fileName, 'audio/wav');
-        await saveUploadedMaterial(
-          currentSession.id,
-          'voice',
-          'voice_recording.wav',
-          fileName
-        );
-      }
-
-      // Save text content
-      if (textContent.trim()) {
-        await saveUploadedMaterial(
-          currentSession.id,
-          'text',
-          undefined,
-          undefined,
-          textContent.trim()
-        );
-      }
-
-      // Save URL content
-      if (urlContent.trim()) {
-        await saveUploadedMaterial(
-          currentSession.id,
-          'url',
-          undefined,
-          undefined,
-          urlContent.trim()
-        );
-      }
-
-      // Update session status
       await updateCurrentSessionStatus('validating');
 
       toast({
@@ -134,7 +227,6 @@ const UploadPage = () => {
         description: "Your materials have been uploaded successfully!",
       });
 
-      // Navigate to validation page
       navigate('/validation');
 
     } catch (error) {
@@ -149,21 +241,6 @@ const UploadPage = () => {
     }
   };
 
-  const handleImageSelect = (file: File | null) => {
-    if (file) {
-      handleImageUpload([file]);
-    }
-  };
-
-  const saveTextContent = () => {
-    if (textContent.trim()) {
-      toast({
-        title: "Text Saved",
-        description: "Your text content has been saved.",
-      });
-    }
-  };
-
   if (!currentSession) {
     return (
       <MainLayout>
@@ -174,8 +251,7 @@ const UploadPage = () => {
     );
   }
 
-  // Check if any content exists
-  const hasAnyContent = uploadedImages.length > 0 || uploadedVoice !== null || textContent.trim() || urlContent.trim();
+  const hasAnyContent = savedMaterials.length > 0 || textContent.trim() || urlContent.trim();
 
   return (
     <MainLayout>
@@ -236,7 +312,7 @@ const UploadPage = () => {
                 className="w-full mt-4 bg-orange-400 hover:bg-orange-500 text-white"
                 disabled={!textContent.trim()}
               >
-                <FileText className="mr-2 h-4 w-4" />
+                <Save className="mr-2 h-4 w-4" />
                 Save Text
               </Button>
             </div>
@@ -245,15 +321,12 @@ const UploadPage = () => {
           {activeTab === 'upload' && (
             <div className="text-center py-8">
               <ImageUpload
-                onFileSelect={handleImageSelect}
-                isLoading={isUploading}
+                onFileSelect={handleImageUpload}
                 className="mx-auto"
               />
-              {uploadedImages.length > 0 && (
-                <p className="text-sm text-green-600 mt-4">
-                  {uploadedImages.length} image(s) uploaded
-                </p>
-              )}
+              <p className="text-sm text-gray-500 mt-4">
+                Click to upload images or documents
+              </p>
             </div>
           )}
 
@@ -266,11 +339,14 @@ const UploadPage = () => {
                 onChange={(e) => setUrlContent(e.target.value)}
                 className="h-12 border-0 bg-gray-50 focus:bg-white"
               />
-              {urlContent.trim() && (
-                <p className="text-sm text-green-600 mt-2">
-                  URL link added
-                </p>
-              )}
+              <Button
+                onClick={saveUrlContent}
+                className="w-full mt-4 bg-orange-400 hover:bg-orange-500 text-white"
+                disabled={!urlContent.trim()}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                Save URL
+              </Button>
             </div>
           )}
 
@@ -279,20 +355,74 @@ const UploadPage = () => {
               <VoiceRecorder
                 onRecordingComplete={handleVoiceUpload}
               />
-              {uploadedVoice && (
-                <p className="text-sm text-green-600 mt-4">
-                  Voice recording ready
-                </p>
-              )}
+              <p className="text-sm text-gray-500 mt-4">
+                Record your voice notes or explanations
+              </p>
             </div>
           )}
         </div>
+
+        {/* Saved Materials List */}
+        {savedMaterials.length > 0 && (
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-4">Saved Materials</h3>
+            <div className="space-y-3">
+              {savedMaterials.map((material) => (
+                <div key={material.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {material.type === 'text' && <FileText size={20} className="text-blue-500" />}
+                    {material.type === 'image' && <Upload size={20} className="text-green-500" />}
+                    {material.type === 'url' && <Link size={20} className="text-purple-500" />}
+                    {material.type === 'voice' && <Mic size={20} className="text-red-500" />}
+                    
+                    <div className="flex-1">
+                      <p className="font-medium">
+                        {material.type === 'text' && `Text: ${material.content?.substring(0, 30)}...`}
+                        {material.type === 'image' && material.fileName}
+                        {material.type === 'url' && material.content}
+                        {material.type === 'voice' && material.fileName}
+                      </p>
+                      <p className="text-sm text-gray-500 capitalize">{material.type}</p>
+                    </div>
+                    
+                    {material.type === 'voice' && material.audioUrl && (
+                      <>
+                        <audio id={`audio-${material.id}`} src={material.audioUrl} />
+                        <Button
+                          onClick={() => toggleAudioPlayback(material.id, material.audioUrl!)}
+                          variant="outline"
+                          size="sm"
+                          className="mr-2"
+                        >
+                          {playingAudio === material.id ? (
+                            <Pause size={16} />
+                          ) : (
+                            <Play size={16} />
+                          )}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  
+                  <Button
+                    onClick={() => removeMaterial(material.id)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <X size={16} />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Submit Button */}
         <div className="mt-8">
           <Button
             onClick={processUploadedMaterials}
-            disabled={!hasAnyContent || isProcessing}
+            disabled={savedMaterials.length === 0 || isProcessing}
             className="w-full bg-orange-400 hover:bg-orange-500 text-white h-12"
             size="lg"
           >
@@ -307,9 +437,9 @@ const UploadPage = () => {
           </Button>
         </div>
         
-        {!hasAnyContent && (
+        {savedMaterials.length === 0 && (
           <p className="text-sm text-red-500 mt-2 text-center">
-            Please add at least one type of content to continue
+            Please add at least one material to continue
           </p>
         )}
       </div>
