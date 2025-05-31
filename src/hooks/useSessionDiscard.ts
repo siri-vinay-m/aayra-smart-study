@@ -22,7 +22,9 @@ export const useSessionDiscard = () => {
   const handleDiscardSession = async () => {
     if (currentSession) {
       try {
-        // Delete the session from the database
+        console.log('Discarding session:', currentSession.id);
+        
+        // Delete the session from the database completely
         const { error } = await supabase
           .from('studysessions')
           .delete()
@@ -30,6 +32,8 @@ export const useSessionDiscard = () => {
 
         if (error) {
           console.error('Error deleting session:', error);
+        } else {
+          console.log('Session deleted successfully from database');
         }
 
         // Clear current session from context
@@ -41,10 +45,9 @@ export const useSessionDiscard = () => {
 
     setShowDiscardDialog(false);
     
-    // Navigate to the pending destination or home by default
-    const destination = pendingNavigation || '/home';
+    // Always navigate to home when discarding a session
     setPendingNavigation(null);
-    navigate(destination);
+    navigate('/home');
   };
 
   const handleCancelDiscard = () => {

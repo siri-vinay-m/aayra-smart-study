@@ -184,7 +184,7 @@ const UploadPage = () => {
           break;
         case 'voice':
           materialData.voicetranscript = 'Voice recording uploaded for transcription.';
-          materialData.filesize = item.duration ? item.duration * 1000 : 0; // Convert seconds to milliseconds
+          materialData.filesize = item.duration ? item.duration * 1000 : 0;
           break;
       }
 
