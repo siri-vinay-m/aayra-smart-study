@@ -18,24 +18,37 @@ const MaterialUploadSection: React.FC<MaterialUploadSectionProps> = ({
   uploadedVoice,
   isUploading
 }) => {
+  const handleImageSelect = (file: File | null) => {
+    if (file) {
+      onImageUpload([file]);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-medium mb-3">Upload Images</h2>
         <ImageUpload
-          onUpload={onImageUpload}
-          uploadedFiles={uploadedImages}
-          disabled={isUploading}
+          onFileSelect={handleImageSelect}
+          isLoading={isUploading}
         />
+        {uploadedImages.length > 0 && (
+          <p className="text-sm text-green-600 mt-2">
+            {uploadedImages.length} image(s) selected
+          </p>
+        )}
       </div>
       
       <div>
         <h2 className="text-lg font-medium mb-3">Record Voice Notes</h2>
         <VoiceRecorder
           onRecordingComplete={onVoiceUpload}
-          uploadedRecording={uploadedVoice}
-          disabled={isUploading}
         />
+        {uploadedVoice && (
+          <p className="text-sm text-green-600 mt-2">
+            Voice recording ready
+          </p>
+        )}
       </div>
     </div>
   );
