@@ -84,14 +84,21 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           description: "Now let's capture what you've learned.",
           variant: "default",
         });
+        // Update status to 'uploading' when focus timer completes
+        if (currentSession && updateCurrentSessionStatus) {
+          updateCurrentSessionStatus('uploading');
+        }
         navigate('/upload');
       } else {
-        // Break timer completed - complete the session
+        // Break timer completed - mark session as completed
         toast({
           title: "Break completed!",
           description: "Session completed successfully!",
           variant: "default",
         });
+        if (currentSession && updateCurrentSessionStatus) {
+          updateCurrentSessionStatus('completed');
+        }
         if (currentSession && completeSession) {
           completeSession(currentSession.id);
         }
@@ -102,7 +109,7 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [status, timeLeft, timerType, navigate, currentSession, completeSession]);
+  }, [status, timeLeft, timerType, navigate, currentSession, completeSession, updateCurrentSessionStatus]);
 
   const startTimer = () => {
     setStatus('running');
@@ -127,10 +134,12 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setStatus('completed');
 
     if (timerType === 'focus') {
-      await updateCurrentSessionStatus('validating');
+      // Update status to 'uploading' when focus timer is skipped
+      await updateCurrentSessionStatus('uploading');
       navigate('/upload');
     } else {
-      // Break timer skipped - complete the session
+      // Break timer skipped - mark session as completed
+      await updateCurrentSessionStatus('completed');
       if (completeSession) {
         await completeSession(currentSession.id);
       }

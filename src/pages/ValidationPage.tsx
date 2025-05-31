@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -95,7 +94,7 @@ const ValidationPage = () => {
   const handleFinishValidation = async () => {
     if (currentSession) {
       console.log('Finishing validation, session status:', currentSession.status);
-      // For incomplete sessions, complete and go to home
+      
       if (currentSession.status === 'incomplete') {
         console.log('Completing incomplete session');
         completeSession(currentSession.id);
@@ -103,11 +102,10 @@ const ValidationPage = () => {
         navigate('/home');
       } else {
         console.log('Regular session flow - going to break');
-        // Regular flow - go to break
-        const updatedSession = { ...currentSession, status: 'break_pending' as const };
+        // Update status to 'break_in_progress' when user clicks "Take a Break"
+        const updatedSession = { ...currentSession, status: 'break_in_progress' as const };
         setCurrentSession(updatedSession);
-        await updateCurrentSessionStatus('break_pending');
-        completeSession(currentSession.id);
+        await updateCurrentSessionStatus('break_in_progress');
         navigate('/break');
       }
     }

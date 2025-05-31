@@ -11,7 +11,7 @@ export const useSessionDiscard = () => {
   const navigate = useNavigate();
 
   const handleNavigationAttempt = (destination: string) => {
-    if (currentSession && (currentSession.status === 'focus_pending' || currentSession.status === 'upload_pending')) {
+    if (currentSession && (currentSession.status === 'focus_in_progress' || currentSession.status === 'uploading')) {
       setShowDiscardDialog(true);
       setPendingNavigation(destination);
     } else {

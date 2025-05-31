@@ -22,7 +22,7 @@ interface UploadItem {
 }
 
 const UploadPage = () => {
-  const { currentSession, setCurrentSession } = useSession();
+  const { currentSession, setCurrentSession, updateCurrentSessionStatus } = useSession();
   const navigate = useNavigate();
   const { processStudyMaterials, isProcessing } = useAI();
   const { toast } = useToast();
@@ -215,6 +215,11 @@ const UploadPage = () => {
     setIsLoading(true);
     
     try {
+      // Update session status to 'validating' when user clicks "Submit to AI"
+      if (currentSession && updateCurrentSessionStatus) {
+        await updateCurrentSessionStatus('validating');
+      }
+      
       console.log('Saving materials to database...');
       
       // Save each uploaded item to the database

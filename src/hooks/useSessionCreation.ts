@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { StudySession } from '@/types/session';
 
@@ -7,8 +6,8 @@ export const useSessionCreation = () => {
   const createNewSession = async (
     subjectName: string,
     topicName: string,
-    focusDuration: number,
-    breakDuration: number
+    focusDurationMinutes: number,
+    breakDurationMinutes: number
   ): Promise<StudySession | null> => {
     try {
       const { data: authUser } = await supabase.auth.getUser();
@@ -17,34 +16,39 @@ export const useSessionCreation = () => {
         return null;
       }
 
-      // Get the next sequence number for this specific subject-topic combination
-      const { data: lastSession } = await supabase
+      // Get the next sequence number for the user
+      const { data: existingSessions, error: countError } = await supabase
         .from('studysessions')
         .select('sequencenumber')
         .eq('userid', authUser.user.id)
-        .eq('subjectname', subjectName)
-        .eq('topicname', topicName)
         .order('sequencenumber', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
 
-      const nextSequenceNumber = (lastSession?.sequencenumber || 0) + 1;
+      if (countError) {
+        console.error('Error getting session count:', countError);
+        return null;
+      }
 
-      // Create session name with the new format: "Subject Name - Topic Name - Sequence Number"
-      const sessionName = `${subjectName} - ${topicName} - ${nextSequenceNumber}`;
+      const nextSequenceNumber = existingSessions && existingSessions.length > 0 
+        ? existingSessions[0].sequencenumber + 1 
+        : 1;
 
-      const { data: session, error } = await supabase
+      const sessionName = `${subjectName} - ${topicName} #${nextSequenceNumber}`;
+
+      const newSession = {
+        sessionname: sessionName,
+        subjectname: subjectName,
+        topicname: topicName,
+        focusdurationminutes: focusDurationMinutes,
+        breakdurationminutes: breakDurationMinutes,
+        status: 'focus_in_progress' as const,
+        userid: authUser.user.id,
+        sequencenumber: nextSequenceNumber,
+      };
+
+      const { data, error } = await supabase
         .from('studysessions')
-        .insert({
-          userid: authUser.user.id,
-          sessionname: sessionName,
-          subjectname: subjectName,
-          topicname: topicName,
-          focusdurationminutes: focusDuration,
-          breakdurationminutes: breakDuration,
-          status: 'focus_inprogress',
-          sequencenumber: nextSequenceNumber,
-        })
+        .insert(newSession)
         .select()
         .single();
 
@@ -53,24 +57,25 @@ export const useSessionCreation = () => {
         return null;
       }
 
-      const newSession: StudySession = {
-        id: session.sessionid,
-        sessionName,
-        subjectName,
-        topicName,
-        focusDuration: focusDuration * 60,
-        breakDuration: breakDuration * 60,
-        focusDurationMinutes: focusDuration,
-        breakDurationMinutes: breakDuration,
-        status: 'focus_inprogress',
-        startTime: new Date(),
-        createdAt: new Date(session.createdat),
-        isFavorite: false,
+      const createdSession: StudySession = {
+        id: data.sessionid,
+        sessionName: data.sessionname,
+        subjectName: data.subjectname,
+        topicName: data.topicname,
+        focusDuration: data.focusdurationminutes * 60,
+        breakDuration: data.breakdurationminutes * 60,
+        focusDurationMinutes: data.focusdurationminutes,
+        breakDurationMinutes: data.breakdurationminutes,
+        status: data.status as 'focus_in_progress',
+        startTime: new Date(data.createdat),
+        createdAt: new Date(data.createdat),
+        isFavorite: data.isfavorite,
       };
 
-      return newSession;
+      console.log('Session created successfully:', createdSession);
+      return createdSession;
     } catch (error) {
-      console.error('Error creating session:', error);
+      console.error('Error in createNewSession:', error);
       return null;
     }
   };
