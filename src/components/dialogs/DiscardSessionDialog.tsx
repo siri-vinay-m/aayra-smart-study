@@ -16,6 +16,7 @@ interface DiscardSessionDialogProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   isValidationPhase?: boolean;
+  isBreakPhase?: boolean;
 }
 
 const DiscardSessionDialog: React.FC<DiscardSessionDialogProps> = ({
@@ -23,20 +24,26 @@ const DiscardSessionDialog: React.FC<DiscardSessionDialogProps> = ({
   onOpenChange,
   onConfirm,
   isValidationPhase = false,
+  isBreakPhase = false,
 }) => {
+  const getTitle = () => {
+    if (isBreakPhase) return 'Complete Session';
+    if (isValidationPhase) return 'Exit Session';
+    return 'Discard Session';
+  };
+
+  const getDescription = () => {
+    if (isBreakPhase) return 'Session will be marked complete.';
+    if (isValidationPhase) return 'Do you want to exit? Session will be marked incomplete.';
+    return 'The session will be discarded. This action cannot be undone.';
+  };
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            {isValidationPhase ? 'Exit Session' : 'Discard Session'}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {isValidationPhase 
-              ? 'Do you want to exit? Session will be marked incomplete.'
-              : 'The session will be discarded. This action cannot be undone.'
-            }
-          </AlertDialogDescription>
+          <AlertDialogTitle>{getTitle()}</AlertDialogTitle>
+          <AlertDialogDescription>{getDescription()}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>

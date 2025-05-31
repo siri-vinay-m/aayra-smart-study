@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSession } from '@/contexts/SessionContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -9,9 +9,14 @@ export const useSessionDiscard = () => {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const { currentSession, setCurrentSession } = useSession();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const isInValidationPhase = () => {
     return currentSession && currentSession.status === 'validating';
+  };
+
+  const isInBreakPhase = () => {
+    return currentSession && currentSession.status === 'break_in_progress';
   };
 
   const handleNavigationAttempt = (destination: string) => {
@@ -19,6 +24,9 @@ export const useSessionDiscard = () => {
       setShowDiscardDialog(true);
       setPendingNavigation(destination);
     } else if (isInValidationPhase()) {
+      setShowDiscardDialog(true);
+      setPendingNavigation(destination);
+    } else if (isInBreakPhase()) {
       setShowDiscardDialog(true);
       setPendingNavigation(destination);
     } else {
@@ -42,6 +50,18 @@ export const useSessionDiscard = () => {
             console.error('Error marking session as incomplete:', error);
           } else {
             console.log('Session marked as incomplete successfully');
+          }
+        } else if (isInBreakPhase()) {
+          // Mark session as completed for break phase
+          const { error } = await supabase
+            .from('studysessions')
+            .update({ status: 'completed' })
+            .eq('sessionid', currentSession.id);
+
+          if (error) {
+            console.error('Error marking session as completed:', error);
+          } else {
+            console.log('Session marked as completed successfully');
           }
         } else {
           // Delete the session completely for focus/upload phases
@@ -77,6 +97,7 @@ export const useSessionDiscard = () => {
   return {
     showDiscardDialog,
     isInValidationPhase: isInValidationPhase(),
+    isInBreakPhase: isInBreakPhase(),
     handleNavigationAttempt,
     handleDiscardSession,
     handleCancelDiscard,

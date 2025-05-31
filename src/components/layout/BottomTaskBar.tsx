@@ -12,6 +12,7 @@ const BottomTaskBar = () => {
   const {
     showDiscardDialog,
     isInValidationPhase,
+    isInBreakPhase,
     handleNavigationAttempt,
     handleDiscardSession,
     handleCancelDiscard,
@@ -69,6 +70,7 @@ const BottomTaskBar = () => {
         onOpenChange={handleCancelDiscard}
         onConfirm={handleDiscardSession}
         isValidationPhase={isInValidationPhase}
+        isBreakPhase={isInBreakPhase}
       />
     </>
   );

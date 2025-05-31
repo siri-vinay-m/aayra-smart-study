@@ -4,10 +4,19 @@ import MainLayout from '@/components/layout/MainLayout';
 import CircularTimer from '@/components/timer/CircularTimer';
 import { useSession } from '@/contexts/SessionContext';
 import { useTimer } from '@/contexts/TimerContext';
+import { useSessionDiscard } from '@/hooks/useSessionDiscard';
+import DiscardSessionDialog from '@/components/dialogs/DiscardSessionDialog';
 
 const BreakTimerPage = () => {
   const { currentSession } = useSession();
   const { setTimerType } = useTimer();
+  const {
+    showDiscardDialog,
+    isInBreakPhase,
+    handleNavigationAttempt,
+    handleDiscardSession,
+    handleCancelDiscard,
+  } = useSessionDiscard();
 
   useEffect(() => {
     setTimerType('break');
@@ -35,6 +44,13 @@ const BreakTimerPage = () => {
           <p className="mt-2">You'll be ready for your next session when the timer ends.</p>
         </div>
       </div>
+      
+      <DiscardSessionDialog
+        open={showDiscardDialog}
+        onOpenChange={handleCancelDiscard}
+        onConfirm={handleDiscardSession}
+        isBreakPhase={isInBreakPhase}
+      />
     </MainLayout>
   );
 };
