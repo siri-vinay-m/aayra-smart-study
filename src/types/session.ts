@@ -1,4 +1,4 @@
-export type SessionStatus = 'focus_inprogress' | 'break_pending' | 'break_inprogress' | 'validating' | 'incomplete' | 'completed';
+export type SessionStatus = 'focus_pending' | 'upload_pending' | 'focus_inprogress' | 'break_pending' | 'break_inprogress' | 'validating' | 'incomplete' | 'completed';
 
 export interface AIGeneratedContent {
   flashcards: Array<{
