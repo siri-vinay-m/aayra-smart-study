@@ -37,10 +37,10 @@ const NewSessionPage = () => {
       const newSession = await createNewSession(subjectName.trim(), topicName.trim(), focusDuration, breakDuration);
       
       if (newSession) {
-        // Update the session with focus_inprogress status and set as current
+        // Update the session with focus_in_progress status and set as current
         const updatedSession = {
           ...newSession,
-          status: 'focus_inprogress' as const
+          status: 'focus_in_progress' as const
         };
         setCurrentSession(updatedSession);
         

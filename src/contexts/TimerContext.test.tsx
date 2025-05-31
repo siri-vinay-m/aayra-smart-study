@@ -16,7 +16,7 @@ const mockCurrentSession: StudySession = {
   breakDuration: 5 * 60,
   focusDurationMinutes: 25,
   breakDurationMinutes: 5,
-  status: 'focus_inprogress',
+  status: 'focus_in_progress',
   startTime: new Date(),
   createdAt: new Date(),
   isFavorite: false,

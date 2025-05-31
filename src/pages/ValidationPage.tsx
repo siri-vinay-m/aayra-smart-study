@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -95,9 +96,9 @@ const ValidationPage = () => {
     if (currentSession) {
       console.log('Finishing validation, session status:', currentSession.status);
       
-      if (currentSession.status === 'incomplete') {
-        console.log('Completing incomplete session');
-        completeSession(currentSession.id);
+      // Check if this is a completed session being reviewed (no longer using 'incomplete' status)
+      if (currentSession.status === 'completed') {
+        console.log('Completing review of completed session');
         setCurrentSession(null);
         navigate('/home');
       } else {
@@ -144,7 +145,7 @@ const ValidationPage = () => {
       <SummaryView
         summary={summary}
         onFinish={handleFinishValidation}
-        isReviewSession={currentSession.status === 'incomplete'}
+        isReviewSession={currentSession.status === 'completed'}
       />
     );
   }

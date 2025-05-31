@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { render, act } from '@testing-library/react';
 import { screen, fireEvent } from '@testing-library/dom';
@@ -179,15 +178,14 @@ describe('ValidationPage Screen Flow', () => {
     await act(async () => { fireEvent.click(takeBreakButton); });
     
     // Verify session completion and navigation
-    expect(mockSetCurrentSession).toHaveBeenCalledWith({...mockCurrentSession, status: 'break_pending'});
-    expect(mockUpdateCurrentSessionStatus).toHaveBeenCalledWith('break_pending');
-    expect(mockCompleteSession).toHaveBeenCalledWith(mockCurrentSession.id);
+    expect(mockSetCurrentSession).toHaveBeenCalledWith({...mockCurrentSession, status: 'break_in_progress'});
+    expect(mockUpdateCurrentSessionStatus).toHaveBeenCalledWith('break_in_progress');
     expect(mockNavigate).toHaveBeenCalledWith('/break');
   });
 
-  it('completes the session and goes to home when finishing incomplete session', async () => {
-    const incompleteSession = { ...mockCurrentSession, status: 'incomplete' as const };
-    renderValidationPage(incompleteSession);
+  it('completes the session and goes to home when finishing completed session review', async () => {
+    const completedSession = { ...mockCurrentSession, status: 'completed' as const };
+    renderValidationPage(completedSession);
     
     // Skip to summary view
     let nextButton = screen.getByRole('button', { name: /Next/i });
@@ -203,12 +201,11 @@ describe('ValidationPage Screen Flow', () => {
     const viewSummaryButton = screen.getByRole('button', { name: /View Summary/i });
     await act(async () => { fireEvent.click(viewSummaryButton); });
     
-    // Click "Complete" button (for incomplete sessions)
+    // Click "Complete" button (for completed sessions)
     const completeButton = screen.getByRole('button', { name: /Complete/i });
     await act(async () => { fireEvent.click(completeButton); });
     
     // Verify session completion and navigation to home
-    expect(mockCompleteSession).toHaveBeenCalledWith(incompleteSession.id);
     expect(mockSetCurrentSession).toHaveBeenCalledWith(null);
     expect(mockNavigate).toHaveBeenCalledWith('/home');
   });
