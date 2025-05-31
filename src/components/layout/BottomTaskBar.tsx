@@ -1,32 +1,39 @@
 
 import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Heart, Home, ArrowLeft } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
+import { useSessionDiscard } from '@/hooks/useSessionDiscard';
+import DiscardSessionDialog from '@/components/dialogs/DiscardSessionDialog';
 
 const BottomTaskBar = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const { isAuthenticated } = useUser();
+  const {
+    showDiscardDialog,
+    handleNavigationAttempt,
+    handleDiscardSession,
+    handleCancelDiscard,
+  } = useSessionDiscard();
   
   const handleFavorites = () => {
-    navigate('/favorites');
+    handleNavigationAttempt('/favorites');
   };
   
   const handleHome = () => {
-    navigate('/home');
+    handleNavigationAttempt('/home');
   };
   
   const handleBack = () => {
     // Special handling for completed sessions and pending reviews pages
     if (location.pathname === '/completed-sessions' || 
         location.pathname === '/pending-reviews') {
-      navigate('/home');
+      handleNavigationAttempt('/home');
     } else if (location.pathname === '/home') {
       // Navigate to login page when on home page
-      navigate('/login');
+      handleNavigationAttempt('/login');
     } else {
-      navigate(-1);
+      handleNavigationAttempt(-1 as any); // This will be handled by the browser's back functionality if no session to discard
     }
   };
   
@@ -55,6 +62,12 @@ const BottomTaskBar = () => {
         </button>
       </div>
       <div className="bottom-task-bar-spacer" />
+      
+      <DiscardSessionDialog
+        open={showDiscardDialog}
+        onOpenChange={handleCancelDiscard}
+        onConfirm={handleDiscardSession}
+      />
     </>
   );
 };
