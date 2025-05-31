@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useUser, StudentCategory } from '@/contexts/UserContext';
@@ -12,12 +11,14 @@ import ImageUpload from '@/components/ui/image-upload';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Crown } from 'lucide-react';
+import { Crown, Bell } from 'lucide-react';
+import { useStudyReminders } from '@/hooks/useStudyReminders';
 
 const ProfilePage = () => {
   const { user, setUser, loadUserData } = useUser();
   const { signOut, user: authUser } = useAuth();
   const { toast } = useToast(); 
+  const { requestNotificationPermission } = useStudyReminders();
   const [displayName, setDisplayName] = useState('');
   const [studentCategory, setStudentCategory] = useState<StudentCategory>('college');
   const [profilePictureURL, setProfilePictureURL] = useState('');
@@ -25,6 +26,13 @@ const ProfilePage = () => {
   const [preferredStudyWeekdays, setPreferredStudyWeekdays] = useState<string[]>([]);
   const [preferredStudyStartTime, setPreferredStudyStartTime] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -72,6 +80,23 @@ const ProfilePage = () => {
   
   const handleFileSelect = (file: File | null) => {
     setSelectedFile(file);
+  };
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    if (granted) {
+      setNotificationPermission('granted');
+      toast({
+        title: "Notifications Enabled",
+        description: "You'll receive study reminders 15 minutes before your preferred study time.",
+      });
+    } else {
+      toast({
+        title: "Notifications Blocked",
+        description: "Please enable notifications in your browser settings to receive study reminders.",
+        variant: "destructive"
+      });
+    }
   };
   
   const handleSaveProfile = async () => {
@@ -181,7 +206,7 @@ const ProfilePage = () => {
         
         toast({
           title: "Success",
-          description: "Profile updated successfully!"
+          description: "Profile updated successfully! Study reminders will be scheduled based on your preferences."
         });
         
         await loadUserData();
@@ -267,6 +292,30 @@ const ProfilePage = () => {
             )}
           </CardContent>
         </Card>
+
+        {notificationPermission !== 'granted' && (
+          <Card className="mb-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Bell size={20} className="text-blue-500" />
+                Study Reminders
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-3">
+                Enable notifications to receive study reminders 15 minutes before your preferred study time.
+              </p>
+              <Button 
+                onClick={handleEnableNotifications}
+                className="w-full"
+                variant="outline"
+              >
+                <Bell size={16} className="mr-2" />
+                Enable Study Reminders
+              </Button>
+            </CardContent>
+          </Card>
+        )}
         
         <div className="space-y-4 mb-6">
           <div>
