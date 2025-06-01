@@ -82,9 +82,23 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     try {
+      // Load user data with subscription information
       const { data: userData, error } = await supabase
         .from('users')
-        .select('*')
+        .select(`
+          *,
+          usersubscriptions!inner(
+            status,
+            startdate,
+            enddate,
+            subscriptionplans(
+              planname,
+              price,
+              maxsessionsperday,
+              adsenabled
+            )
+          )
+        `)
         .eq('userid', authUser.id)
         .maybeSingle();
 
@@ -104,8 +118,13 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
 
-        // Ensure subscription_plan is properly typed
-        const subscriptionPlan = userData.subscription_plan === 'premium' ? 'premium' : 'free';
+        // Check if user has active subscription from usersubscriptions table
+        const activeSubscription = userData.usersubscriptions?.find(
+          (sub: any) => sub.status === 'active' && new Date(sub.enddate) > new Date()
+        );
+
+        const subscriptionPlan = activeSubscription ? 'premium' : 'free';
+        const isSubscribed = !!activeSubscription;
 
         setUser({
           id: userData.userid,
@@ -115,10 +134,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           profilePictureURL: userData.profilepictureurl,
           preferredStudyWeekdays: parsedWeekdays,
           preferredStudyStartTime: userData.preferredstudystarttime,
-          isSubscribed: userData.subscription_plan === 'premium',
+          isSubscribed: isSubscribed,
           subscriptionPlan: subscriptionPlan,
-          subscriptionStartDate: userData.subscription_start_date,
-          subscriptionEndDate: userData.subscription_end_date,
+          subscriptionStartDate: activeSubscription?.startdate || userData.subscription_start_date,
+          subscriptionEndDate: activeSubscription?.enddate || userData.subscription_end_date,
           lastLoginAt: userData.lastloginat || null,
           currentSubscriptionId: userData.currentsubscriptionid || null,
           stripeCustomerId: userData.stripe_customer_id,
@@ -128,6 +147,45 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
         setIsAuthenticated(true);
       } else {
+        // If no user data found, try loading without subscription join
+        const { data: basicUserData, error: basicError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('userid', authUser.id)
+          .maybeSingle();
+
+        if (basicUserData) {
+          let parsedWeekdays: string[] | null = null;
+          if (basicUserData.preferredstudyweekdays) {
+            if (Array.isArray(basicUserData.preferredstudyweekdays)) {
+              parsedWeekdays = basicUserData.preferredstudyweekdays;
+            } else if (typeof basicUserData.preferredstudyweekdays === 'string') {
+              parsedWeekdays = basicUserData.preferredstudyweekdays.split(',').map(day => day.trim()).filter(day => day);
+            }
+          }
+
+          const subscriptionPlan = basicUserData.subscription_plan === 'premium' ? 'premium' : 'free';
+
+          setUser({
+            id: basicUserData.userid,
+            displayName: basicUserData.displayname,
+            email: basicUserData.email,
+            studentCategory: basicUserData.studentcategory as StudentCategory,
+            profilePictureURL: basicUserData.profilepictureurl,
+            preferredStudyWeekdays: parsedWeekdays,
+            preferredStudyStartTime: basicUserData.preferredstudystarttime,
+            isSubscribed: basicUserData.subscription_plan === 'premium',
+            subscriptionPlan: subscriptionPlan,
+            subscriptionStartDate: basicUserData.subscription_start_date,
+            subscriptionEndDate: basicUserData.subscription_end_date,
+            lastLoginAt: basicUserData.lastloginat || null,
+            currentSubscriptionId: basicUserData.currentsubscriptionid || null,
+            stripeCustomerId: basicUserData.stripe_customer_id,
+            stripeSubscriptionId: basicUserData.stripe_subscription_id,
+            sessionsUsedToday: basicUserData.sessions_used_today || 0,
+            sessionsUsedThisWeek: basicUserData.sessions_used_this_week || 0,
+          });
+        }
         setIsAuthenticated(true);
       }
     } catch (error) {
