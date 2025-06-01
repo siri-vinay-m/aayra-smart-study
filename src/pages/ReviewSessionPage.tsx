@@ -14,7 +14,7 @@ import { useReviewSessionNavigation } from '@/hooks/useReviewSessionNavigation';
 const ReviewSessionPage = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
-  const { pendingReviews, completedSessions } = useSession();
+  const { pendingReviews, completedSessions, incompleteSessions } = useSession();
   
   const {
     currentStep,
@@ -29,15 +29,16 @@ const ReviewSessionPage = () => {
     setCurrentStep
   } = useReviewSessionNavigation();
   
-  // Find the review session based on the session ID
+  // Find the review session based on the session ID - check all possible sources
   const reviewSession = pendingReviews.find(review => review.sessionId === sessionId) ||
-    completedSessions.find(session => session.id === sessionId);
+    completedSessions.find(session => session.id === sessionId) ||
+    incompleteSessions.find(session => session.id === sessionId);
   
   const { aiContent, isLoadingContent, hasError } = useReviewSessionContent(reviewSession, sessionId);
   
   useEffect(() => {
     if (!reviewSession) {
-      navigate('/pending-reviews');
+      navigate('/home');
     }
   }, [reviewSession, navigate]);
   
