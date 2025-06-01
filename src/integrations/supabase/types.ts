@@ -407,6 +407,33 @@ export type Database = {
           },
         ]
       }
+      user_session_usage: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          sessions_count: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          sessions_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          sessions_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       usernotifications: {
         Row: {
           createdat: string
@@ -548,12 +575,21 @@ export type Database = {
           displayname: string
           email: string
           emailverified: boolean
+          last_session_date: string | null
+          last_weekly_reset_date: string | null
           lastloginat: string | null
           passwordhash: string
           preferredstudystarttime: string | null
           preferredstudyweekdays: string | null
           profilepictureurl: string | null
+          sessions_used_this_week: number | null
+          sessions_used_today: number | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           studentcategory: string
+          subscription_end_date: string | null
+          subscription_plan: string | null
+          subscription_start_date: string | null
           updatedat: string
           userid: string
           verificationtoken: string | null
@@ -564,12 +600,21 @@ export type Database = {
           displayname: string
           email: string
           emailverified?: boolean
+          last_session_date?: string | null
+          last_weekly_reset_date?: string | null
           lastloginat?: string | null
           passwordhash: string
           preferredstudystarttime?: string | null
           preferredstudyweekdays?: string | null
           profilepictureurl?: string | null
+          sessions_used_this_week?: number | null
+          sessions_used_today?: number | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           studentcategory: string
+          subscription_end_date?: string | null
+          subscription_plan?: string | null
+          subscription_start_date?: string | null
           updatedat?: string
           userid?: string
           verificationtoken?: string | null
@@ -580,12 +625,21 @@ export type Database = {
           displayname?: string
           email?: string
           emailverified?: boolean
+          last_session_date?: string | null
+          last_weekly_reset_date?: string | null
           lastloginat?: string | null
           passwordhash?: string
           preferredstudystarttime?: string | null
           preferredstudyweekdays?: string | null
           profilepictureurl?: string | null
+          sessions_used_this_week?: number | null
+          sessions_used_today?: number | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           studentcategory?: string
+          subscription_end_date?: string | null
+          subscription_plan?: string | null
+          subscription_start_date?: string | null
           updatedat?: string
           userid?: string
           verificationtoken?: string | null
@@ -656,9 +710,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_free_plan_days_remaining: {
+        Args: { user_created_at: string }
+        Returns: number
+      }
       calculate_next_review_date: {
         Args: { current_stage: number }
         Returns: string
+      }
+      can_create_session: {
+        Args: { user_id_param: string }
+        Returns: boolean
       }
       complete_review_cycle: {
         Args: { entry_id: string }

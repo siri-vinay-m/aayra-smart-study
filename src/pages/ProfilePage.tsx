@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useUser, StudentCategory } from '@/contexts/UserContext';
@@ -13,7 +12,7 @@ import ProfileForm from '@/components/profile/ProfileForm';
 import ProfileActions from '@/components/profile/ProfileActions';
 
 const ProfilePage = () => {
-  const { user, setUser, loadUserData } = useUser();
+  const { user, setUser, loadUserData, checkSubscriptionStatus } = useUser();
   const { signOut, user: authUser } = useAuth();
   const { toast } = useToast(); 
   const { requestNotificationPermission } = useStudyReminders();
@@ -31,6 +30,35 @@ const ProfilePage = () => {
       setNotificationPermission(Notification.permission);
     }
   }, []);
+
+  // Check for payment success/cancellation in URL params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    
+    if (paymentStatus === 'success') {
+      toast({
+        title: "Payment Successful!",
+        description: "Your subscription has been upgraded to Premium. Checking status...",
+      });
+      // Check subscription status after successful payment
+      setTimeout(() => {
+        checkSubscriptionStatus();
+      }, 2000);
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (paymentStatus === 'cancelled') {
+      toast({
+        title: "Payment Cancelled",
+        description: "Your payment was cancelled. You can try again anytime.",
+        variant: "destructive"
+      });
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [checkSubscriptionStatus, toast]);
 
   useEffect(() => {
     if (user) {
@@ -170,6 +198,7 @@ const ProfilePage = () => {
             email: authUser.email || '',
             passwordhash: '',
             emailverified: authUser.email_confirmed_at ? true : false,
+            subscription_plan: 'free',
             ...userDataToSave,
           });
         error = insertError;
@@ -184,7 +213,12 @@ const ProfilePage = () => {
         });
       } else {
         setUser(prevUser => ({
-          ...(prevUser || { id: authUser.id, email: authUser.email || '', isSubscribed: false, subscriptionPlan: 'free' }),
+          ...(prevUser || { 
+            id: authUser.id, 
+            email: authUser.email || '', 
+            isSubscribed: false, 
+            subscriptionPlan: 'free' 
+          }),
           displayName,
           studentCategory,
           profilePictureURL: newProfilePictureUrl,

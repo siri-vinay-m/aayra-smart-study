@@ -20,8 +20,14 @@ export interface User {
   preferredStudyStartTime: string | null;
   isSubscribed: boolean;
   subscriptionPlan: 'free' | 'premium' | null;
+  subscriptionStartDate?: string | null;
+  subscriptionEndDate?: string | null;
   lastLoginAt?: string | null;
   currentSubscriptionId?: string | null;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  sessionsUsedToday?: number;
+  sessionsUsedThisWeek?: number;
 }
 
 export interface UpdateUserPayload {
@@ -40,6 +46,7 @@ interface UserContextType {
   setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
   loadUserData: () => Promise<void>;
   updateUserProfile: (updates: UpdateUserPayload) => Promise<{ success: boolean; error?: any }>;
+  checkSubscriptionStatus: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -48,6 +55,24 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const { user: authUser, session } = useAuth();
+
+  const checkSubscriptionStatus = async () => {
+    if (!authUser) return;
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      
+      if (error) {
+        console.error('Error checking subscription:', error);
+        return;
+      }
+      
+      // Reload user data after subscription check
+      await loadUserData();
+    } catch (error) {
+      console.error('Error in checkSubscriptionStatus:', error);
+    }
+  };
 
   const loadUserData = async () => {
     if (!authUser) {
@@ -87,10 +112,16 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           profilePictureURL: userData.profilepictureurl,
           preferredStudyWeekdays: parsedWeekdays,
           preferredStudyStartTime: userData.preferredstudystarttime,
-          isSubscribed: false,
-          subscriptionPlan: 'free',
+          isSubscribed: userData.subscription_plan === 'premium',
+          subscriptionPlan: userData.subscription_plan || 'free',
+          subscriptionStartDate: userData.subscription_start_date,
+          subscriptionEndDate: userData.subscription_end_date,
           lastLoginAt: userData.lastloginat || null,
-          currentSubscriptionId: userData.currentsubscriptionid || null
+          currentSubscriptionId: userData.currentsubscriptionid || null,
+          stripeCustomerId: userData.stripe_customer_id,
+          stripeSubscriptionId: userData.stripe_subscription_id,
+          sessionsUsedToday: userData.sessions_used_today || 0,
+          sessionsUsedThisWeek: userData.sessions_used_this_week || 0,
         });
         setIsAuthenticated(true);
       } else {
@@ -157,6 +188,13 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [session, authUser]);
 
+  // Check subscription status on mount and when user changes
+  useEffect(() => {
+    if (authUser && session) {
+      checkSubscriptionStatus();
+    }
+  }, [authUser, session]);
+
   return (
     <UserContext.Provider value={{ 
       user,
@@ -164,7 +202,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isAuthenticated,
       setIsAuthenticated,
       loadUserData,
-      updateUserProfile
+      updateUserProfile,
+      checkSubscriptionStatus
     }}>
       {children}
     </UserContext.Provider>
@@ -179,5 +218,4 @@ export const useUser = (): UserContextType => {
   return context;
 };
 
-// Export UserContext for testing
 export { UserContext };
