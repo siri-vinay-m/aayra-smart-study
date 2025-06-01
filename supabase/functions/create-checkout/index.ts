@@ -40,11 +40,16 @@ serve(async (req) => {
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
-      console.error("STRIPE_SECRET_KEY not found");
+      console.error("STRIPE_SECRET_KEY not found in environment");
       throw new Error("Stripe configuration missing");
     }
 
-    console.log("Stripe key found, initializing Stripe");
+    if (!stripeKey.startsWith('sk_')) {
+      console.error("Invalid Stripe secret key format. Key should start with 'sk_'");
+      throw new Error("Invalid Stripe secret key format. Please use a secret key (starts with 'sk_')");
+    }
+
+    console.log("Stripe key found and validated, initializing Stripe");
     const stripe = new Stripe(stripeKey, {
       apiVersion: "2023-10-16",
     });
