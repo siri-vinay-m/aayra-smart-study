@@ -11,6 +11,7 @@ export class NotificationService {
   }
 
   async requestPermission(): Promise<boolean> {
+    // Check if notifications are supported
     if (!('Notification' in window)) {
       console.log('This browser does not support notifications');
       return false;
@@ -18,6 +19,7 @@ export class NotificationService {
 
     // Check if already granted
     if (Notification.permission === 'granted') {
+      console.log('Notifications already granted');
       return true;
     }
 
@@ -28,13 +30,28 @@ export class NotificationService {
     }
 
     try {
-      // Request permission and wait for user response
+      // For browsers that support the promise-based API
       const permission = await Notification.requestPermission();
       console.log('Notification permission result:', permission);
       return permission === 'granted';
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
-      return false;
+      // Fallback for browsers that don't support promise-based API
+      console.log('Using callback-based permission request');
+      
+      return new Promise((resolve) => {
+        const permission = Notification.requestPermission((result) => {
+          console.log('Notification permission result (callback):', result);
+          resolve(result === 'granted');
+        });
+        
+        // Handle case where requestPermission returns a promise even in older browsers
+        if (permission && typeof permission.then === 'function') {
+          permission.then((result: NotificationPermission) => {
+            console.log('Notification permission result (promise fallback):', result);
+            resolve(result === 'granted');
+          });
+        }
+      });
     }
   }
 
@@ -51,6 +68,8 @@ export class NotificationService {
       } catch (error) {
         console.error('Error showing notification:', error);
       }
+    } else {
+      console.log('Cannot show notification: permission not granted');
     }
   }
 
@@ -59,6 +78,12 @@ export class NotificationService {
     this.clearAllNotifications();
 
     if (!weekdays.length || !startTime) {
+      console.log('Cannot schedule reminders: missing weekdays or start time');
+      return;
+    }
+
+    if (Notification.permission !== 'granted') {
+      console.log('Cannot schedule reminders: notification permission not granted');
       return;
     }
 
