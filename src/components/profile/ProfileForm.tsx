@@ -31,9 +31,10 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
   const weekdaysDefinition = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
   const handleWeekdayToggle = (day: string) => {
-    setPreferredStudyWeekdays(prev => 
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-    );
+    const newWeekdays = preferredStudyWeekdays.includes(day) 
+      ? preferredStudyWeekdays.filter(d => d !== day) 
+      : [...preferredStudyWeekdays, day];
+    setPreferredStudyWeekdays(newWeekdays);
   };
 
   const handleSelectAllWeekdays = (checked: boolean) => {
