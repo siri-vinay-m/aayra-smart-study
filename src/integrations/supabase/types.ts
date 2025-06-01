@@ -722,9 +722,27 @@ export type Database = {
         Args: { user_id_param: string }
         Returns: boolean
       }
+      check_and_update_expired_subscriptions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       complete_review_cycle: {
         Args: { entry_id: string }
         Returns: undefined
+      }
+      get_user_subscription_status: {
+        Args: { user_id_param: string }
+        Returns: {
+          plan_name: string
+          status: string
+          start_date: string
+          end_date: string
+          days_remaining: number
+          sessions_per_day: number
+          sessions_per_week: number
+          ads_enabled: boolean
+          is_trial: boolean
+        }[]
       }
     }
     Enums: {

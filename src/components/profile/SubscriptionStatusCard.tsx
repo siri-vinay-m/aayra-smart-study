@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Crown, Calendar, Zap } from 'lucide-react';
+import { Crown, Calendar, Zap, Clock, Shield } from 'lucide-react';
 import { User } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,30 +15,7 @@ interface SubscriptionStatusCardProps {
 const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user }) => {
   const { user: authUser } = useAuth();
   const { toast } = useToast();
-  const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const calculateDaysRemaining = async () => {
-      if (authUser && user?.subscriptionPlan === 'free') {
-        try {
-          const { data, error } = await supabase.rpc('calculate_free_plan_days_remaining', {
-            user_created_at: authUser.created_at
-          });
-          
-          if (error) {
-            console.error('Error calculating days remaining:', error);
-          } else {
-            setDaysRemaining(data);
-          }
-        } catch (error) {
-          console.error('Error in calculateDaysRemaining:', error);
-        }
-      }
-    };
-
-    calculateDaysRemaining();
-  }, [authUser, user?.subscriptionPlan]);
 
   const handleUpgradeToPremium = async () => {
     if (!authUser) {
@@ -81,78 +58,122 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
     }
   };
 
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const getPlanIcon = () => {
+    switch (user?.subscriptionPlan) {
+      case 'premium':
+        return <Crown size={20} className="text-yellow-500" />;
+      case 'free':
+        return <Clock size={20} className="text-blue-500" />;
+      case 'free-for-life':
+        return <Shield size={20} className="text-green-500" />;
+      default:
+        return <Crown size={20} className="text-gray-400" />;
+    }
+  };
+
+  const getPlanDisplayName = () => {
+    switch (user?.subscriptionPlan) {
+      case 'premium':
+        return 'Premium';
+      case 'free':
+        return user?.isTrial ? 'Free Trial' : 'Free';
+      case 'free-for-life':
+        return 'Free for Life';
+      default:
+        return 'Free';
+    }
+  };
+
   const renderPlanDetails = () => {
-    if (user?.subscriptionPlan === 'premium') {
-      return (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-green-600">
-            <Zap size={16} />
-            <span>10 sessions per day</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-green-600">
-            <Crown size={16} />
-            <span>No ads</span>
-          </div>
-          {user.subscriptionPlan === 'premium' && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Calendar size={16} />
-              <span>Valid for 30 days</span>
+    return (
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <div className="text-sm text-gray-600">Sessions per day:</div>
+            <div className="font-medium">
+              {user?.sessionsPerDay || 'Unlimited'}
             </div>
-          )}
+          </div>
+          <div className="space-y-2">
+            <div className="text-sm text-gray-600">Sessions per week:</div>
+            <div className="font-medium">
+              {user?.sessionsPerWeek || 'Unlimited'}
+            </div>
+          </div>
         </div>
-      );
-    } else {
-      return (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Zap size={16} />
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <div className="text-sm text-gray-600">Ads:</div>
+            <div className="font-medium">
+              {user?.adsEnabled ? 'Enabled' : 'Disabled'}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="text-sm text-gray-600">Status:</div>
+            <div className={`font-medium capitalize ${
+              user?.subscriptionStatus === 'active' ? 'text-green-600' : 'text-gray-600'
+            }`}>
+              {user?.subscriptionStatus || 'Unknown'}
+            </div>
+          </div>
+        </div>
+
+        {user?.isTrial && (
+          <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 p-2 rounded">
+            <Calendar size={16} />
             <span>
-              {daysRemaining !== null && daysRemaining > 0 
-                ? '2 sessions per day' 
-                : '2 sessions per week'}
+              Trial period: {user?.daysRemaining || 0} days remaining
             </span>
           </div>
-          {daysRemaining !== null && (
-            <div className="flex items-center gap-2 text-sm text-orange-600">
-              <Calendar size={16} />
-              <span>
-                {daysRemaining > 0 
-                  ? `${daysRemaining} days remaining in trial period`
-                  : 'Trial period ended - weekly limits apply'}
-              </span>
+        )}
+
+        {user?.subscriptionStartDate && (
+          <div className="space-y-2">
+            <div className="text-sm text-gray-600">Started:</div>
+            <div className="text-sm">{formatDate(user?.subscriptionStartDate)}</div>
+          </div>
+        )}
+
+        {user?.subscriptionEndDate && (
+          <div className="space-y-2">
+            <div className="text-sm text-gray-600">
+              {user?.isTrial ? 'Trial ends:' : 'Next billing:'}
             </div>
-          )}
-        </div>
-      );
-    }
+            <div className="text-sm">{formatDate(user?.subscriptionEndDate)}</div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
     <Card className="mb-6">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Crown size={20} className={user?.subscriptionPlan === 'premium' ? 'text-yellow-500' : 'text-gray-400'} />
-          Subscription Status
+          {getPlanIcon()}
+          Subscription Details
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-between items-center">
           <span className="text-gray-600">Current Plan:</span>
-          <span className={`font-medium capitalize ${
-            user?.subscriptionPlan === 'premium' ? 'text-yellow-600' : 'text-gray-900'
+          <span className={`font-medium ${
+            user?.subscriptionPlan === 'premium' ? 'text-yellow-600' : 
+            user?.subscriptionPlan === 'free-for-life' ? 'text-green-600' : 'text-gray-900'
           }`}>
-            {user?.subscriptionPlan || 'Free'}
-            {user?.subscriptionPlan === 'free' && daysRemaining !== null && daysRemaining > 0 && (
-              <span className="text-xs text-orange-500 ml-1">
-                ({daysRemaining} days left)
-              </span>
-            )}
+            {getPlanDisplayName()}
           </span>
         </div>
         
         {renderPlanDetails()}
         
-        {user?.subscriptionPlan === 'free' && (
+        {user?.subscriptionPlan !== 'premium' && (
           <Button 
             onClick={handleUpgradeToPremium}
             disabled={isLoading}

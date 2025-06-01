@@ -30,84 +30,135 @@ serve(async (req) => {
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated");
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2023-10-16",
-    });
+    // Get current subscription status using the database function
+    const { data: subscriptionStatus, error: statusError } = await supabaseClient
+      .rpc('get_user_subscription_status', { user_id_param: user.id });
 
-    // Check if customer exists in Stripe
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    if (statusError) {
+      console.error('Error getting subscription status:', statusError);
+      throw new Error(`Failed to get subscription status: ${statusError.message}`);
+    }
+
+    if (!subscriptionStatus || subscriptionStatus.length === 0) {
+      // If no subscription found, create a free trial for the user
+      const { data: freePlan } = await supabaseClient
+        .from('subscriptionplans')
+        .select('planid')
+        .eq('planname', 'free')
+        .single();
+
+      if (freePlan) {
+        await supabaseClient
+          .from('usersubscriptions')
+          .insert({
+            userid: user.id,
+            planid: freePlan.planid,
+            status: 'active',
+            startdate: new Date().toISOString(),
+            enddate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString()
+          });
+
+        // Get the updated status
+        const { data: newStatus } = await supabaseClient
+          .rpc('get_user_subscription_status', { user_id_param: user.id });
+
+        if (newStatus && newStatus.length > 0) {
+          const status = newStatus[0];
+          return new Response(JSON.stringify({
+            subscribed: status.plan_name === 'premium',
+            subscription_plan: status.plan_name,
+            subscription_status: status.status,
+            subscription_start_date: status.start_date,
+            subscription_end_date: status.end_date,
+            days_remaining: status.days_remaining,
+            sessions_per_day: status.sessions_per_day,
+            sessions_per_week: status.sessions_per_week,
+            ads_enabled: status.ads_enabled,
+            is_trial: status.is_trial
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
+      }
+    }
+
+    const status = subscriptionStatus[0];
     
-    if (customers.data.length === 0) {
-      // No customer found, ensure user is on free plan
-      await supabaseClient.from("users").upsert({
-        userid: user.id,
-        email: user.email,
-        displayname: user.user_metadata?.display_name || 'User',
-        studentcategory: user.user_metadata?.student_category || 'college',
-        passwordhash: '',
-        emailverified: user.email_confirmed_at ? true : false,
-        subscription_plan: 'free',
-      }, { onConflict: 'userid' });
-      
-      return new Response(JSON.stringify({ 
-        subscribed: false, 
-        subscription_plan: 'free' 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+    // If user has Stripe subscription, verify it's still active
+    if (status.plan_name === 'premium') {
+      const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+        apiVersion: "2023-10-16",
       });
-    }
 
-    const customerId = customers.data[0].id;
-    
-    // Check for active subscriptions
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
-
-    const hasActiveSub = subscriptions.data.length > 0;
-    let subscriptionPlan = 'free';
-    let subscriptionEndDate = null;
-
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      subscriptionPlan = 'premium';
-      subscriptionEndDate = new Date(subscription.current_period_end * 1000).toISOString();
+      // Check if customer exists in Stripe
+      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
       
-      // Update user with premium status
-      await supabaseClient.from("users").upsert({
-        userid: user.id,
-        email: user.email,
-        displayname: user.user_metadata?.display_name || 'User',
-        studentcategory: user.user_metadata?.student_category || 'college',
-        passwordhash: '',
-        emailverified: user.email_confirmed_at ? true : false,
-        subscription_plan: 'premium',
-        subscription_start_date: new Date(subscription.current_period_start * 1000).toISOString(),
-        subscription_end_date: subscriptionEndDate,
-        stripe_customer_id: customerId,
-        stripe_subscription_id: subscription.id,
-      }, { onConflict: 'userid' });
-    } else {
-      // Update user to free plan
-      await supabaseClient.from("users").upsert({
-        userid: user.id,
-        email: user.email,
-        displayname: user.user_metadata?.display_name || 'User',
-        studentcategory: user.user_metadata?.student_category || 'college',
-        passwordhash: '',
-        emailverified: user.email_confirmed_at ? true : false,
-        subscription_plan: 'free',
-        stripe_customer_id: customerId,
-      }, { onConflict: 'userid' });
+      if (customers.data.length > 0) {
+        const customerId = customers.data[0].id;
+        
+        // Check for active subscriptions
+        const subscriptions = await stripe.subscriptions.list({
+          customer: customerId,
+          status: "active",
+          limit: 1,
+        });
+
+        if (subscriptions.data.length === 0) {
+          // No active Stripe subscription, but user has premium in database
+          // This means subscription was cancelled, so we need to expire it
+          await supabaseClient.rpc('check_and_update_expired_subscriptions');
+          
+          // Get updated status
+          const { data: updatedStatus } = await supabaseClient
+            .rpc('get_user_subscription_status', { user_id_param: user.id });
+          
+          if (updatedStatus && updatedStatus.length > 0) {
+            const newStatus = updatedStatus[0];
+            return new Response(JSON.stringify({
+              subscribed: false,
+              subscription_plan: newStatus.plan_name,
+              subscription_status: newStatus.status,
+              subscription_start_date: newStatus.start_date,
+              subscription_end_date: newStatus.end_date,
+              days_remaining: newStatus.days_remaining,
+              sessions_per_day: newStatus.sessions_per_day,
+              sessions_per_week: newStatus.sessions_per_week,
+              ads_enabled: newStatus.ads_enabled,
+              is_trial: newStatus.is_trial
+            }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 200,
+            });
+          }
+        }
+      }
     }
+
+    // Update user record with current subscription info
+    await supabaseClient.from("users").upsert({
+      userid: user.id,
+      email: user.email,
+      displayname: user.user_metadata?.display_name || 'User',
+      studentcategory: user.user_metadata?.student_category || 'college',
+      passwordhash: '',
+      emailverified: user.email_confirmed_at ? true : false,
+      subscription_plan: status.plan_name,
+      subscription_start_date: status.start_date,
+      subscription_end_date: status.end_date,
+    }, { onConflict: 'userid' });
 
     return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
-      subscription_plan: subscriptionPlan,
-      subscription_end_date: subscriptionEndDate
+      subscribed: status.plan_name === 'premium',
+      subscription_plan: status.plan_name,
+      subscription_status: status.status,
+      subscription_start_date: status.start_date,
+      subscription_end_date: status.end_date,
+      days_remaining: status.days_remaining,
+      sessions_per_day: status.sessions_per_day,
+      sessions_per_week: status.sessions_per_week,
+      ads_enabled: status.ads_enabled,
+      is_trial: status.is_trial
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

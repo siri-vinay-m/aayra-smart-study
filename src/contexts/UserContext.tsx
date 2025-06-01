@@ -19,9 +19,15 @@ export interface User {
   preferredStudyWeekdays: string[] | null;
   preferredStudyStartTime: string | null;
   isSubscribed: boolean;
-  subscriptionPlan: 'free' | 'premium' | null;
+  subscriptionPlan: 'free' | 'free-for-life' | 'premium' | null;
+  subscriptionStatus?: string | null;
   subscriptionStartDate?: string | null;
   subscriptionEndDate?: string | null;
+  daysRemaining?: number | null;
+  sessionsPerDay?: number | null;
+  sessionsPerWeek?: number | null;
+  adsEnabled?: boolean | null;
+  isTrial?: boolean | null;
   lastLoginAt?: string | null;
   currentSubscriptionId?: string | null;
   stripeCustomerId?: string | null;
@@ -67,8 +73,25 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
       }
       
-      // Reload user data after subscription check
-      await loadUserData();
+      if (data) {
+        // Update user state with subscription details
+        setUser(prevUser => {
+          if (!prevUser) return null;
+          return {
+            ...prevUser,
+            isSubscribed: data.subscribed || false,
+            subscriptionPlan: data.subscription_plan || 'free',
+            subscriptionStatus: data.subscription_status,
+            subscriptionStartDate: data.subscription_start_date,
+            subscriptionEndDate: data.subscription_end_date,
+            daysRemaining: data.days_remaining,
+            sessionsPerDay: data.sessions_per_day,
+            sessionsPerWeek: data.sessions_per_week,
+            adsEnabled: data.ads_enabled,
+            isTrial: data.is_trial
+          };
+        });
+      }
     } catch (error) {
       console.error('Error in checkSubscriptionStatus:', error);
     }
@@ -82,6 +105,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     try {
+      // First get user data from users table
       const { data: userData, error } = await supabase
         .from('users')
         .select('*')
@@ -92,6 +116,16 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.error('Error loading user data:', error);
         return;
       }
+
+      // Get subscription status using our database function
+      const { data: subscriptionData, error: subError } = await supabase
+        .rpc('get_user_subscription_status', { user_id_param: authUser.id });
+
+      if (subError) {
+        console.error('Error loading subscription data:', subError);
+      }
+
+      const subscriptionInfo = subscriptionData && subscriptionData.length > 0 ? subscriptionData[0] : null;
 
       if (userData) {
         // Parse weekdays - handle both array and comma-separated string formats
@@ -104,9 +138,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
 
-        // Ensure subscription_plan is properly typed
-        const subscriptionPlan = userData.subscription_plan === 'premium' ? 'premium' : 'free';
-
         setUser({
           id: userData.userid,
           displayName: userData.displayname,
@@ -115,10 +146,16 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           profilePictureURL: userData.profilepictureurl,
           preferredStudyWeekdays: parsedWeekdays,
           preferredStudyStartTime: userData.preferredstudystarttime,
-          isSubscribed: userData.subscription_plan === 'premium',
-          subscriptionPlan: subscriptionPlan,
-          subscriptionStartDate: userData.subscription_start_date,
-          subscriptionEndDate: userData.subscription_end_date,
+          isSubscribed: subscriptionInfo?.plan_name === 'premium' || false,
+          subscriptionPlan: subscriptionInfo?.plan_name || 'free',
+          subscriptionStatus: subscriptionInfo?.status,
+          subscriptionStartDate: subscriptionInfo?.start_date,
+          subscriptionEndDate: subscriptionInfo?.end_date,
+          daysRemaining: subscriptionInfo?.days_remaining,
+          sessionsPerDay: subscriptionInfo?.sessions_per_day,
+          sessionsPerWeek: subscriptionInfo?.sessions_per_week,
+          adsEnabled: subscriptionInfo?.ads_enabled,
+          isTrial: subscriptionInfo?.is_trial,
           lastLoginAt: userData.lastloginat || null,
           currentSubscriptionId: userData.currentsubscriptionid || null,
           stripeCustomerId: userData.stripe_customer_id,
@@ -128,6 +165,42 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
         setIsAuthenticated(true);
       } else {
+        // Create new user record if none exists
+        const newUserData = {
+          userid: authUser.id,
+          email: authUser.email || '',
+          displayname: authUser.user_metadata?.display_name || 'User',
+          studentcategory: authUser.user_metadata?.student_category || 'college',
+          passwordhash: '',
+          emailverified: authUser.email_confirmed_at ? true : false,
+          subscription_plan: 'free',
+        };
+
+        await supabase.from('users').insert(newUserData);
+        
+        setUser({
+          id: authUser.id,
+          displayName: authUser.user_metadata?.display_name || 'User',
+          email: authUser.email || '',
+          studentCategory: authUser.user_metadata?.student_category || 'college',
+          profilePictureURL: null,
+          preferredStudyWeekdays: null,
+          preferredStudyStartTime: null,
+          isSubscribed: false,
+          subscriptionPlan: 'free',
+          subscriptionStatus: 'active',
+          daysRemaining: 45,
+          sessionsPerDay: 2,
+          sessionsPerWeek: null,
+          adsEnabled: true,
+          isTrial: true,
+          lastLoginAt: null,
+          currentSubscriptionId: null,
+          stripeCustomerId: null,
+          stripeSubscriptionId: null,
+          sessionsUsedToday: 0,
+          sessionsUsedThisWeek: 0,
+        });
         setIsAuthenticated(true);
       }
     } catch (error) {
