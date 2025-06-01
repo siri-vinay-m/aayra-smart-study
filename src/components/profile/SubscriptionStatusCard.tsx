@@ -41,20 +41,39 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
   }, [authUser, user?.subscriptionPlan]);
 
   const handleUpgradeToPremium = async () => {
+    if (!authUser) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to upgrade your subscription.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
+    console.log('Starting checkout process...');
+    
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout');
       
-      if (error) throw error;
+      console.log('Checkout response:', { data, error });
+      
+      if (error) {
+        console.error('Checkout error:', error);
+        throw new Error(error.message || 'Failed to create checkout session');
+      }
       
       if (data?.url) {
+        console.log('Redirecting to checkout:', data.url);
         window.open(data.url, '_blank');
+      } else {
+        throw new Error('No checkout URL received');
       }
     } catch (error: any) {
       console.error('Error creating checkout session:', error);
       toast({
-        title: "Error",
-        description: "Failed to start checkout process. Please try again.",
+        title: "Checkout Error",
+        description: error.message || "Failed to start checkout process. Please try again.",
         variant: "destructive"
       });
     } finally {

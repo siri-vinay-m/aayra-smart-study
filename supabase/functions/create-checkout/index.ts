@@ -14,18 +14,38 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Starting create-checkout function");
+    
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("No authorization header provided");
+      throw new Error("No authorization header provided");
+    }
+
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated");
+    
+    if (!user?.email) {
+      console.error("User not authenticated");
+      throw new Error("User not authenticated");
+    }
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    console.log("User authenticated:", user.email);
+
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) {
+      console.error("STRIPE_SECRET_KEY not found");
+      throw new Error("Stripe configuration missing");
+    }
+
+    console.log("Stripe key found, initializing Stripe");
+    const stripe = new Stripe(stripeKey, {
       apiVersion: "2023-10-16",
     });
 
@@ -34,9 +54,12 @@ serve(async (req) => {
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
+      console.log("Existing customer found:", customerId);
+    } else {
+      console.log("No existing customer found");
     }
 
-    // Create checkout session for premium subscription
+    console.log("Creating checkout session");
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -62,11 +85,13 @@ serve(async (req) => {
       },
     });
 
+    console.log("Checkout session created successfully:", session.id);
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
+    console.error("Error in create-checkout:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
