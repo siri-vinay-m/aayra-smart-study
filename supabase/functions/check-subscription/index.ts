@@ -76,43 +76,6 @@ serve(async (req) => {
       subscriptionPlan = 'premium';
       subscriptionEndDate = new Date(subscription.current_period_end * 1000).toISOString();
       
-      // Get or create subscription plan record
-      const { data: planData } = await supabaseClient
-        .from("subscriptionplans")
-        .select("planid")
-        .eq("planname", "premium")
-        .single();
-
-      let planId = planData?.planid;
-      if (!planId) {
-        // Create premium plan if it doesn't exist
-        const { data: newPlan } = await supabaseClient
-          .from("subscriptionplans")
-          .insert({
-            planname: "premium",
-            price: 9.99,
-            billingcycle: "monthly",
-            maxsessionsperday: 10,
-            adsenabled: false,
-            featuresdescription: "10 sessions per day with no ads"
-          })
-          .select("planid")
-          .single();
-        planId = newPlan?.planid;
-      }
-
-      // Update or create user subscription record
-      if (planId) {
-        await supabaseClient.from("usersubscriptions").upsert({
-          userid: user.id,
-          planid: planId,
-          status: "active",
-          startdate: new Date(subscription.current_period_start * 1000).toISOString(),
-          enddate: subscriptionEndDate,
-          paymentgatewaysubscriptionid: subscription.id,
-        }, { onConflict: 'userid,planid' });
-      }
-      
       // Update user with premium status
       await supabaseClient.from("users").upsert({
         userid: user.id,
@@ -128,7 +91,7 @@ serve(async (req) => {
         stripe_subscription_id: subscription.id,
       }, { onConflict: 'userid' });
     } else {
-      // Update user to free plan and deactivate subscription
+      // Update user to free plan
       await supabaseClient.from("users").upsert({
         userid: user.id,
         email: user.email,
@@ -139,13 +102,6 @@ serve(async (req) => {
         subscription_plan: 'free',
         stripe_customer_id: customerId,
       }, { onConflict: 'userid' });
-
-      // Deactivate any existing subscriptions
-      await supabaseClient
-        .from("usersubscriptions")
-        .update({ status: "cancelled", enddate: new Date().toISOString() })
-        .eq("userid", user.id)
-        .eq("status", "active");
     }
 
     return new Response(JSON.stringify({
