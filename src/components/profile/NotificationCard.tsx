@@ -17,20 +17,6 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
     return null;
   }
 
-  const getButtonText = () => {
-    if (notificationPermission === 'denied') {
-      return 'Notifications Blocked - Check Browser Settings';
-    }
-    return 'Enable Study Reminders';
-  };
-
-  const getDescriptionText = () => {
-    if (notificationPermission === 'denied') {
-      return 'Notifications are currently blocked. Please enable them in your browser settings to receive study reminders.';
-    }
-    return 'Enable notifications to receive study reminders 15 minutes before your preferred study time.';
-  };
-
   return (
     <Card className="mb-6">
       <CardHeader className="pb-3">
@@ -41,22 +27,16 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
       </CardHeader>
       <CardContent>
         <p className="text-sm text-gray-600 mb-3">
-          {getDescriptionText()}
+          Enable notifications to receive study reminders 15 minutes before your preferred study time.
         </p>
         <Button 
           onClick={onEnableNotifications}
           className="w-full"
-          variant={notificationPermission === 'denied' ? 'secondary' : 'outline'}
-          disabled={notificationPermission === 'denied'}
+          variant="outline"
         >
           <Bell size={16} className="mr-2" />
-          {getButtonText()}
+          Enable Study Reminders
         </Button>
-        {notificationPermission === 'denied' && (
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            Go to your browser settings → Notifications → Allow this site to send notifications
-          </p>
-        )}
       </CardContent>
     </Card>
   );

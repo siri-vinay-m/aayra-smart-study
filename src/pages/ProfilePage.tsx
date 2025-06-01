@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useUser, StudentCategory } from '@/contexts/UserContext';
@@ -28,16 +29,6 @@ const ProfilePage = () => {
   useEffect(() => {
     if ('Notification' in window) {
       setNotificationPermission(Notification.permission);
-      
-      // Listen for permission changes
-      const checkPermission = () => {
-        setNotificationPermission(Notification.permission);
-      };
-      
-      // Check permission periodically in case user changes it in browser settings
-      const interval = setInterval(checkPermission, 1000);
-      
-      return () => clearInterval(interval);
     }
   }, []);
 
@@ -89,42 +80,17 @@ const ProfilePage = () => {
   };
 
   const handleEnableNotifications = async () => {
-    console.log('Requesting notification permission...');
-    
-    try {
-      const granted = await requestNotificationPermission();
-      console.log('Permission granted:', granted);
-      
-      if (granted) {
-        setNotificationPermission('granted');
-        toast({
-          title: "Notifications Enabled",
-          description: "You'll receive study reminders 15 minutes before your preferred study time.",
-        });
-      } else {
-        // Check the current permission state
-        const currentPermission = 'Notification' in window ? Notification.permission : 'default';
-        setNotificationPermission(currentPermission);
-        
-        if (currentPermission === 'denied') {
-          toast({
-            title: "Notifications Blocked",
-            description: "Notifications are blocked in your browser. Please enable them in your browser settings.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Notifications Not Enabled",
-            description: "Please allow notifications when prompted to receive study reminders.",
-            variant: "destructive"
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error enabling notifications:', error);
+    const granted = await requestNotificationPermission();
+    if (granted) {
+      setNotificationPermission('granted');
       toast({
-        title: "Error",
-        description: "Failed to enable notifications. Please try again.",
+        title: "Notifications Enabled",
+        description: "You'll receive study reminders 15 minutes before your preferred study time.",
+      });
+    } else {
+      toast({
+        title: "Notifications Blocked",
+        description: "Please enable notifications in your browser settings to receive study reminders.",
         variant: "destructive"
       });
     }
