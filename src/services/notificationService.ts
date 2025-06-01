@@ -16,27 +16,41 @@ export class NotificationService {
       return false;
     }
 
+    // Check if already granted
     if (Notification.permission === 'granted') {
       return true;
     }
 
-    if (Notification.permission !== 'denied') {
-      const permission = await Notification.requestPermission();
-      return permission === 'granted';
+    // Don't request if explicitly denied
+    if (Notification.permission === 'denied') {
+      console.log('Notifications are blocked by the user');
+      return false;
     }
 
-    return false;
+    try {
+      // Request permission and wait for user response
+      const permission = await Notification.requestPermission();
+      console.log('Notification permission result:', permission);
+      return permission === 'granted';
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+      return false;
+    }
   }
 
   showNotification(title: string, body: string, icon?: string): void {
     if (Notification.permission === 'granted') {
-      new Notification(title, {
-        body,
-        icon: icon || '/favicon.ico',
-        badge: '/favicon.ico',
-        tag: 'study-reminder',
-        requireInteraction: true
-      });
+      try {
+        new Notification(title, {
+          body,
+          icon: icon || '/favicon.ico',
+          badge: '/favicon.ico',
+          tag: 'study-reminder',
+          requireInteraction: true
+        });
+      } catch (error) {
+        console.error('Error showing notification:', error);
+      }
     }
   }
 

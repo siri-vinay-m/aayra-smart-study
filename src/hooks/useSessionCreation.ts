@@ -16,11 +16,13 @@ export const useSessionCreation = () => {
         return null;
       }
 
-      // Get the next sequence number for the user
+      // Get the next sequence number for the specific subject + topic combination
       const { data: existingSessions, error: countError } = await supabase
         .from('studysessions')
         .select('sequencenumber')
         .eq('userid', authUser.user.id)
+        .eq('subjectname', subjectName)
+        .eq('topicname', topicName)
         .order('sequencenumber', { ascending: false })
         .limit(1);
 

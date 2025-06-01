@@ -44,8 +44,8 @@ const NewSessionPage = () => {
         };
         setCurrentSession(updatedSession);
         
-        // Navigate directly without showing toast popup
-        navigate('/focus');
+        // Navigate to focus timer page
+        navigate('/focus-timer');
       } else {
         toast({
           title: "Error",

@@ -13,29 +13,21 @@ const IncompleteSessionsPage = () => {
   const handleSessionClick = (session: any) => {
     console.log('Resuming incomplete session:', session.id, 'Status:', session.status);
     
-    // For sessions with 'validating' status, resume in validation page
-    if (session.status === 'validating') {
-      const sessionWithValidatingStatus = { ...session, status: 'validating' as const };
-      setCurrentSession(sessionWithValidatingStatus);
-      navigate('/validation');
-    } else {
-      // For sessions with 'incomplete' status, also resume in validation page
-      const sessionWithIncompleteStatus = { ...session, status: 'incomplete' as const };
-      setCurrentSession(sessionWithIncompleteStatus);
-      navigate('/validation');
-    }
+    // Set current session and navigate to validation page to resume
+    setCurrentSession(session);
+    navigate('/validation');
   };
 
   const getStatusDisplay = (status: string) => {
     if (status === 'validating') {
-      return 'Validating';
+      return 'Start Date';
     }
     return 'Incomplete';
   };
 
   const getStatusColor = (status: string) => {
     if (status === 'validating') {
-      return 'text-blue-500';
+      return 'text-gray-600';
     }
     return 'text-orange-500';
   };
