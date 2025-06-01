@@ -20,7 +20,8 @@ describe('BottomTaskBar', () => {
     isAuthenticated: false,
     setIsAuthenticated: jest.fn(),
     loadUserData: jest.fn(),
-    updateUserProfile: jest.fn(), // Add missing property
+    updateUserProfile: jest.fn(),
+    checkSubscriptionStatus: jest.fn(), // Add missing property
   };
 
   beforeEach(() => {

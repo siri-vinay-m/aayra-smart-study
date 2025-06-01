@@ -3,20 +3,24 @@ import React from 'react';
 import { render, act } from '@testing-library/react';
 import { waitFor, fireEvent } from '@testing-library/dom';
 import { UserProvider, useUser, User } from './UserContext';
-import { AuthContext } from './AuthContext'; // To mock AuthContext values
-import { supabase } from '@/integrations/supabase/client'; // To mock Supabase client
+import { AuthContext } from './AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { vi } from 'vitest';
 
 // Mock Supabase client
 const mockSupabaseSelect = vi.fn();
 const mockSupabaseUpdate = vi.fn();
+const mockSupabaseFunctionsInvoke = vi.fn();
+
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     from: vi.fn(() => ({
       select: mockSupabaseSelect,
       update: mockSupabaseUpdate,
     })),
-    // Add other Supabase modules if needed by UserContext, e.g., auth, storage
+    functions: {
+      invoke: mockSupabaseFunctionsInvoke,
+    },
   },
 }));
 
@@ -25,7 +29,7 @@ const mockAuthUser = { id: 'auth-user-123', email: 'auth@example.com' };
 const mockSession = { access_token: 'fake-token', user: mockAuthUser };
 
 const TestConsumerComponent = () => {
-  const { user, loadUserData, updateUserProfile } = useUser();
+  const { user, loadUserData, updateUserProfile, checkSubscriptionStatus } = useUser();
   return (
     <div>
       <div data-testid="user-id">{user?.id}</div>
@@ -38,6 +42,7 @@ const TestConsumerComponent = () => {
       <button onClick={() => updateUserProfile({ displayName: 'New Name', currentSubscriptionId: 'sub_new' })}>
         Update Profile
       </button>
+      <button onClick={checkSubscriptionStatus}>Check Subscription</button>
     </div>
   );
 };
@@ -62,9 +67,9 @@ const renderWithContext = (authUser: any = mockAuthUser, session: any = mockSess
 describe('UserContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset mock implementations for each test
     mockSupabaseSelect.mockReset();
     mockSupabaseUpdate.mockReset();
+    mockSupabaseFunctionsInvoke.mockReset();
   });
 
   describe('loadUserData', () => {
@@ -77,8 +82,9 @@ describe('UserContext', () => {
         profilepictureurl: 'http://db.com/pic.png',
         preferredstudyweekdays: ['Monday'],
         preferredstudystarttime: '10:00',
-        last_login_at: '2023-01-01T10:00:00Z',
-        current_subscription_id: 'sub_db123',
+        lastloginat: '2023-01-01T10:00:00Z',
+        currentsubscriptionid: 'sub_db123',
+        subscription_plan: 'free',
       };
       mockSupabaseSelect.mockReturnValueOnce({
         eq: vi.fn().mockReturnValueOnce({
@@ -88,12 +94,7 @@ describe('UserContext', () => {
 
       const { getByTestId, getByText } = renderWithContext();
       
-      // loadUserData is called automatically on mount due to useEffect in UserProvider if session exists
-      // We can also trigger it manually if needed for specific test cases.
-      // For this test, we'll rely on the initial load.
       await act(async () => {
-         // Allow useEffect in UserProvider to run if it didn't complete due to async nature
-         // Or, if loadUserData is not called on mount anymore, click the button:
          fireEvent.click(getByText('Load User Data'));
       });
 
@@ -101,8 +102,8 @@ describe('UserContext', () => {
         expect(getByTestId('user-id').textContent).toBe(mockDbUser.userid);
         expect(getByTestId('user-displayname').textContent).toBe(mockDbUser.displayname);
         expect(getByTestId('user-email').textContent).toBe(mockDbUser.email);
-        expect(getByTestId('user-lastloginat').textContent).toBe(mockDbUser.last_login_at);
-        expect(getByTestId('user-subscriptionid').textContent).toBe(mockDbUser.current_subscription_id);
+        expect(getByTestId('user-lastloginat').textContent).toBe(mockDbUser.lastloginat);
+        expect(getByTestId('user-subscriptionid').textContent).toBe(mockDbUser.currentsubscriptionid);
         expect(getByTestId('user-profilepicurl').textContent).toBe(mockDbUser.profilepictureurl);
       });
     });
@@ -115,19 +116,16 @@ describe('UserContext', () => {
       });
       
       const { getByTestId } = renderWithContext();
-      // Wait for useEffect in UserProvider to complete
       await act(async () => {}); 
 
       await waitFor(() => {
-        // User object in context should be null or have defaults based on AuthUser if no DB record
-        // The TestConsumerComponent would render empty strings for these if user is null
-        expect(getByTestId('user-id').textContent).toBe(''); // Or specific default if user is not set to null
+        expect(getByTestId('user-id').textContent).toBe('');
         expect(getByTestId('user-displayname').textContent).toBe('');
       });
     });
 
     it('does not set user if authUser is null', async () => {
-      const { getByTestId } = renderWithContext(null, null); // No authenticated user
+      const { getByTestId } = renderWithContext(null, null);
        await act(async () => {});
 
       await waitFor(() => {
@@ -139,20 +137,18 @@ describe('UserContext', () => {
 
   describe('updateUserProfile', () => {
     it('attempts to save current_subscription_id if provided', async () => {
-      // Initial load to set a user in context
-      const initialDbUser = { userid: 'auth-user-123', displayname: 'Initial' };
+      const initialDbUser = { userid: 'auth-user-123', displayname: 'Initial', subscription_plan: 'free' };
       mockSupabaseSelect.mockReturnValueOnce({
         eq: vi.fn().mockReturnValueOnce({
           maybeSingle: vi.fn().mockResolvedValueOnce({ data: initialDbUser, error: null }),
         }),
       });
-      mockSupabaseUpdate.mockReturnValueOnce({ // For the updateUserProfile call
+      mockSupabaseUpdate.mockReturnValueOnce({
         eq: vi.fn().mockResolvedValueOnce({ error: null }),
       });
       
       const { getByText } = renderWithContext();
       
-      // Ensure initial user is loaded
       await act(async () => {});
       await waitFor(() => expect(getByText('Update Profile')).toBeInTheDocument());
 
@@ -163,10 +159,31 @@ describe('UserContext', () => {
       await waitFor(() => {
         expect(mockSupabaseUpdate).toHaveBeenCalledWith(
           expect.objectContaining({
-            displayname: 'New Name', // From TestConsumerComponent's updateUserProfile call
-            current_subscription_id: 'sub_new',
+            displayname: 'New Name',
+            currentsubscriptionid: 'sub_new',
           })
         );
+      });
+    });
+  });
+
+  describe('checkSubscriptionStatus', () => {
+    it('invokes the check-subscription function', async () => {
+      mockSupabaseFunctionsInvoke.mockResolvedValueOnce({ data: {}, error: null });
+      mockSupabaseSelect.mockReturnValueOnce({
+        eq: vi.fn().mockReturnValueOnce({
+          maybeSingle: vi.fn().mockResolvedValueOnce({ data: null, error: null }),
+        }),
+      });
+      
+      const { getByText } = renderWithContext();
+      
+      await act(async () => {
+        fireEvent.click(getByText('Check Subscription'));
+      });
+
+      await waitFor(() => {
+        expect(mockSupabaseFunctionsInvoke).toHaveBeenCalledWith('check-subscription');
       });
     });
   });

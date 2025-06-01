@@ -104,6 +104,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
 
+        // Ensure subscription_plan is properly typed
+        const subscriptionPlan = userData.subscription_plan === 'premium' ? 'premium' : 'free';
+
         setUser({
           id: userData.userid,
           displayName: userData.displayname,
@@ -113,7 +116,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           preferredStudyWeekdays: parsedWeekdays,
           preferredStudyStartTime: userData.preferredstudystarttime,
           isSubscribed: userData.subscription_plan === 'premium',
-          subscriptionPlan: userData.subscription_plan || 'free',
+          subscriptionPlan: subscriptionPlan,
           subscriptionStartDate: userData.subscription_start_date,
           subscriptionEndDate: userData.subscription_end_date,
           lastLoginAt: userData.lastloginat || null,

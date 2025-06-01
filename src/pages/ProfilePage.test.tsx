@@ -4,8 +4,8 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import ProfilePage from './ProfilePage';
 import { UserContext, User, StudentCategory } from '@/contexts/UserContext';
 import { BrowserRouter } from 'react-router-dom';
-import { ToastProvider } from '@/components/ui/toast'; // Assuming ToastProvider is used by useToast
-import { AuthProvider } from '@/contexts/AuthContext'; // AuthProvider is needed for UserProvider
+import { ToastProvider } from '@/components/ui/toast';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { vi } from 'vitest';
 
 // --- Mocks ---
@@ -52,7 +52,7 @@ const defaultMockUser: User = {
   email: 'test@example.com',
   studentCategory: 'college' as StudentCategory,
   profilePictureURL: null,
-  preferredStudyWeekdays: ['Monday', 'Wednesday'], // Array as per recent changes
+  preferredStudyWeekdays: ['Monday', 'Wednesday'],
   preferredStudyStartTime: '09:00',
   isSubscribed: false,
   subscriptionPlan: 'free',
@@ -63,36 +63,36 @@ const defaultMockUser: User = {
 // Mock UserContext values
 const mockSetUser = vi.fn();
 const mockLoadUserData = vi.fn().mockResolvedValue(undefined);
+const mockCheckSubscriptionStatus = vi.fn().mockResolvedValue(undefined); // Add missing mock
 
 const renderProfilePage = (userOverride?: Partial<User>) => {
   const currentUser = userOverride ? { ...defaultMockUser, ...userOverride } : defaultMockUser;
   
   // Setup mock implementations for Supabase calls for each render
-  // This simulates ProfilePage's direct Supabase interactions
-  mockSupabaseSelect.mockReturnValue({ // For the initial check if user exists in DB
+  mockSupabaseSelect.mockReturnValue({
     eq: vi.fn().mockReturnValue({
       maybeSingle: vi.fn().mockResolvedValue({ data: { userid: currentUser?.id }, error: null }),
     }),
   });
-  mockSupabaseUpdate.mockReturnValue({ // For the update call
+  mockSupabaseUpdate.mockReturnValue({
     eq: vi.fn().mockResolvedValue({ error: null }),
   });
-  mockSupabaseInsert.mockResolvedValue({ error: null }); // For insert if user didn't exist
+  mockSupabaseInsert.mockResolvedValue({ error: null });
   mockSupabaseStorageUpload.mockResolvedValue({ error: null });
   mockSupabaseStorageGetPublicUrl.mockReturnValue({ data: { publicUrl: 'http://mockurl.com/new-image.png' } });
-
 
   return render(
     <BrowserRouter>
       <ToastProvider>
-        <AuthProvider> {/* UserProvider might depend on AuthProvider for authUser */}
+        <AuthProvider>
           <UserContext.Provider value={{
             user: currentUser,
             setUser: mockSetUser,
             isAuthenticated: !!currentUser,
             setIsAuthenticated: vi.fn(),
             loadUserData: mockLoadUserData,
-            updateUserProfile: vi.fn() // This context func is not directly used by ProfilePage's save anymore
+            updateUserProfile: vi.fn(),
+            checkSubscriptionStatus: mockCheckSubscriptionStatus, // Add missing property
           }}>
             <ProfilePage />
           </UserContext.Provider>
@@ -110,7 +110,7 @@ describe('ProfilePage', () => {
   test('renders form elements and loads initial data', () => {
     renderProfilePage();
     expect(screen.getByLabelText(/Display Name/i)).toHaveValue(defaultMockUser.displayName);
-    expect(screen.getByLabelText(/Student Category/i)).toBeInTheDocument(); // Select component needs specific value check
+    expect(screen.getByLabelText(/Student Category/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Preferred Study Weekdays/i)).toHaveTextContent('Monday, Wednesday');
     expect(screen.getByLabelText(/Preferred Study Start Time/i)).toHaveValue(defaultMockUser.preferredStudyStartTime);
   });
@@ -134,7 +134,7 @@ describe('ProfilePage', () => {
       expect(mockSupabaseUpdate).toHaveBeenCalledWith(
         expect.objectContaining({ displayname: newDisplayName })
       );
-      expect(mockLoadUserData).toHaveBeenCalled(); // Ensure data is reloaded
+      expect(mockLoadUserData).toHaveBeenCalled();
     });
   });
 
@@ -146,12 +146,12 @@ describe('ProfilePage', () => {
       expect(screen.getByLabelText(/Preferred Study Weekdays/i)).toHaveTextContent('Tuesday, Friday');
 
       rerender(
-         <BrowserRouter><ToastProvider><AuthProvider><UserContext.Provider value={{ user: { ...defaultMockUser, preferredStudyWeekdays: weekdays }, setUser: mockSetUser, isAuthenticated: true, setIsAuthenticated: vi.fn(), loadUserData: mockLoadUserData, updateUserProfile: vi.fn() }}><ProfilePage /></UserContext.Provider></AuthProvider></ToastProvider></BrowserRouter>
+         <BrowserRouter><ToastProvider><AuthProvider><UserContext.Provider value={{ user: { ...defaultMockUser, preferredStudyWeekdays: weekdays }, setUser: mockSetUser, isAuthenticated: true, setIsAuthenticated: vi.fn(), loadUserData: mockLoadUserData, updateUserProfile: vi.fn(), checkSubscriptionStatus: mockCheckSubscriptionStatus }}><ProfilePage /></UserContext.Provider></AuthProvider></ToastProvider></BrowserRouter>
       );
       expect(screen.getByLabelText(/Preferred Study Weekdays/i)).toHaveTextContent('All weekdays');
       
       rerender(
-         <BrowserRouter><ToastProvider><AuthProvider><UserContext.Provider value={{ user: { ...defaultMockUser, preferredStudyWeekdays: [] }, setUser: mockSetUser, isAuthenticated: true, setIsAuthenticated: vi.fn(), loadUserData: mockLoadUserData, updateUserProfile: vi.fn() }}><ProfilePage /></UserContext.Provider></AuthProvider></ToastProvider></BrowserRouter>
+         <BrowserRouter><ToastProvider><AuthProvider><UserContext.Provider value={{ user: { ...defaultMockUser, preferredStudyWeekdays: [] }, setUser: mockSetUser, isAuthenticated: true, setIsAuthenticated: vi.fn(), loadUserData: mockLoadUserData, updateUserProfile: vi.fn(), checkSubscriptionStatus: mockCheckSubscriptionStatus }}><ProfilePage /></UserContext.Provider></AuthProvider></ToastProvider></BrowserRouter>
       );
       expect(screen.getByLabelText(/Preferred Study Weekdays/i)).toHaveTextContent('Select weekdays');
     });
@@ -160,14 +160,13 @@ describe('ProfilePage', () => {
       renderProfilePage({ ...defaultMockUser, preferredStudyWeekdays: [] });
       const weekdaysButton = screen.getByLabelText(/Preferred Study Weekdays/i);
       
-      await act(async () => { fireEvent.click(weekdaysButton); }); // Open dropdown
+      await act(async () => { fireEvent.click(weekdaysButton); });
       await act(async () => { fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Monday' })); });
       expect(weekdaysButton).toHaveTextContent('Monday');
       
       await act(async () => { fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Wednesday' })); });
       expect(weekdaysButton).toHaveTextContent('Monday, Wednesday');
 
-      // Save
       const saveButton = screen.getByRole('button', { name: /Save Profile/i });
       await act(async () => { fireEvent.click(saveButton); });
       await waitFor(() => {
@@ -180,14 +179,13 @@ describe('ProfilePage', () => {
     test('"All Weekdays" checkbox selects/deselects all and updates save payload', async () => {
       renderProfilePage({ ...defaultMockUser, preferredStudyWeekdays: [] });
       const weekdaysButton = screen.getByLabelText(/Preferred Study Weekdays/i);
-      await act(async () => { fireEvent.click(weekdaysButton); }); // Open
+      await act(async () => { fireEvent.click(weekdaysButton); });
       
       const allWeekdaysCheckbox = screen.getByRole('menuitemcheckbox', { name: 'All Weekdays' });
 
-      await act(async () => { fireEvent.click(allWeekdaysCheckbox); }); // Select all
+      await act(async () => { fireEvent.click(allWeekdaysCheckbox); });
       expect(weekdaysButton).toHaveTextContent('All weekdays');
       
-      // Save (all selected)
       const saveButton = screen.getByRole('button', { name: /Save Profile/i });
       await act(async () => { fireEvent.click(saveButton); });
       await waitFor(() => {
@@ -196,49 +194,29 @@ describe('ProfilePage', () => {
         );
       });
 
-      await act(async () => { fireEvent.click(allWeekdaysCheckbox); }); // Deselect all
+      await act(async () => { fireEvent.click(allWeekdaysCheckbox); });
       expect(weekdaysButton).toHaveTextContent('Select weekdays');
 
-      // Save (none selected)
       await act(async () => { fireEvent.click(saveButton); });
       await waitFor(() => {
         expect(mockSupabaseUpdate).toHaveBeenCalledWith(
-          expect.objectContaining({ preferredstudyweekdays: null }) // Empty array becomes null
+          expect.objectContaining({ preferredstudyweekdays: null })
         );
       });
     });
   });
   
-  // Note: The original tests for "Failed Profile Save" and "handleSaveProfile when user is null"
-  // relied on mockUpdateUserProfile from UserContext. Since ProfilePage now calls Supabase directly,
-  // these tests would need to be refactored to mock the Supabase client calls' error states
-  // (e.g., mockSupabaseUpdate.mockReturnValueOnce({ eq: vi.fn().mockResolvedValueOnce({ error: { message: 'Supabase error' } }) }); )
-  // For brevity, this refactoring is omitted here but would be necessary for complete coverage.
-
   describe('Profile Picture Upload', () => {
     test('selecting a file updates component state and saving uploads the file', async () => {
       renderProfilePage();
 
       const mockFile = new File(['(⌐□_□)'], 'chucknorris.png', { type: 'image/png' });
 
-      // ImageUpload component internally has an input type="file"
-      // We need to find it. It's hidden, so not directly accessible by label.
-      // Assuming the clickable div in ImageUpload eventually triggers this input.
-      // For testing, it's often easier to get the input by testId if ImageUpload provided one,
-      // or query for the input directly if its structure is known.
-      // Let's assume ImageUpload's clickable element (role 'img' or its container) can be found
-      // and ProfilePage correctly wires it up.
-      // The ImageUpload component uses a ref, so we can't directly get the input.
-      // The click is on the div. Let's assume `ImageUpload`'s input is the only file input.
-      
-      const fileInput = screen.getByTestId('profile-image-upload').querySelector('input[type="file"]') as HTMLInputElement; // Assuming ImageUpload has a data-testid="profile-image-upload" on its root for easier targeting
+      const fileInput = screen.getByTestId('profile-image-upload').querySelector('input[type="file"]') as HTMLInputElement;
 
       await act(async () => {
         fireEvent.change(fileInput, { target: { files: [mockFile] } });
       });
-      
-      // Verify preview (optional, if ImageUpload shows it and we can access it)
-      // For now, focus on the save logic.
 
       const saveButton = screen.getByRole('button', { name: /Save Profile/i });
       await act(async () => {
@@ -246,20 +224,16 @@ describe('ProfilePage', () => {
       });
 
       await waitFor(() => {
-        // 1. Check storage upload
         expect(mockSupabaseStorageUpload).toHaveBeenCalledWith(
-          expect.stringContaining(`public/${defaultMockUser.id}`), // File path
-          mockFile, // File object
-          expect.any(Object) // Upload options
+          expect.stringContaining(`public/${defaultMockUser.id}`),
+          mockFile,
+          expect.any(Object)
         );
         
-        // 2. Check getPublicUrl (implicitly tested by its return value being used)
-        // 3. Check database update with the new URL
         expect(mockSupabaseUpdate).toHaveBeenCalledWith(
           expect.objectContaining({ profilepictureurl: 'http://mockurl.com/new-image.png' })
         );
         
-        // 4. Check loadUserData call
         expect(mockLoadUserData).toHaveBeenCalled();
       });
     });
@@ -283,7 +257,7 @@ describe('ProfilePage', () => {
         expect(mockSupabaseUpdate).toHaveBeenCalledWith(
           expect.objectContaining({ 
             displayname: newDisplayName,
-            profilepictureurl: defaultMockUser.profilePictureURL // Should be the original URL or null
+            profilepictureurl: defaultMockUser.profilePictureURL
           })
         );
         expect(mockLoadUserData).toHaveBeenCalled();
