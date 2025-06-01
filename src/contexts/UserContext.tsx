@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -119,7 +118,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         // Check if user has active subscription from usersubscriptions table
-        const activeSubscription = userData.usersubscriptions?.find(
+        // Cast to array to handle both single object and array cases
+        const subscriptionsArray = Array.isArray(userData.usersubscriptions) 
+          ? userData.usersubscriptions 
+          : userData.usersubscriptions ? [userData.usersubscriptions] : [];
+        
+        const activeSubscription = subscriptionsArray.find(
           (sub: any) => sub.status === 'active' && new Date(sub.enddate) > new Date()
         );
 
