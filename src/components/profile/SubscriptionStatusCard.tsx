@@ -58,11 +58,6 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
     }
   };
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString();
-  };
-
   const getPlanIcon = () => {
     switch (user?.subscriptionPlan) {
       case 'premium':
@@ -133,19 +128,9 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
           </div>
         )}
 
-        {user?.subscriptionStartDate && (
-          <div className="space-y-2">
-            <div className="text-sm text-gray-600">Started:</div>
-            <div className="text-sm">{formatDate(user?.subscriptionStartDate)}</div>
-          </div>
-        )}
-
-        {user?.subscriptionEndDate && (
-          <div className="space-y-2">
-            <div className="text-sm text-gray-600">
-              {user?.isTrial ? 'Trial ends:' : 'Next billing:'}
-            </div>
-            <div className="text-sm">{formatDate(user?.subscriptionEndDate)}</div>
+        {user?.premiumPrice && user?.subscriptionPlan !== 'premium' && (
+          <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
+            Premium Plan: ${user.premiumPrice}/month
           </div>
         )}
       </div>
@@ -180,7 +165,7 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
             variant="outline" 
             className="w-full border-orange-500 text-orange-500 hover:bg-orange-50"
           >
-            {isLoading ? 'Processing...' : 'Upgrade to Premium'}
+            {isLoading ? 'Processing...' : `Upgrade to Premium ${user?.premiumPrice ? `($${user.premiumPrice}/month)` : ''}`}
           </Button>
         )}
       </CardContent>

@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,6 +33,7 @@ export interface User {
   stripeSubscriptionId?: string | null;
   sessionsUsedToday?: number;
   sessionsUsedThisWeek?: number;
+  premiumPrice?: number | null;
 }
 
 export interface UpdateUserPayload {
@@ -97,7 +97,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             sessionsPerDay: data.sessions_per_day,
             sessionsPerWeek: data.sessions_per_week,
             adsEnabled: data.ads_enabled,
-            isTrial: data.is_trial
+            isTrial: data.is_trial,
+            premiumPrice: data.premium_price
           };
         });
       }
@@ -171,6 +172,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           stripeSubscriptionId: userData.stripe_subscription_id,
           sessionsUsedToday: userData.sessions_used_today || 0,
           sessionsUsedThisWeek: userData.sessions_used_this_week || 0,
+          premiumPrice: subscriptionInfo?.price || 9.99,
         });
         setIsAuthenticated(true);
       } else {
@@ -209,6 +211,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           stripeSubscriptionId: null,
           sessionsUsedToday: 0,
           sessionsUsedThisWeek: 0,
+          premiumPrice: 9.99,
         });
         setIsAuthenticated(true);
       }

@@ -39,6 +39,17 @@ serve(async (req) => {
       throw new Error(`Failed to get subscription status: ${statusError.message}`);
     }
 
+    // Get premium plan price
+    const { data: premiumPlan, error: planError } = await supabaseClient
+      .from('subscriptionplans')
+      .select('price')
+      .eq('planname', 'premium')
+      .single();
+
+    if (planError) {
+      console.error('Error getting premium plan price:', planError);
+    }
+
     if (!subscriptionStatus || subscriptionStatus.length === 0) {
       // If no subscription found, create a free trial for the user
       const { data: freePlan } = await supabaseClient
@@ -74,7 +85,8 @@ serve(async (req) => {
             sessions_per_day: status.sessions_per_day,
             sessions_per_week: status.sessions_per_week,
             ads_enabled: status.ads_enabled,
-            is_trial: status.is_trial
+            is_trial: status.is_trial,
+            premium_price: premiumPlan?.price || 9.99
           }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 200,
@@ -125,7 +137,8 @@ serve(async (req) => {
               sessions_per_day: newStatus.sessions_per_day,
               sessions_per_week: newStatus.sessions_per_week,
               ads_enabled: newStatus.ads_enabled,
-              is_trial: newStatus.is_trial
+              is_trial: newStatus.is_trial,
+              premium_price: premiumPlan?.price || 9.99
             }), {
               headers: { ...corsHeaders, "Content-Type": "application/json" },
               status: 200,
@@ -158,7 +171,8 @@ serve(async (req) => {
       sessions_per_day: status.sessions_per_day,
       sessions_per_week: status.sessions_per_week,
       ads_enabled: status.ads_enabled,
-      is_trial: status.is_trial
+      is_trial: status.is_trial,
+      premium_price: premiumPlan?.price || 9.99
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

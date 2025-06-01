@@ -38,6 +38,23 @@ serve(async (req) => {
 
     console.log("User authenticated:", user.email);
 
+    // Get premium plan price from database
+    const { data: premiumPlan, error: planError } = await supabaseClient
+      .from('subscriptionplans')
+      .select('price')
+      .eq('planname', 'premium')
+      .single();
+
+    if (planError) {
+      console.error('Error getting premium plan price:', planError);
+      throw new Error('Failed to get premium plan price');
+    }
+
+    const premiumPrice = premiumPlan.price || 9.99;
+    const priceInCents = Math.round(premiumPrice * 100);
+
+    console.log("Premium price retrieved:", premiumPrice, "cents:", priceInCents);
+
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       console.error("STRIPE_SECRET_KEY not found in environment");
@@ -76,7 +93,7 @@ serve(async (req) => {
               name: "Premium Plan",
               description: "10 sessions per day for 30 days with no ads"
             },
-            unit_amount: 999, // $9.99
+            unit_amount: priceInCents,
             recurring: { interval: "month" },
           },
           quantity: 1,
