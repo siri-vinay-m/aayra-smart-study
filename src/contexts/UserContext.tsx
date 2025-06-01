@@ -57,6 +57,15 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+// Helper function to validate subscription plan
+const validateSubscriptionPlan = (plan: string | null): 'free' | 'free-for-life' | 'premium' | null => {
+  if (!plan) return null;
+  if (plan === 'free' || plan === 'free-for-life' || plan === 'premium') {
+    return plan;
+  }
+  return 'free'; // Default to free if invalid plan
+};
+
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -80,7 +89,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return {
             ...prevUser,
             isSubscribed: data.subscribed || false,
-            subscriptionPlan: data.subscription_plan || 'free',
+            subscriptionPlan: validateSubscriptionPlan(data.subscription_plan),
             subscriptionStatus: data.subscription_status,
             subscriptionStartDate: data.subscription_start_date,
             subscriptionEndDate: data.subscription_end_date,
@@ -147,7 +156,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           preferredStudyWeekdays: parsedWeekdays,
           preferredStudyStartTime: userData.preferredstudystarttime,
           isSubscribed: subscriptionInfo?.plan_name === 'premium' || false,
-          subscriptionPlan: subscriptionInfo?.plan_name || 'free',
+          subscriptionPlan: validateSubscriptionPlan(subscriptionInfo?.plan_name),
           subscriptionStatus: subscriptionInfo?.status,
           subscriptionStartDate: subscriptionInfo?.start_date,
           subscriptionEndDate: subscriptionInfo?.end_date,
