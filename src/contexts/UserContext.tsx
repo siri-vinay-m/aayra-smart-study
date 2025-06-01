@@ -137,6 +137,17 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const subscriptionInfo = subscriptionData && subscriptionData.length > 0 ? subscriptionData[0] : null;
 
+      // Get premium plan price separately
+      const { data: premiumPlan, error: planError } = await supabase
+        .from('subscriptionplans')
+        .select('price')
+        .eq('planname', 'premium')
+        .single();
+
+      if (planError) {
+        console.error('Error getting premium plan price:', planError);
+      }
+
       if (userData) {
         // Parse weekdays - handle both array and comma-separated string formats
         let parsedWeekdays: string[] | null = null;
@@ -172,7 +183,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           stripeSubscriptionId: userData.stripe_subscription_id,
           sessionsUsedToday: userData.sessions_used_today || 0,
           sessionsUsedThisWeek: userData.sessions_used_this_week || 0,
-          premiumPrice: subscriptionInfo?.price || 9.99,
+          premiumPrice: premiumPlan?.price || 9.99,
         });
         setIsAuthenticated(true);
       } else {
@@ -211,7 +222,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           stripeSubscriptionId: null,
           sessionsUsedToday: 0,
           sessionsUsedThisWeek: 0,
-          premiumPrice: 9.99,
+          premiumPrice: premiumPlan?.price || 9.99,
         });
         setIsAuthenticated(true);
       }
