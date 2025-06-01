@@ -1,18 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useUser, StudentCategory } from '@/contexts/UserContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import ImageUpload from '@/components/ui/image-upload';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Crown, Bell } from 'lucide-react';
 import { useStudyReminders } from '@/hooks/useStudyReminders';
+import ProfileImageSection from '@/components/profile/ProfileImageSection';
+import SubscriptionStatusCard from '@/components/profile/SubscriptionStatusCard';
+import NotificationCard from '@/components/profile/NotificationCard';
+import ProfileForm from '@/components/profile/ProfileForm';
+import ProfileActions from '@/components/profile/ProfileActions';
 
 const ProfilePage = () => {
   const { user, setUser, loadUserData } = useUser();
@@ -40,7 +38,6 @@ const ProfilePage = () => {
       setStudentCategory(user.studentCategory || 'college');
       setProfilePictureURL(user.profilePictureURL || '');
       
-      // Handle preferredStudyWeekdays - it can be string[] | null
       if (user.preferredStudyWeekdays && Array.isArray(user.preferredStudyWeekdays)) {
         setPreferredStudyWeekdays(user.preferredStudyWeekdays);
       } else {
@@ -113,7 +110,6 @@ const ProfilePage = () => {
     let newProfilePictureUrl = profilePictureURL;
 
     try {
-      // Only upload image if a new file is selected
       if (selectedFile) {
         const fileExt = selectedFile.name.split('.').pop();
         const fileName = `${authUser.id}-${Date.now()}.${fileExt}`;
@@ -140,7 +136,6 @@ const ProfilePage = () => {
         }
       }
 
-      // Convert array to comma-separated string for database storage
       const weekdaysForDb = preferredStudyWeekdays.length > 0 ? preferredStudyWeekdays.join(',') : null;
 
       const userDataToSave = {
@@ -235,181 +230,41 @@ const ProfilePage = () => {
       });
     }
   };
-
-  const weekdaysDefinition = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
-  const handleWeekdayToggle = (day: string) => {
-    setPreferredStudyWeekdays(prev => 
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-    );
-  };
-
-  const handleSelectAllWeekdays = (checked: boolean) => {
-    if (checked) {
-      setPreferredStudyWeekdays(weekdaysDefinition);
-    } else {
-      setPreferredStudyWeekdays([]);
-    }
-  };
   
   return (
     <MainLayout>
       <div className="px-4 max-w-md mx-auto">
         <h1 className="text-2xl font-semibold mb-6 text-center">Profile</h1>
         
-        <div className="flex justify-center mb-6">
-          <ImageUpload
-            currentImageUrl={profilePictureURL}
-            onFileSelect={handleFileSelect}
-            isLoading={isLoading}
-            data-testid="profile-image-upload"
-          />
-        </div>
+        <ProfileImageSection
+          profilePictureURL={profilePictureURL}
+          onFileSelect={handleFileSelect}
+          isLoading={isLoading}
+        />
         
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Crown size={20} className={user?.subscriptionPlan === 'premium' ? 'text-yellow-500' : 'text-gray-400'} />
-              Subscription Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Current Plan:</span>
-              <span className={`font-medium capitalize ${
-                user?.subscriptionPlan === 'premium' ? 'text-yellow-600' : 'text-gray-900'
-              }`}>
-                {user?.subscriptionPlan || 'Free'}
-              </span>
-            </div>
-            {user?.subscriptionPlan === 'free' && (
-              <Button 
-                variant="outline" 
-                className="w-full mt-3 border-orange-500 text-orange-500 hover:bg-orange-50"
-              >
-                Upgrade to Premium
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        <SubscriptionStatusCard user={user} />
 
-        {notificationPermission !== 'granted' && (
-          <Card className="mb-6">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Bell size={20} className="text-blue-500" />
-                Study Reminders
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-3">
-                Enable notifications to receive study reminders 15 minutes before your preferred study time.
-              </p>
-              <Button 
-                onClick={handleEnableNotifications}
-                className="w-full"
-                variant="outline"
-              >
-                <Bell size={16} className="mr-2" />
-                Enable Study Reminders
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <NotificationCard
+          notificationPermission={notificationPermission}
+          onEnableNotifications={handleEnableNotifications}
+        />
         
-        <div className="space-y-4 mb-6">
-          <div>
-            <Label htmlFor="displayName">Display Name</Label>
-            <Input
-              id="displayName"
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Your display name"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="studentCategory">Student Category</Label>
-            <Select value={studentCategory} onValueChange={(value) => setStudentCategory(value as StudentCategory)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select your category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="high_school">High School</SelectItem>
-                <SelectItem value="college">College</SelectItem>
-                <SelectItem value="competitive_exams">Competitive Exams</SelectItem>
-                <SelectItem value="professional">Professional</SelectItem>
-                <SelectItem value="lifelong_learner">Lifelong Learner</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <Label htmlFor="weekdays-trigger">Preferred Study Weekdays</Label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button id="weekdays-trigger" variant="outline" className="w-full justify-start font-normal">
-                  {preferredStudyWeekdays.length === 0
-                    ? "Select weekdays"
-                    : preferredStudyWeekdays.length === weekdaysDefinition.length
-                    ? "All weekdays"
-                    : preferredStudyWeekdays.sort((a, b) => weekdaysDefinition.indexOf(a) - weekdaysDefinition.indexOf(b)).join(', ')}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
-                <DropdownMenuLabel>Select Days</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem
-                  checked={preferredStudyWeekdays.length === weekdaysDefinition.length && weekdaysDefinition.length > 0}
-                  onCheckedChange={handleSelectAllWeekdays}
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  All Weekdays
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuSeparator />
-                {weekdaysDefinition.map((day) => (
-                  <DropdownMenuCheckboxItem
-                    key={day}
-                    checked={preferredStudyWeekdays.includes(day)}
-                    onCheckedChange={() => handleWeekdayToggle(day)}
-                    onSelect={(e) => e.preventDefault()}
-                  >
-                    {day}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          
-          <div>
-            <Label htmlFor="startTime">Preferred Study Start Time</Label>
-            <Input
-              id="startTime"
-              type="time"
-              value={preferredStudyStartTime}
-              onChange={(e) => setPreferredStudyStartTime(e.target.value)}
-            />
-          </div>
-        </div>
+        <ProfileForm
+          displayName={displayName}
+          setDisplayName={setDisplayName}
+          studentCategory={studentCategory}
+          setStudentCategory={setStudentCategory}
+          preferredStudyWeekdays={preferredStudyWeekdays}
+          setPreferredStudyWeekdays={setPreferredStudyWeekdays}
+          preferredStudyStartTime={preferredStudyStartTime}
+          setPreferredStudyStartTime={setPreferredStudyStartTime}
+        />
         
-        <div className="space-y-3">
-          <Button 
-            onClick={handleSaveProfile} 
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Saving...' : 'Save Profile'}
-          </Button>
-          
-          <Button 
-            onClick={handleSignOut} 
-            variant="outline" 
-            className="w-full"
-          >
-            Sign Out
-          </Button>
-        </div>
+        <ProfileActions
+          onSaveProfile={handleSaveProfile}
+          onSignOut={handleSignOut}
+          isLoading={isLoading}
+        />
       </div>
     </MainLayout>
   );
