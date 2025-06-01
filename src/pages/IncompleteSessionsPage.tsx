@@ -13,23 +13,19 @@ const IncompleteSessionsPage = () => {
   const handleSessionClick = (session: any) => {
     console.log('Resuming incomplete session:', session.id, 'Status:', session.status);
     
-    // Set current session and navigate to validation page to resume
+    // Set current session and navigate to review page to start AI content generation
     setCurrentSession(session);
-    navigate('/validation');
+    navigate(`/review/${session.id}`);
   };
 
-  const getStatusDisplay = (status: string) => {
-    if (status === 'validating') {
-      return 'Start Date';
-    }
-    return 'Incomplete';
+  const getStatusDisplay = (session: any) => {
+    // Show the actual start date formatted
+    return format(new Date(session.createdAt), 'MMM d, yyyy');
   };
 
-  const getStatusColor = (status: string) => {
-    if (status === 'validating') {
-      return 'text-gray-600';
-    }
-    return 'text-orange-500';
+  const getStatusColor = () => {
+    // Always use blue color for the start date
+    return 'text-blue-600';
   };
   
   return (
@@ -62,13 +58,10 @@ const IncompleteSessionsPage = () => {
                     <p className="text-sm text-gray-500">
                       Topic: {session.topicName}
                     </p>
-                    <p className="text-sm text-gray-500">
-                      Started: {format(new Date(session.createdAt), 'MMM d, yyyy')}
-                    </p>
                   </div>
-                  <div className={`flex items-center ${getStatusColor(session.status)}`}>
+                  <div className={`flex items-center ${getStatusColor()}`}>
                     <AlertCircle size={20} className="mr-1" />
-                    <span className="text-sm font-medium">{getStatusDisplay(session.status)}</span>
+                    <span className="text-sm font-medium">{getStatusDisplay(session)}</span>
                   </div>
                 </div>
               </div>
