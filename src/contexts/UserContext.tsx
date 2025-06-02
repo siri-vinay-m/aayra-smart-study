@@ -67,6 +67,19 @@ const validateSubscriptionPlan = (plan: string | null): 'free' | 'free-for-life'
   return 'free'; // Default to free if invalid plan
 };
 
+// Helper function to calculate subscription days remaining
+const calculateSubscriptionDaysRemaining = (registrationDate: string, subscriptionPlan: string | null): number => {
+  if (!registrationDate || subscriptionPlan === 'premium' || subscriptionPlan === 'free-for-life') {
+    return 0;
+  }
+  
+  const now = new Date();
+  const regDate = new Date(registrationDate);
+  const daysSinceRegistration = Math.floor((now.getTime() - regDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  return Math.max(0, 45 - daysSinceRegistration);
+};
+
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -160,6 +173,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
 
+        // Calculate real-time subscription days remaining based on registration date
+        const calculatedDaysRemaining = calculateSubscriptionDaysRemaining(
+          authUser.created_at, 
+          userData.subscription_plan
+        );
+
         setUser({
           id: userData.userid,
           displayName: userData.displayname,
@@ -169,12 +188,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           preferredStudyWeekdays: parsedWeekdays,
           preferredStudyStartTime: userData.preferredstudystarttime,
           isSubscribed: subscriptionInfo?.plan_name === 'premium' || false,
-          subscriptionPlan: validateSubscriptionPlan(subscriptionInfo?.plan_name),
+          subscriptionPlan: validateSubscriptionPlan(subscriptionInfo?.plan_name || userData.subscription_plan),
           subscriptionStatus: subscriptionInfo?.status,
           subscriptionStartDate: subscriptionInfo?.start_date,
           subscriptionEndDate: subscriptionInfo?.end_date,
           daysRemaining: subscriptionInfo?.days_remaining,
-					subscriptionDaysRemaining: userData.subscription_days_remaining,
+					subscriptionDaysRemaining: calculatedDaysRemaining,
           sessionsPerDay: subscriptionInfo?.sessions_per_day,
           sessionsPerWeek: subscriptionInfo?.sessions_per_week,
           adsEnabled: subscriptionInfo?.ads_enabled,
@@ -190,6 +209,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsAuthenticated(true);
       } else {
         // Create new user record if none exists
+        const calculatedDaysRemaining = calculateSubscriptionDaysRemaining(authUser.created_at, 'free');
+        
         const newUserData = {
           userid: authUser.id,
           email: authUser.email || '',
@@ -198,7 +219,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           passwordhash: '',
           emailverified: authUser.email_confirmed_at ? true : false,
           subscription_plan: 'free',
-					subscription_days_remaining: 45,
+					subscription_days_remaining: calculatedDaysRemaining,
         };
 
         await supabase.from('users').insert(newUserData);
@@ -214,8 +235,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           isSubscribed: false,
           subscriptionPlan: 'free',
           subscriptionStatus: 'active',
-          daysRemaining: 45,
-					subscriptionDaysRemaining: 45,
+          daysRemaining: calculatedDaysRemaining,
+					subscriptionDaysRemaining: calculatedDaysRemaining,
           sessionsPerDay: 2,
           sessionsPerWeek: null,
           adsEnabled: true,

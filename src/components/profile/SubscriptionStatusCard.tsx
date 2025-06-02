@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -119,16 +118,16 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
           </div>
         </div>
 
-        {user?.subscriptionDaysRemaining !== null && user?.subscriptionDaysRemaining !== undefined && (
+        {user?.subscriptionDaysRemaining !== null && user?.subscriptionDaysRemaining !== undefined && user?.subscriptionPlan !== 'premium' && user?.subscriptionPlan !== 'free-for-life' && (
           <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 p-2 rounded">
             <Calendar size={16} />
             <span>
-              Subscription days remaining: {user.subscriptionDaysRemaining} days
+              Trial days remaining: {user.subscriptionDaysRemaining} days
             </span>
           </div>
         )}
 
-        {user?.isTrial && (
+        {user?.isTrial && user?.daysRemaining !== null && user?.daysRemaining !== undefined && (
           <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 p-2 rounded">
             <Calendar size={16} />
             <span>
