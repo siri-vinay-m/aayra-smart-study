@@ -131,8 +131,109 @@ serve(async (req) => {
   }
 });
 
+function detectLanguage(content: string): string {
+  // Simple language detection based on character patterns
+  const text = content.toLowerCase();
+  
+  // Telugu detection - check for Telugu Unicode range
+  const teluguPattern = /[\u0c00-\u0c7f]/;
+  if (teluguPattern.test(content)) {
+    return 'Telugu';
+  }
+  
+  // Hindi detection - check for Devanagari script
+  const hindiPattern = /[\u0900-\u097f]/;
+  if (hindiPattern.test(content)) {
+    return 'Hindi';
+  }
+  
+  // Tamil detection
+  const tamilPattern = /[\u0b80-\u0bff]/;
+  if (tamilPattern.test(content)) {
+    return 'Tamil';
+  }
+  
+  // Kannada detection
+  const kannadaPattern = /[\u0c80-\u0cff]/;
+  if (kannadaPattern.test(content)) {
+    return 'Kannada';
+  }
+  
+  // Malayalam detection
+  const malayalamPattern = /[\u0d00-\u0d7f]/;
+  if (malayalamPattern.test(content)) {
+    return 'Malayalam';
+  }
+  
+  // Gujarati detection
+  const gujaratiPattern = /[\u0a80-\u0aff]/;
+  if (gujaratiPattern.test(content)) {
+    return 'Gujarati';
+  }
+  
+  // Punjabi detection
+  const punjabiPattern = /[\u0a00-\u0a7f]/;
+  if (punjabiPattern.test(content)) {
+    return 'Punjabi';
+  }
+  
+  // Bengali detection
+  const bengaliPattern = /[\u0980-\u09ff]/;
+  if (bengaliPattern.test(content)) {
+    return 'Bengali';
+  }
+  
+  // Marathi detection (uses Devanagari but can be distinguished by context)
+  const marathiWords = ['आहे', 'आणि', 'तो', 'ती', 'ते', 'या', 'की', 'होते', 'करतो', 'करते'];
+  if (marathiWords.some(word => text.includes(word))) {
+    return 'Marathi';
+  }
+  
+  // Spanish detection
+  const spanishWords = ['el', 'la', 'de', 'que', 'y', 'en', 'un', 'es', 'se', 'no', 'te', 'lo', 'le', 'da', 'su', 'por', 'son', 'con', 'para', 'al', 'del', 'los', 'una', 'las'];
+  const spanishCount = spanishWords.filter(word => text.includes(' ' + word + ' ') || text.startsWith(word + ' ') || text.endsWith(' ' + word)).length;
+  if (spanishCount >= 3) {
+    return 'Spanish';
+  }
+  
+  // French detection
+  const frenchWords = ['le', 'de', 'et', 'à', 'un', 'il', 'être', 'et', 'en', 'avoir', 'que', 'pour', 'dans', 'ce', 'son', 'une', 'sur', 'avec', 'ne', 'se', 'pas', 'tout', 'plus', 'par', 'grand', 'quand', 'même', 'lui', 'nous', 'sans', 'peut'];
+  const frenchCount = frenchWords.filter(word => text.includes(' ' + word + ' ') || text.startsWith(word + ' ') || text.endsWith(' ' + word)).length;
+  if (frenchCount >= 3) {
+    return 'French';
+  }
+  
+  // German detection
+  const germanWords = ['der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das', 'mit', 'sich', 'des', 'auf', 'für', 'ist', 'im', 'dem', 'nicht', 'ein', 'eine', 'als', 'auch', 'es', 'an', 'werden', 'aus', 'er', 'hat', 'dass', 'sie', 'nach'];
+  const germanCount = germanWords.filter(word => text.includes(' ' + word + ' ') || text.startsWith(word + ' ') || text.endsWith(' ' + word)).length;
+  if (germanCount >= 3) {
+    return 'German';
+  }
+  
+  // Portuguese detection
+  const portugueseWords = ['de', 'a', 'o', 'e', 'do', 'da', 'em', 'um', 'para', 'é', 'com', 'não', 'uma', 'os', 'no', 'se', 'na', 'por', 'mais', 'as', 'dos', 'como', 'mas', 'foi', 'ao', 'ele', 'das', 'tem', 'à', 'seu'];
+  const portugueseCount = portugueseWords.filter(word => text.includes(' ' + word + ' ') || text.startsWith(word + ' ') || text.endsWith(' ' + word)).length;
+  if (portugueseCount >= 3) {
+    return 'Portuguese';
+  }
+  
+  // Italian detection
+  const italianWords = ['di', 'a', 'da', 'in', 'con', 'su', 'per', 'tra', 'fra', 'il', 'lo', 'la', 'i', 'gli', 'le', 'un', 'uno', 'una', 'e', 'che', 'non', 'è', 'si', 'sono', 'stato', 'questa', 'questo'];
+  const italianCount = italianWords.filter(word => text.includes(' ' + word + ' ') || text.startsWith(word + ' ') || text.endsWith(' ' + word)).length;
+  if (italianCount >= 3) {
+    return 'Italian';
+  }
+  
+  // Default to English if no other language detected
+  return 'English';
+}
+
 async function generateAIContent(content: string, sessionName: string): Promise<AIResponse> {
   console.log('Calling Gemini API...');
+  
+  // Detect the language of the input content
+  const detectedLanguage = detectLanguage(content);
+  console.log('Detected language:', detectedLanguage);
   
   const prompt = `
 You are an educational AI assistant. Based on the following study materials from a session called "${sessionName}", generate comprehensive educational content.
@@ -140,33 +241,35 @@ You are an educational AI assistant. Based on the following study materials from
 Study Materials:
 ${content}
 
+IMPORTANT: The study materials above are in ${detectedLanguage}. You MUST generate ALL content (flashcards, quiz questions, and summary) in the SAME language (${detectedLanguage}). Do not translate or use any other language.
+
 Please create:
-1. 5-7 flashcards with clear questions and detailed answers
-2. 6-8 multiple choice quiz questions with 4 options each, correct answer, and explanations
-3. A comprehensive summary of the key concepts
+1. 5-7 flashcards with clear questions and detailed answers in ${detectedLanguage}
+2. 6-8 multiple choice quiz questions with 4 options each, correct answer, and explanations in ${detectedLanguage}
+3. A comprehensive summary of the key concepts in ${detectedLanguage}
 
 Focus on the actual educational content provided. If the materials mention specific topics, subjects, or concepts, create relevant questions and content around those topics.
 
-Please respond in the following JSON format:
+Please respond in the following JSON format (but with all text content in ${detectedLanguage}):
 {
   "flashcards": [
     {
-      "question": "Question text",
-      "answer": "Answer text"
+      "question": "Question text in ${detectedLanguage}",
+      "answer": "Answer text in ${detectedLanguage}"
     }
   ],
   "quizQuestions": [
     {
-      "question": "Question text", 
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswer": "Option A",
-      "explanation": "Explanation text"
+      "question": "Question text in ${detectedLanguage}", 
+      "options": ["Option A in ${detectedLanguage}", "Option B in ${detectedLanguage}", "Option C in ${detectedLanguage}", "Option D in ${detectedLanguage}"],
+      "correctAnswer": "Option A in ${detectedLanguage}",
+      "explanation": "Explanation text in ${detectedLanguage}"
     }
   ],
-  "summary": "Comprehensive summary text"
+  "summary": "Comprehensive summary text in ${detectedLanguage}"
 }
 
-Make sure the content is educational, accurate, and directly related to the study materials provided. Return only valid JSON without any markdown formatting.
+Make sure the content is educational, accurate, and directly related to the study materials provided. Return only valid JSON without any markdown formatting. ALL TEXT MUST BE IN ${detectedLanguage}.
 `;
 
   try {
@@ -238,28 +341,74 @@ Make sure the content is educational, accurate, and directly related to the stud
       console.error('Error parsing AI response:', parseError);
       console.error('Generated text:', generatedText);
       
-      // Enhanced fallback response with more relevant content
+      // Create language-specific fallback response
+      return createLanguageSpecificFallback(sessionName, detectedLanguage);
+    }
+  } catch (error) {
+    console.error('Error calling Gemini API:', error);
+    throw error;
+  }
+}
+
+function createLanguageSpecificFallback(sessionName: string, language: string): AIResponse {
+  // Create fallback content in the detected language
+  switch (language) {
+    case 'Telugu':
       return {
         flashcards: [
           {
-            question: `What is the main topic covered in the "${sessionName}" session?`,
-            answer: "This session covers important educational concepts. Review the uploaded materials to understand the main ideas and practice applying them to reinforce your learning."
+            question: `"${sessionName}" సెషన్‌లో ప్రధాన అంశం ఏమిటి?`,
+            answer: "ఈ సెషన్ ముఖ్యమైన విద్యా భావనలను కవర్ చేస్తుంది. ప్రధాన ఆలోచనలను అర్థం చేసుకోవడానికి మరియు మీ అభ్యాసాన్ని బలోపేతం చేయడానికి అప్‌లోడ్ చేసిన పదార్థాలను సమీక్షించండి."
           },
           {
-            question: "How should you approach studying this material effectively?",
-            answer: "Break down complex topics into smaller parts, use active recall techniques, and connect new information to what you already know. Regular practice and review are key to mastering the content."
+            question: "ఈ అధ్యయన సెషన్‌కు ముఖ్య అభ్యాస లక్ష్యాలు ఏమిటి?",
+            answer: "ప్రధాన భావనలను అర్థం చేసుకోవడం, ఆలోచనల మధ్య ముఖ్యమైన సంబంధాలను గుర్తించడం మరియు పదార్థానికి సంబంధించిన సమస్య పరిష్కార పద్ధతులను అభ్యసించడంపై దృష్టి పెట్టండి."
+          }
+        ],
+        quizQuestions: [
+          {
+            question: `"${sessionName}" అధ్యయన సెషన్‌యొక్క ప్రాథమిక దృష్టి ఏమిటి?`,
+            options: ["అప్‌లోడ్ చేసిన పదార్థాల నుండి ప్రధాన విద్యా భావనలు", "అసంబద్ధ సాధారణ జ్ఞానం", "యాదృచ్ఛిక సమాచారం", "నిర్దిష్ట దృష్టి లేదు"],
+            correctAnswer: "అప్‌లోడ్ చేసిన పదార్థాల నుండి ప్రధాన విద్యా భావనలు",
+            explanation: "ఈ సెషన్ మీరు అప్‌లోడ్ చేసిన నిర్దిష్ట విద్యా పదార్థాలను ప్రాసెస్ చేయడానికి మరియు వాటి నుండి నేర్చుకోవడానికి రూపొందించబడింది."
+          }
+        ],
+        summary: `"${sessionName}" పై ఈ అధ్యయన సెషన్ మీ అప్‌లోడ్ చేసిన విద్యా పదార్థాలను ప్రాసెస్ చేయడం మరియు వాటి నుండి నేర్చుకోవడంపై దృష్టి పెట్టింది. క్రియాశీల స్మరణ కోసం ఫ్లాష్‌కార్డులు, స్వీయ-పరీక్ష కోసం క్విజ్ ప్రశ్నలు మరియు భావన బలోపేతం కోసం సారాంశ సమీక్షలతో సహా వివిధ పద్ధతులను ఉపయోగించి ప్రభాવకరమైన అధ్యయనం కోసం ఫ్రేమ్‌వర్క్‌ను సెషన్ విజయవంతంగా సృష్టించింది.`
+      };
+    
+    case 'Hindi':
+      return {
+        flashcards: [
+          {
+            question: `"${sessionName}" सत्र में मुख्य विषय क्या था?`,
+            answer: "इस सत्र में महत्वपूर्ण शैक्षणिक अवधारणाओं को कवर किया गया। मुख्य विचारों को समझने और अपने सीखने को मजबूत बनाने के लिए अपलोड की गई सामग्री की समीक्षा करें।"
+          },
+          {
+            question: "इस अध्ययन सत्र के मुख्य सीखने के उद्देश्य क्या हैं?",
+            answer: "मुख्य अवधारणाओं को समझने, विचारों के बीच महत्वपूर्ण संबंधों की पहचान करने और सामग्री से संबंधित समस्या-समाधान तकनीकों का अभ्यास करने पर ध्यान दें।"
+          }
+        ],
+        quizQuestions: [
+          {
+            question: `"${sessionName}" अध्ययन सत्र का प्राथमिक फोकस क्या था?`,
+            options: ["अपलोड की गई सामग्री से मुख्य शैक्षणिक अवधारणाएं", "असंबंधित सामान्य ज्ञान", "यादृच्छिक जानकारी", "कोई विशिष्ट फोकस नहीं"],
+            correctAnswer: "अपलोड की गई सामग्री से मुख्य शैक्षणिक अवधारणाएं",
+            explanation: "यह सत्र आपके द्वारा अपलोड की गई विशिष्ट शैक्षणिक सामग्री को प्रोसेस करने और उससे सीखने के लिए डिज़ाइन किया गया था।"
+          }
+        ],
+        summary: `"${sessionName}" पर यह अध्ययन सत्र आपकी अपलोड की गई शैक्षणिक सामग्री को प्रोसेस करने और उससे सीखने पर केंद्रित था। सत्र ने सक्रिय याद के लिए फ्लैशकार्ड, स्व-परीक्षण के लिए क्विज़ प्रश्न, और अवधारणा सुदृढ़ीकरण के लिए सारांश समीक्षा सहित विभिन्न तकनीकों का उपयोग करके प्रभावी अध्ययन के लिए एक ढांचा सफलतापूर्वक बनाया।`
+      };
+    
+    default: // English fallback
+      return {
+        flashcards: [
+          {
+            question: `What was the main topic covered in the "${sessionName}" session?`,
+            answer: "This session covered important educational concepts. Review the uploaded materials to understand the main ideas and practice applying them to reinforce your learning."
           },
           {
             question: "What are the key learning objectives for this study session?",
             answer: "Focus on understanding the core concepts, identifying important relationships between ideas, and practicing problem-solving techniques related to the material."
-          },
-          {
-            question: "How can you apply the concepts from this session?",
-            answer: "Look for real-world applications of the concepts, create your own examples, and practice explaining the ideas to others to deepen your understanding."
-          },
-          {
-            question: "What study strategies work best for this type of material?",
-            answer: "Use a combination of reading, note-taking, visual aids, and practice exercises. Spaced repetition and active testing will help with long-term retention."
           }
         ],
         quizQuestions: [
@@ -268,37 +417,9 @@ Make sure the content is educational, accurate, and directly related to the stud
             options: ["Core educational concepts from uploaded materials", "Unrelated general knowledge", "Random information", "No specific focus"],
             correctAnswer: "Core educational concepts from uploaded materials",
             explanation: "This session was designed to process and learn from the specific educational materials you uploaded, creating targeted study content."
-          },
-          {
-            question: "What is the most effective approach to reviewing study materials?",
-            options: ["Skip reviewing entirely", "Review once quickly", "Regular practice with active recall", "Memorize everything word-for-word"],
-            correctAnswer: "Regular practice with active recall",
-            explanation: "Regular practice combined with active recall techniques helps reinforce learning and improve long-term retention of information."
-          },
-          {
-            question: "How can you make your study sessions more productive?",
-            options: ["Study for long hours without breaks", "Use active learning techniques", "Only read materials passively", "Avoid taking any notes"],
-            correctAnswer: "Use active learning techniques",
-            explanation: "Active learning techniques like summarizing, questioning, and applying concepts help improve understanding and retention more than passive reading."
-          },
-          {
-            question: "What role do flashcards play in effective studying?",
-            options: ["They replace the need for other study methods", "They help with spaced repetition and recall", "They are only useful for memorization", "They are not effective for learning"],
-            correctAnswer: "They help with spaced repetition and recall",
-            explanation: "Flashcards are excellent tools for spaced repetition and active recall, helping to strengthen memory and identify areas that need more attention."
-          },
-          {
-            question: "Why is it important to create summaries of study materials?",
-            options: ["To make the content shorter", "To identify and reinforce key concepts", "To avoid reading the original material", "To impress others with knowledge"],
-            correctAnswer: "To identify and reinforce key concepts",
-            explanation: "Creating summaries helps you identify the most important concepts, organize information logically, and reinforce understanding through active processing."
           }
         ],
-        summary: `This study session on "${sessionName}" focused on processing and learning from your uploaded educational materials. While the AI encountered some formatting challenges in processing the specific content, the session successfully created a framework for effective studying. The materials you uploaded contain valuable educational content that can be studied using various techniques including flashcards for active recall, quiz questions for self-testing, and summary reviews for concept reinforcement. To maximize your learning from these materials, continue to engage with them actively through regular review, practice application of concepts, and connection to related knowledge you already possess. The combination of the uploaded materials and these study tools provides a comprehensive foundation for mastering the subject matter.`
+        summary: `This study session on "${sessionName}" focused on processing and learning from your uploaded educational materials. The session successfully created a framework for effective studying using various techniques including flashcards for active recall, quiz questions for self-testing, and summary reviews for concept reinforcement.`
       };
-    }
-  } catch (error) {
-    console.error('Error calling Gemini API:', error);
-    throw error;
   }
 }
