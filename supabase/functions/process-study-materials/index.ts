@@ -132,60 +132,71 @@ serve(async (req) => {
 });
 
 function detectLanguage(content: string): string {
-  // Simple language detection based on character patterns
+  console.log('Detecting language for content:', content.substring(0, 200));
+  
+  // Simple language detection based on character patterns and common words
   const text = content.toLowerCase();
   
   // Telugu detection - check for Telugu Unicode range
   const teluguPattern = /[\u0c00-\u0c7f]/;
   if (teluguPattern.test(content)) {
+    console.log('Telugu script detected');
     return 'Telugu';
   }
   
   // Hindi detection - check for Devanagari script
   const hindiPattern = /[\u0900-\u097f]/;
   if (hindiPattern.test(content)) {
+    console.log('Hindi script detected');
     return 'Hindi';
   }
   
   // Tamil detection
   const tamilPattern = /[\u0b80-\u0bff]/;
   if (tamilPattern.test(content)) {
+    console.log('Tamil script detected');
     return 'Tamil';
   }
   
   // Kannada detection
   const kannadaPattern = /[\u0c80-\u0cff]/;
   if (kannadaPattern.test(content)) {
+    console.log('Kannada script detected');
     return 'Kannada';
   }
   
   // Malayalam detection
   const malayalamPattern = /[\u0d00-\u0d7f]/;
   if (malayalamPattern.test(content)) {
+    console.log('Malayalam script detected');
     return 'Malayalam';
   }
   
   // Gujarati detection
   const gujaratiPattern = /[\u0a80-\u0aff]/;
   if (gujaratiPattern.test(content)) {
+    console.log('Gujarati script detected');
     return 'Gujarati';
   }
   
   // Punjabi detection
   const punjabiPattern = /[\u0a00-\u0a7f]/;
   if (punjabiPattern.test(content)) {
+    console.log('Punjabi script detected');
     return 'Punjabi';
   }
   
   // Bengali detection
   const bengaliPattern = /[\u0980-\u09ff]/;
   if (bengaliPattern.test(content)) {
+    console.log('Bengali script detected');
     return 'Bengali';
   }
   
   // Marathi detection (uses Devanagari but can be distinguished by context)
   const marathiWords = ['आहे', 'आणि', 'तो', 'ती', 'ते', 'या', 'की', 'होते', 'करतो', 'करते'];
   if (marathiWords.some(word => text.includes(word))) {
+    console.log('Marathi words detected');
     return 'Marathi';
   }
   
@@ -193,6 +204,7 @@ function detectLanguage(content: string): string {
   const spanishWords = ['el', 'la', 'de', 'que', 'y', 'en', 'un', 'es', 'se', 'no', 'te', 'lo', 'le', 'da', 'su', 'por', 'son', 'con', 'para', 'al', 'del', 'los', 'una', 'las'];
   const spanishCount = spanishWords.filter(word => text.includes(' ' + word + ' ') || text.startsWith(word + ' ') || text.endsWith(' ' + word)).length;
   if (spanishCount >= 3) {
+    console.log('Spanish words detected');
     return 'Spanish';
   }
   
@@ -200,6 +212,7 @@ function detectLanguage(content: string): string {
   const frenchWords = ['le', 'de', 'et', 'à', 'un', 'il', 'être', 'et', 'en', 'avoir', 'que', 'pour', 'dans', 'ce', 'son', 'une', 'sur', 'avec', 'ne', 'se', 'pas', 'tout', 'plus', 'par', 'grand', 'quand', 'même', 'lui', 'nous', 'sans', 'peut'];
   const frenchCount = frenchWords.filter(word => text.includes(' ' + word + ' ') || text.startsWith(word + ' ') || text.endsWith(' ' + word)).length;
   if (frenchCount >= 3) {
+    console.log('French words detected');
     return 'French';
   }
   
@@ -207,6 +220,7 @@ function detectLanguage(content: string): string {
   const germanWords = ['der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das', 'mit', 'sich', 'des', 'auf', 'für', 'ist', 'im', 'dem', 'nicht', 'ein', 'eine', 'als', 'auch', 'es', 'an', 'werden', 'aus', 'er', 'hat', 'dass', 'sie', 'nach'];
   const germanCount = germanWords.filter(word => text.includes(' ' + word + ' ') || text.startsWith(word + ' ') || text.endsWith(' ' + word)).length;
   if (germanCount >= 3) {
+    console.log('German words detected');
     return 'German';
   }
   
@@ -214,6 +228,7 @@ function detectLanguage(content: string): string {
   const portugueseWords = ['de', 'a', 'o', 'e', 'do', 'da', 'em', 'um', 'para', 'é', 'com', 'não', 'uma', 'os', 'no', 'se', 'na', 'por', 'mais', 'as', 'dos', 'como', 'mas', 'foi', 'ao', 'ele', 'das', 'tem', 'à', 'seu'];
   const portugueseCount = portugueseWords.filter(word => text.includes(' ' + word + ' ') || text.startsWith(word + ' ') || text.endsWith(' ' + word)).length;
   if (portugueseCount >= 3) {
+    console.log('Portuguese words detected');
     return 'Portuguese';
   }
   
@@ -221,10 +236,12 @@ function detectLanguage(content: string): string {
   const italianWords = ['di', 'a', 'da', 'in', 'con', 'su', 'per', 'tra', 'fra', 'il', 'lo', 'la', 'i', 'gli', 'le', 'un', 'uno', 'una', 'e', 'che', 'non', 'è', 'si', 'sono', 'stato', 'questa', 'questo'];
   const italianCount = italianWords.filter(word => text.includes(' ' + word + ' ') || text.startsWith(word + ' ') || text.endsWith(' ' + word)).length;
   if (italianCount >= 3) {
+    console.log('Italian words detected');
     return 'Italian';
   }
   
   // Default to English if no other language detected
+  console.log('No specific language detected, defaulting to English');
   return 'English';
 }
 
@@ -236,21 +253,32 @@ async function generateAIContent(content: string, sessionName: string): Promise<
   console.log('Detected language:', detectedLanguage);
   
   const prompt = `
-You are an educational AI assistant. Based on the following study materials from a session called "${sessionName}", generate comprehensive educational content.
+You are an educational AI assistant that MUST generate content in the SAME language as the input materials.
 
-Study Materials:
+Study Materials Language: ${detectedLanguage}
+Session Name: "${sessionName}"
+
+Study Materials Content:
 ${content}
 
-IMPORTANT: The study materials above are in ${detectedLanguage}. You MUST generate ALL content (flashcards, quiz questions, and summary) in the SAME language (${detectedLanguage}). Do not translate or use any other language.
+CRITICAL INSTRUCTION: You MUST generate ALL content (flashcards, quiz questions, and summary) EXCLUSIVELY in ${detectedLanguage}. Do NOT use English or any other language. Every single word in your response must be in ${detectedLanguage}.
 
-Please create:
-1. 5-7 flashcards with clear questions and detailed answers in ${detectedLanguage}
-2. 6-8 multiple choice quiz questions with 4 options each, correct answer, and explanations in ${detectedLanguage}
-3. A comprehensive summary of the key concepts in ${detectedLanguage}
+If the detected language is ${detectedLanguage}, then:
+- ALL questions must be written in ${detectedLanguage}
+- ALL answers must be written in ${detectedLanguage}  
+- ALL quiz options must be written in ${detectedLanguage}
+- ALL explanations must be written in ${detectedLanguage}
+- The summary must be written in ${detectedLanguage}
+
+Please create educational content based on the study materials:
+1. Generate 5-7 flashcards with clear questions and detailed answers - ALL TEXT IN ${detectedLanguage}
+2. Create 6-8 multiple choice quiz questions with 4 options each, correct answer, and explanations - ALL TEXT IN ${detectedLanguage}
+3. Write a comprehensive summary of the key concepts - ALL TEXT IN ${detectedLanguage}
 
 Focus on the actual educational content provided. If the materials mention specific topics, subjects, or concepts, create relevant questions and content around those topics.
 
-Please respond in the following JSON format (but with all text content in ${detectedLanguage}):
+RESPONSE FORMAT: Return ONLY valid JSON without any markdown formatting. ALL text content MUST be in ${detectedLanguage}:
+
 {
   "flashcards": [
     {
@@ -269,11 +297,11 @@ Please respond in the following JSON format (but with all text content in ${dete
   "summary": "Comprehensive summary text in ${detectedLanguage}"
 }
 
-Make sure the content is educational, accurate, and directly related to the study materials provided. Return only valid JSON without any markdown formatting. ALL TEXT MUST BE IN ${detectedLanguage}.
+REMEMBER: Every single word in your response must be in ${detectedLanguage}. Do not mix languages.
 `;
 
   try {
-    console.log('Making request to Gemini API...');
+    console.log('Making request to Gemini API with language-specific prompt...');
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${googleApiKey}`, {
       method: 'POST',
       headers: {
@@ -286,9 +314,9 @@ Make sure the content is educational, accurate, and directly related to the stud
           }]
         }],
         generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
+          temperature: 0.3,
+          topK: 20,
+          topP: 0.8,
           maxOutputTokens: 8192,
         },
       }),
@@ -346,11 +374,14 @@ Make sure the content is educational, accurate, and directly related to the stud
     }
   } catch (error) {
     console.error('Error calling Gemini API:', error);
-    throw error;
+    // Return language-specific fallback instead of throwing error
+    return createLanguageSpecificFallback(sessionName, detectedLanguage);
   }
 }
 
 function createLanguageSpecificFallback(sessionName: string, language: string): AIResponse {
+  console.log(`Creating fallback content in ${language} for session: ${sessionName}`);
+  
   // Create fallback content in the detected language
   switch (language) {
     case 'Telugu':
@@ -361,7 +392,7 @@ function createLanguageSpecificFallback(sessionName: string, language: string): 
             answer: "ఈ సెషన్ ముఖ్యమైన విద్యా భావనలను కవర్ చేస్తుంది. ప్రధాన ఆలోచనలను అర్థం చేసుకోవడానికి మరియు మీ అభ్యాసాన్ని బలోపేతం చేయడానికి అప్‌లోడ్ చేసిన పదార్థాలను సమీక్షించండి."
           },
           {
-            question: "ఈ అధ్యయన సెషన్‌కు ముఖ్య అభ్యాస లక్ష్యాలు ఏమిటి?",
+            question: "ఈ అధ్యయన సెషన్‌కు ముఖ్యమైన అభ్యాస లక్ష్యాలు ఏమిటి?",
             answer: "ప్రధాన భావనలను అర్థం చేసుకోవడం, ఆలోచనల మధ్య ముఖ్యమైన సంబంధాలను గుర్తించడం మరియు పదార్థానికి సంబంధించిన సమస్య పరిష్కార పద్ధతులను అభ్యసించడంపై దృష్టి పెట్టండి."
           }
         ],
@@ -373,7 +404,7 @@ function createLanguageSpecificFallback(sessionName: string, language: string): 
             explanation: "ఈ సెషన్ మీరు అప్‌లోడ్ చేసిన నిర్దిష్ట విద్యా పదార్థాలను ప్రాసెస్ చేయడానికి మరియు వాటి నుండి నేర్చుకోవడానికి రూపొందించబడింది."
           }
         ],
-        summary: `"${sessionName}" పై ఈ అధ్యయన సెషన్ మీ అప్‌లోడ్ చేసిన విద్యా పదార్థాలను ప్రాసెస్ చేయడం మరియు వాటి నుండి నేర్చుకోవడంపై దృష్టి పెట్టింది. క్రియాశీల స్మరణ కోసం ఫ్లాష్‌కార్డులు, స్వీయ-పరీక్ష కోసం క్విజ్ ప్రశ్నలు మరియు భావన బలోపేతం కోసం సారాంశ సమీక్షలతో సహా వివిధ పద్ధతులను ఉపయోగించి ప్రభాવకరమైన అధ్యయనం కోసం ఫ్రేమ్‌వర్క్‌ను సెషన్ విజయవంతంగా సృష్టించింది.`
+        summary: `"${sessionName}" పై ఈ అధ్యయన సెషన్ మీ అప్‌లోడ్ చేసిన విద్యా పదార్థాలను ప్రాసెస్ చేయడం మరియు వాటి నుండి నేర్చుకోవడంపై దృష్టి పెట్టింది. క్రియాశీల స్మరణ కోసం ఫ్లాష్‌కార్డులు, స్వీయ-పరీక్ష కోసం క్విజ్ ప్రశ్నలు మరియు భావన బలోపేతం కోసం సారాంశ సమీక్షలతో సహా వివిధ పద్ధతులను ఉపయోగించి ప్రభావకరమైన అధ్యయనం కోసం ఫ్రేమ్‌వర్క్‌ను సెషన్ విజయవంతంగా సృష్టించింది.`
       };
     
     case 'Hindi':
