@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
 import { format } from 'date-fns';
-import { AlertCircle, Folder, ArrowLeft } from 'lucide-react';
+import { Folder, ArrowLeft } from 'lucide-react';
 
 const IncompleteSessionsPage = () => {
   const { incompleteSessions, setCurrentSession } = useSession();
@@ -46,14 +46,9 @@ const IncompleteSessionsPage = () => {
     setSelectedSubject(null);
   };
 
-  const getStatusDisplay = (session: any) => {
-    // Show the actual start date formatted
-    return format(new Date(session.createdAt), 'MMM d, yyyy');
-  };
-
-  const getStatusColor = () => {
-    // Always use blue color for the start date
-    return 'text-blue-600';
+  const getStartDateDisplay = (session: any) => {
+    // Show the session start date formatted
+    return format(new Date(session.startTime), 'MMM d, yyyy');
   };
   
   return (
@@ -87,12 +82,13 @@ const IncompleteSessionsPage = () => {
                         Topic: {session.topicName}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {getStatusDisplay(session)}
+                        Created: {format(new Date(session.createdAt), 'MMM d, yyyy')}
                       </p>
                     </div>
-                    <div className={`flex items-center ${getStatusColor()}`}>
-                      <AlertCircle size={20} className="mr-1" />
-                      <span className="text-sm font-medium">Incomplete</span>
+                    <div className="text-blue-600">
+                      <span className="text-sm font-medium">
+                        {getStartDateDisplay(session)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -106,7 +102,6 @@ const IncompleteSessionsPage = () => {
             
             {subjects.length === 0 ? (
               <div className="text-center py-8">
-                <AlertCircle size={48} className="text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600">No incomplete sessions</p>
                 <p className="text-sm text-gray-500 mt-2">
                   All your sessions have been completed successfully!
