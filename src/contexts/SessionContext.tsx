@@ -40,8 +40,17 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, []);
 
   const completeSession = (sessionId: string) => {
+    console.log('SessionContext: completeSession called for:', sessionId);
+    
+    // Pass the loadIncompleteSessions function to handle moving sessions between lists
+    reviewOps.completeSession(
+      sessionId, 
+      sessionOps.loadCompletedSessions,
+      sessionOps.loadIncompleteSessions
+    );
+    
+    // Clear current session if it's the one being completed
     if (sessionOps.currentSession && sessionOps.currentSession.id === sessionId) {
-      reviewOps.completeSession(sessionId, sessionOps.loadCompletedSessions);
       sessionOps.setCurrentSession(null);
     }
   };

@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useReviewCompletion } from '@/hooks/useReviewCompletion';
+import { useSession } from '@/contexts/SessionContext';
 
 interface SummaryViewProps {
   summary: string;
@@ -20,6 +21,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   sessionId
 }) => {
   const { completeReview, isCompleting } = useReviewCompletion();
+  const { completeSession, currentSession } = useSession();
 
   const handleFinish = async () => {
     if (isReviewSession && reviewId && sessionId) {
@@ -30,7 +32,13 @@ const SummaryView: React.FC<SummaryViewProps> = ({
         // Still call onFinish as fallback
         onFinish();
       }
+    } else if (currentSession && (currentSession.status === 'incomplete' || currentSession.status === 'validating')) {
+      // This is an incomplete session being completed
+      console.log('Completing incomplete session:', currentSession.id);
+      completeSession(currentSession.id);
+      onFinish();
     } else {
+      // Regular session flow
       onFinish();
     }
   };
@@ -39,6 +47,9 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   const getButtonText = () => {
     if (isCompleting) return 'Completing...';
     if (isReviewSession) return 'Complete';
+    if (currentSession && (currentSession.status === 'incomplete' || currentSession.status === 'validating')) {
+      return 'Complete Session';
+    }
     return 'Take a Break';
   };
 

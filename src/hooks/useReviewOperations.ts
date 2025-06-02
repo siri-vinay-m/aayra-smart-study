@@ -57,12 +57,18 @@ export const useReviewOperations = () => {
     }
   };
 
-  const completeSession = async (sessionId: string, loadCompletedSessions: () => Promise<void>) => {
+  const completeSession = async (
+    sessionId: string, 
+    loadCompletedSessions: () => Promise<void>,
+    loadIncompleteSessions?: () => Promise<void>
+  ) => {
     try {
       const { data: authUser } = await supabase.auth.getUser();
       if (!authUser.user) return;
 
-      // Update session status to completed
+      console.log('Completing session:', sessionId);
+
+      // Update session status to completed and set last reviewed date
       const { error: sessionError } = await supabase
         .from('studysessions')
         .update({ 
@@ -75,6 +81,8 @@ export const useReviewOperations = () => {
         console.error('Error completing session:', sessionError);
         return;
       }
+
+      console.log('Session status updated to completed');
 
       // Create review cycle entry for spaced repetition
       const { error: reviewError } = await supabase
@@ -90,11 +98,16 @@ export const useReviewOperations = () => {
 
       if (reviewError) {
         console.error('Error creating review cycle entry:', reviewError);
+      } else {
+        console.log('Review cycle entry created successfully');
       }
       
       // Reload the data to reflect changes
-      loadCompletedSessions();
-      loadPendingReviews();
+      await loadCompletedSessions();
+      if (loadIncompleteSessions) {
+        await loadIncompleteSessions();
+      }
+      await loadPendingReviews();
     } catch (error) {
       console.error('Error completing session:', error);
     }
