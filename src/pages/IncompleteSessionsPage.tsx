@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -80,9 +79,6 @@ const IncompleteSessionsPage = () => {
                       <h3 className="font-medium text-gray-900">{session.sessionName}</h3>
                       <p className="text-sm text-gray-500 mt-1">
                         Topic: {session.topicName}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Created: {format(new Date(session.createdAt), 'MMM d, yyyy')}
                       </p>
                     </div>
                     <div className="text-blue-600">
