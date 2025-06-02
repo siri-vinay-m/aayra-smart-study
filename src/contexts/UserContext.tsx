@@ -23,6 +23,7 @@ export interface User {
   subscriptionStartDate?: string | null;
   subscriptionEndDate?: string | null;
   daysRemaining?: number | null;
+	subscriptionDaysRemaining?: number | null;
   sessionsPerDay?: number | null;
   sessionsPerWeek?: number | null;
   adsEnabled?: boolean | null;
@@ -173,6 +174,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           subscriptionStartDate: subscriptionInfo?.start_date,
           subscriptionEndDate: subscriptionInfo?.end_date,
           daysRemaining: subscriptionInfo?.days_remaining,
+					subscriptionDaysRemaining: userData.subscription_days_remaining,
           sessionsPerDay: subscriptionInfo?.sessions_per_day,
           sessionsPerWeek: subscriptionInfo?.sessions_per_week,
           adsEnabled: subscriptionInfo?.ads_enabled,
@@ -196,6 +198,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           passwordhash: '',
           emailverified: authUser.email_confirmed_at ? true : false,
           subscription_plan: 'free',
+					subscription_days_remaining: 45,
         };
 
         await supabase.from('users').insert(newUserData);
@@ -212,6 +215,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           subscriptionPlan: 'free',
           subscriptionStatus: 'active',
           daysRemaining: 45,
+					subscriptionDaysRemaining: 45,
           sessionsPerDay: 2,
           sessionsPerWeek: null,
           adsEnabled: true,

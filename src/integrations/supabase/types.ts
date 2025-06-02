@@ -587,6 +587,7 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           studentcategory: string
+          subscription_days_remaining: number | null
           subscription_end_date: string | null
           subscription_plan: string | null
           subscription_start_date: string | null
@@ -612,6 +613,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           studentcategory: string
+          subscription_days_remaining?: number | null
           subscription_end_date?: string | null
           subscription_plan?: string | null
           subscription_start_date?: string | null
@@ -637,6 +639,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           studentcategory?: string
+          subscription_days_remaining?: number | null
           subscription_end_date?: string | null
           subscription_plan?: string | null
           subscription_start_date?: string | null

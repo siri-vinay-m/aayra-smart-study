@@ -119,6 +119,15 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
           </div>
         </div>
 
+        {user?.subscriptionDaysRemaining !== null && user?.subscriptionDaysRemaining !== undefined && (
+          <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 p-2 rounded">
+            <Calendar size={16} />
+            <span>
+              Subscription days remaining: {user.subscriptionDaysRemaining} days
+            </span>
+          </div>
+        )}
+
         {user?.isTrial && (
           <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 p-2 rounded">
             <Calendar size={16} />
