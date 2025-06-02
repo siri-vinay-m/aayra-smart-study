@@ -4,11 +4,30 @@ import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import FeatureBlock from '@/components/ui/feature-block';
 import { useSession } from '@/contexts/SessionContext';
+import { useSessionLimits } from '@/hooks/useSessionLimits';
 import { Clock, Plus, List, AlertCircle } from 'lucide-react';
 
 const HomePage = () => {
   const navigate = useNavigate();
   const { pendingReviews, completedSessions, incompleteSessions } = useSession();
+  const sessionLimits = useSessionLimits();
+  
+  const getNewSessionDescription = () => {
+    if (sessionLimits.isLoading) {
+      return "Loading session limits...";
+    }
+    
+    if (!sessionLimits.canCreateSession) {
+      return "Session limit reached for today/week";
+    }
+    
+    let description = "Begin a focused study session";
+    if (sessionLimits.dailyLimit) {
+      description += ` (${sessionLimits.sessionsUsedToday}/${sessionLimits.dailyLimit} today)`;
+    }
+    
+    return description;
+  };
   
   return (
     <MainLayout>
@@ -28,9 +47,11 @@ const HomePage = () => {
         
         <FeatureBlock
           title="Start New Session"
-          description="Begin a focused study session"
+          description={getNewSessionDescription()}
           icon={<Plus size={24} />}
           onClick={() => navigate('/new-session')}
+          disabled={!sessionLimits.canCreateSession}
+          className={!sessionLimits.canCreateSession ? 'opacity-50' : ''}
         />
         
         <FeatureBlock
