@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -117,7 +118,7 @@ const ValidationPage = () => {
         const updatedSession = { ...currentSession, status: 'break_in_progress' as const };
         setCurrentSession(updatedSession);
         await updateCurrentSessionStatus('break_in_progress');
-        navigate('/break');
+        navigate('/break-timer');
       }
     }
   };
