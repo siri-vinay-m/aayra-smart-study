@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -127,18 +128,9 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
           </div>
         )}
 
-        {user?.isTrial && user?.daysRemaining !== null && user?.daysRemaining !== undefined && (
-          <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 p-2 rounded">
-            <Calendar size={16} />
-            <span>
-              Trial period: {user?.daysRemaining || 0} days remaining
-            </span>
-          </div>
-        )}
-
-        {user?.premiumPrice && user?.subscriptionPlan !== 'premium' && (
-          <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-            Premium Plan: ${user.premiumPrice}/month
+        {user?.subscriptionPlan !== 'premium' && user?.subscriptionPlan !== 'free-for-life' && (
+          <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+            After the current plan you will have 2 sessions per week
           </div>
         )}
       </div>
