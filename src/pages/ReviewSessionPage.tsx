@@ -47,13 +47,15 @@ const ReviewSessionPage = () => {
           return;
         }
 
-        // Get review cycle entry for this session
+        // Get review cycle entry for this session - get the most recent one
         const { data: reviewEntry, error: reviewError } = await supabase
           .from('reviewcycleentries')
           .select('*')
           .eq('sessionid', sessionId)
           .eq('userid', user.id)
           .eq('status', 'pending')
+          .order('createdat', { ascending: false })
+          .limit(1)
           .single();
 
         if (reviewError || !reviewEntry) {
@@ -79,8 +81,11 @@ const ReviewSessionPage = () => {
           id: reviewEntry.entryid,
           sessionId: sessionData.sessionid,
           sessionName: sessionData.sessionname,
-          dueDate: reviewEntry.currentreviewduedate,
-          reviewStage: reviewEntry.reviewstage
+          subjectName: sessionData.subjectname,
+          topicName: sessionData.topicname,
+          completedAt: new Date(sessionData.lastreviewedat || sessionData.createdat),
+          dueDate: new Date(reviewEntry.currentreviewduedate),
+          reviewStage: `Stage ${reviewEntry.reviewstage}`
         };
 
         setReviewSession(pendingReview);
@@ -90,7 +95,16 @@ const ReviewSessionPage = () => {
         setCurrentSession({
           id: sessionData.sessionid,
           sessionName: sessionData.sessionname,
+          subjectName: sessionData.subjectname,
+          topicName: sessionData.topicname,
+          focusDuration: sessionData.focusdurationminutes * 60,
+          breakDuration: sessionData.breakdurationminutes * 60,
+          focusDurationMinutes: sessionData.focusdurationminutes,
+          breakDurationMinutes: sessionData.breakdurationminutes,
           status: 'completed',
+          startTime: new Date(sessionData.createdat),
+          createdAt: new Date(sessionData.createdat),
+          isFavorite: sessionData.isfavorite || false,
           aiGeneratedContent: null // Will be populated by useReviewSessionContent
         });
 
@@ -171,7 +185,10 @@ const ReviewSessionPage = () => {
   if (hasError || !reviewSession || !aiContent) {
     return (
       <MainLayout>
-        <ReviewSessionError onRetry={() => window.location.reload()} />
+        <ReviewSessionError 
+          message="Unable to load review session. Please try again."
+          onRetry={() => window.location.reload()} 
+        />
       </MainLayout>
     );
   }

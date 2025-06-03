@@ -1,56 +1,36 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export type ReviewStep = 'flashcards' | 'quiz' | 'summary';
 
 export const useReviewSessionNavigation = () => {
-  const [currentStep, setCurrentStep] = useState<ReviewStep>('flashcards');
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+  const [showNavigationDialog, setShowNavigationDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  const navigate = useNavigate();
 
-  const handleNextCard = (totalCards: number) => {
-    if (currentCardIndex < totalCards - 1) {
-      setCurrentCardIndex(currentCardIndex + 1);
-    } else {
-      setCurrentStep('quiz');
-    }
+  const handleNavigationAttempt = (destination: string) => {
+    setShowNavigationDialog(true);
+    setPendingNavigation(destination);
   };
 
-  const handleSubmitAnswer = () => {
-    if (selectedAnswer) {
-      setIsAnswerSubmitted(true);
+  const handleConfirmNavigation = () => {
+    if (pendingNavigation) {
+      navigate(pendingNavigation);
     }
+    setShowNavigationDialog(false);
+    setPendingNavigation(null);
   };
 
-  const handleNextQuestion = (totalQuestions: number) => {
-    setSelectedAnswer(null);
-    setIsAnswerSubmitted(false);
-    
-    if (currentQuestionIndex < totalQuestions - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    } else {
-      setCurrentStep('summary');
-    }
-  };
-
-  const handleAnswerSelect = (answer: string) => {
-    if (!isAnswerSubmitted) {
-      setSelectedAnswer(answer);
-    }
+  const handleCancelNavigation = () => {
+    setShowNavigationDialog(false);
+    setPendingNavigation(null);
   };
 
   return {
-    currentStep,
-    currentCardIndex,
-    currentQuestionIndex,
-    selectedAnswer,
-    isAnswerSubmitted,
-    handleNextCard,
-    handleSubmitAnswer,
-    handleNextQuestion,
-    handleAnswerSelect,
-    setCurrentStep
+    showNavigationDialog,
+    handleNavigationAttempt,
+    handleConfirmNavigation,
+    handleCancelNavigation,
   };
 };
