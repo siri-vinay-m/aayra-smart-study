@@ -15,7 +15,7 @@ const ContentModerationAlert: React.FC<ContentModerationAlertProps> = ({
   category,
   onDismiss
 }) => {
-  const getAlertVariant = () => {
+  const getAlertVariant = (): "default" | "destructive" => {
     if (category === 'hate_speech') return 'destructive';
     return 'destructive';
   };
