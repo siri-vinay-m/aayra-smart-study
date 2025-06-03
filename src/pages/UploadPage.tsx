@@ -11,6 +11,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAI } from '@/hooks/useAI';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useContentModeration } from '@/hooks/useContentModeration';
+import ContentModerationAlert from '@/components/moderation/ContentModerationAlert';
 
 interface UploadItem {
   id: string;
@@ -26,6 +28,7 @@ const UploadPage = () => {
   const navigate = useNavigate();
   const { processStudyMaterials, isProcessing } = useAI();
   const { toast } = useToast();
+  const { checkContent, isChecking } = useContentModeration();
   
   const [activeTab, setActiveTab] = useState('text');
   const [text, setText] = useState('');
@@ -36,6 +39,7 @@ const UploadPage = () => {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedItems, setUploadedItems] = useState<UploadItem[]>([]);
+  const [moderationAlert, setModerationAlert] = useState<{ reason: string; category: string } | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -117,9 +121,40 @@ const UploadPage = () => {
     }
   };
   
-  const saveCurrentItem = () => {
+  const saveCurrentItem = async () => {
     const id = Date.now().toString();
+    let contentToCheck = '';
+    let itemType: 'text' | 'file' | 'url' | 'voice' = 'text';
     
+    // Prepare content for moderation check
+    if (activeTab === 'text' && text.trim()) {
+      contentToCheck = text;
+      itemType = 'text';
+    } else if (activeTab === 'file' && file) {
+      contentToCheck = file.name;
+      itemType = 'file';
+    } else if (activeTab === 'link' && url.trim()) {
+      contentToCheck = url;
+      itemType = 'url';
+    } else if (activeTab === 'voice' && recordedAudio) {
+      contentToCheck = 'voice recording content';
+      itemType = 'voice';
+    } else {
+      return; // No content to save
+    }
+    
+    // Check content with moderation system
+    const moderationResult = await checkContent(contentToCheck, itemType);
+    
+    if (!moderationResult.isAppropriate) {
+      setModerationAlert({
+        reason: moderationResult.reason || 'Content not appropriate for academic use',
+        category: moderationResult.category || 'unknown'
+      });
+      return;
+    }
+    
+    // If content passes moderation, save it
     if (activeTab === 'text' && text.trim()) {
       setUploadedItems([...uploadedItems, {
         id,
@@ -153,6 +188,11 @@ const UploadPage = () => {
       setRecordedAudio(null);
       setRecordingTime(0);
     }
+    
+    toast({
+      title: "Content Added",
+      description: "Your study material has been added successfully.",
+    });
   };
   
   const deleteItem = (id: string) => {
@@ -292,6 +332,14 @@ const UploadPage = () => {
         <h1 className="text-2xl font-semibold mb-2">Upload Study Materials</h1>
         <p className="text-gray-600 mb-6">Share what you've been studying</p>
         
+        {moderationAlert && (
+          <ContentModerationAlert
+            reason={moderationAlert.reason}
+            category={moderationAlert.category}
+            onDismiss={() => setModerationAlert(null)}
+          />
+        )}
+        
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-4 mb-6">
             <TabsTrigger value="text">
@@ -318,10 +366,10 @@ const UploadPage = () => {
             <Button 
               onClick={saveCurrentItem} 
               className="w-full" 
-              disabled={!text.trim()}
+              disabled={!text.trim() || isChecking}
             >
               <Save size={16} className="mr-2" />
-              Save Text
+              {isChecking ? 'Checking Content...' : 'Save Text'}
             </Button>
           </TabsContent>
           
@@ -351,10 +399,10 @@ const UploadPage = () => {
             <Button 
               onClick={saveCurrentItem} 
               className="w-full" 
-              disabled={!file}
+              disabled={!file || isChecking}
             >
               <Save size={16} className="mr-2" />
-              Save File
+              {isChecking ? 'Checking Content...' : 'Save File'}
             </Button>
           </TabsContent>
           
@@ -368,10 +416,10 @@ const UploadPage = () => {
             <Button 
               onClick={saveCurrentItem} 
               className="w-full" 
-              disabled={!url.trim()}
+              disabled={!url.trim() || isChecking}
             >
               <Save size={16} className="mr-2" />
-              Save Link
+              {isChecking ? 'Checking Content...' : 'Save Link'}
             </Button>
           </TabsContent>
           
@@ -412,10 +460,10 @@ const UploadPage = () => {
             <Button 
               onClick={saveCurrentItem} 
               className="w-full" 
-              disabled={!recordedAudio}
+              disabled={!recordedAudio || isChecking}
             >
               <Save size={16} className="mr-2" />
-              Save Recording
+              {isChecking ? 'Checking Content...' : 'Save Recording'}
             </Button>
           </TabsContent>
         </Tabs>

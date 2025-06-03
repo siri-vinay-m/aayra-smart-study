@@ -98,6 +98,22 @@ export const useAI = () => {
       console.log('Session name:', sessionName);
       console.log('Materials:', materials);
       
+      // Additional content validation before sending to AI
+      for (const material of materials) {
+        const content = material.content.toLowerCase();
+        
+        // Basic server-side validation as backup
+        const problematicPatterns = [
+          'porn', 'xxx', 'hate', 'kill', 'bomb', 'violence',
+          'nigger', 'fuck you', 'die', 'murder'
+        ];
+        
+        if (problematicPatterns.some(pattern => content.includes(pattern))) {
+          console.log('Inappropriate content detected during AI processing');
+          return createFallbackContent(sessionName);
+        }
+      }
+      
       // Use the correct Supabase edge function URL
       const response = await fetch('https://ouyilgvqbwcekkajrrug.supabase.co/functions/v1/process-study-materials', {
         method: 'POST',
