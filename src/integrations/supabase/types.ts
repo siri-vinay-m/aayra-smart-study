@@ -227,6 +227,53 @@ export type Database = {
           },
         ]
       }
+      session_pdfs: {
+        Row: {
+          content_summary: string | null
+          created_at: string
+          flashcards_count: number | null
+          generated_at: string
+          id: string
+          pdf_file_path: string
+          pdf_file_size: number | null
+          quiz_questions_count: number | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          content_summary?: string | null
+          created_at?: string
+          flashcards_count?: number | null
+          generated_at?: string
+          id?: string
+          pdf_file_path: string
+          pdf_file_size?: number | null
+          quiz_questions_count?: number | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          content_summary?: string | null
+          created_at?: string
+          flashcards_count?: number | null
+          generated_at?: string
+          id?: string
+          pdf_file_path?: string
+          pdf_file_size?: number | null
+          quiz_questions_count?: number | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_pdfs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "studysessions"
+            referencedColumns: ["sessionid"]
+          },
+        ]
+      }
       studysessions: {
         Row: {
           breakdurationminutes: number

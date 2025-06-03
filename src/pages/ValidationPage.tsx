@@ -14,7 +14,7 @@ import DiscardSessionDialog from '@/components/dialogs/DiscardSessionDialog';
 
 const ValidationPage = () => {
   const navigate = useNavigate();
-  const { currentSession, setCurrentSession, updateCurrentSessionStatus, completeSession, markSessionAsIncomplete } = useSession();
+  const { currentSession, setCurrentSession, updateCurrentSessionStatus } = useSession();
   const { setTimerType } = useTimer();
   const [currentStep, setCurrentStep] = useState<'flashcards' | 'quiz' | 'summary'>('flashcards');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);

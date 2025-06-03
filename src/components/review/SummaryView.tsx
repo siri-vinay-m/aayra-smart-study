@@ -1,9 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useReviewCompletion } from '@/hooks/useReviewCompletion';
+import { usePDFGeneration } from '@/hooks/usePDFGeneration';
 import { useSession } from '@/contexts/SessionContext';
+import { Loader2, FileText } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface SummaryViewProps {
   summary: string;
@@ -20,58 +23,101 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   reviewId,
   sessionId
 }) => {
-  const { completeReview, isCompleting } = useReviewCompletion();
-  const { completeSession, currentSession } = useSession();
+  const { currentSession } = useSession();
+  const { completeReview } = useReviewCompletion();
+  const { generateSessionPDF, isGenerating } = usePDFGeneration();
+  const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFinish = async () => {
-    if (isReviewSession && reviewId && sessionId) {
-      try {
-        await completeReview(reviewId, sessionId);
-      } catch (error) {
-        console.error('Failed to complete review:', error);
-        // Still call onFinish as fallback
-        onFinish();
+    setIsProcessing(true);
+    
+    try {
+      // Generate PDF for new sessions (not review sessions)
+      if (!isReviewSession && currentSession && currentSession.aiGeneratedContent) {
+        console.log('Generating PDF for session completion...');
+        
+        const pdfId = await generateSessionPDF(
+          currentSession.id,
+          currentSession.sessionName,
+          currentSession.aiGeneratedContent
+        );
+        
+        if (pdfId) {
+          toast({
+            title: "Session Complete!",
+            description: "Your study session has been saved as a PDF for future reference.",
+          });
+        } else {
+          toast({
+            title: "Session Complete!",
+            description: "Session completed, but PDF generation encountered an issue.",
+            variant: "destructive"
+          });
+        }
       }
-    } else if (currentSession && (currentSession.status === 'incomplete' || currentSession.status === 'validating')) {
-      // This is an incomplete session being completed
-      console.log('Completing incomplete session:', currentSession.id);
-      completeSession(currentSession.id);
+
+      // Handle review completion if this is a review session
+      if (isReviewSession && reviewId && sessionId) {
+        await completeReview(reviewId, sessionId);
+        toast({
+          title: "Review Complete!",
+          description: "Great job completing your review session!",
+        });
+      }
+
       onFinish();
-    } else {
-      // Regular session flow
+    } catch (error) {
+      console.error('Error in handleFinish:', error);
+      toast({
+        title: "Error",
+        description: "An error occurred while completing the session.",
+        variant: "destructive"
+      });
+      // Still call onFinish to prevent user from being stuck
       onFinish();
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  // Determine button text based on session type
-  const getButtonText = () => {
-    if (isCompleting) return 'Completing...';
-    if (isReviewSession) return 'Complete';
-    if (currentSession && (currentSession.status === 'incomplete' || currentSession.status === 'validating')) {
-      return 'Complete Session';
-    }
-    return 'Take a Break';
-  };
+  const isLoading = isProcessing || isGenerating;
 
   return (
-    <Card className="mb-6 min-h-[300px]">
-      <CardContent className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Session Summary</h2>
-        <div className="whitespace-pre-line mb-6 text-gray-700">
-          {summary}
+    <>
+      <Card className="mb-6">
+        <CardContent className="p-6">
+          <h3 className="text-lg font-medium mb-4">Session Summary</h3>
+          <p className="text-gray-700 leading-relaxed">{summary}</p>
+        </CardContent>
+      </Card>
+      
+      <div className="flex justify-center">
+        <Button
+          onClick={handleFinish}
+          disabled={isLoading}
+          className="bg-green-500 hover:bg-green-600 px-8 py-3 flex items-center gap-2"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {isReviewSession ? 'Completing Review...' : 'Generating PDF...'}
+            </>
+          ) : (
+            <>
+              {!isReviewSession && <FileText className="h-4 w-4" />}
+              {isReviewSession ? 'Complete Review' : 'Take a Break'}
+            </>
+          )}
+        </Button>
+      </div>
+      
+      {!isReviewSession && (
+        <div className="text-center mt-4 text-sm text-gray-600">
+          <p>Your session summary will be saved as a PDF for future reference</p>
         </div>
-        
-        <div className="flex justify-center">
-          <Button
-            onClick={handleFinish}
-            disabled={isCompleting}
-            className="bg-green-500 hover:bg-green-600 px-6 py-3"
-          >
-            {getButtonText()}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      )}
+    </>
   );
 };
 
