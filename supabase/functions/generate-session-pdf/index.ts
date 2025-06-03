@@ -8,41 +8,122 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Simple PDF generation using HTML to PDF approach
-const generatePDF = async (content: string): Promise<Uint8Array> => {
-  // For a more robust solution, you'd use a library like Puppeteer or jsPDF
-  // This is a simplified implementation
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-          .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
-          .section { margin-bottom: 30px; }
-          .section h2 { color: #333; border-left: 4px solid #007bff; padding-left: 15px; }
-          .flashcard { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; }
-          .question { font-weight: bold; color: #495057; margin-bottom: 10px; }
-          .answer { color: #6c757d; }
-          .quiz-question { background: #fff3cd; padding: 15px; margin: 10px 0; border-radius: 5px; }
-          .options { margin: 10px 0; }
-          .option { margin: 5px 0; padding: 5px 10px; background: #e9ecef; border-radius: 3px; }
-          .correct { background: #d4edda !important; }
-          .explanation { font-style: italic; color: #6c757d; margin-top: 10px; }
-          .summary { background: #e7f3ff; padding: 20px; border-radius: 5px; }
-        </style>
-      </head>
-      <body>
-        ${content}
-      </body>
-    </html>
-  `;
+// Simple PDF generation using jsPDF
+const generatePDF = async (htmlContent: string): Promise<Uint8Array> => {
+  // Use jsPDF to create a proper PDF
+  const jsPDFModule = await import('https://esm.sh/jspdf@2.5.1');
+  const { jsPDF } = jsPDFModule.default || jsPDFModule;
   
-  // Convert HTML to basic text-based PDF format (simplified)
-  // In production, you'd use a proper PDF library
-  const encoder = new TextEncoder();
-  return encoder.encode(htmlContent);
+  const doc = new jsPDF();
+  
+  // Set font and add content
+  doc.setFontSize(20);
+  doc.text('Study Session Report', 20, 30);
+  
+  // Parse the HTML content and add to PDF
+  const parser = new DOMParser();
+  const htmlDoc = parser.parseFromString(htmlContent, 'text/html');
+  
+  let yPosition = 50;
+  
+  // Add session title
+  const title = htmlDoc.querySelector('h3')?.textContent || 'Study Session';
+  doc.setFontSize(16);
+  doc.text(title, 20, yPosition);
+  yPosition += 20;
+  
+  // Add flashcards section
+  const flashcardsSection = htmlDoc.querySelector('.section:has(h2:contains("Flashcards"))');
+  if (flashcardsSection) {
+    doc.setFontSize(14);
+    doc.text('Flashcards', 20, yPosition);
+    yPosition += 15;
+    
+    const flashcards = flashcardsSection.querySelectorAll('.flashcard');
+    flashcards.forEach((card, index) => {
+      const question = card.querySelector('.question')?.textContent || '';
+      const answer = card.querySelector('.answer')?.textContent || '';
+      
+      doc.setFontSize(10);
+      const questionLines = doc.splitTextToSize(`Q${index + 1}: ${question}`, 170);
+      doc.text(questionLines, 20, yPosition);
+      yPosition += questionLines.length * 5 + 5;
+      
+      const answerLines = doc.splitTextToSize(`A: ${answer}`, 170);
+      doc.text(answerLines, 20, yPosition);
+      yPosition += answerLines.length * 5 + 10;
+      
+      if (yPosition > 250) {
+        doc.addPage();
+        yPosition = 20;
+      }
+    });
+  }
+  
+  // Add quiz questions section
+  const quizSection = htmlDoc.querySelector('.section:has(h2:contains("Quiz"))');
+  if (quizSection) {
+    if (yPosition > 200) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    
+    doc.setFontSize(14);
+    doc.text('Quiz Questions', 20, yPosition);
+    yPosition += 15;
+    
+    const questions = quizSection.querySelectorAll('.quiz-question');
+    questions.forEach((question, index) => {
+      const questionText = question.querySelector('.question')?.textContent || '';
+      
+      doc.setFontSize(10);
+      const questionLines = doc.splitTextToSize(`Q${index + 1}: ${questionText}`, 170);
+      doc.text(questionLines, 20, yPosition);
+      yPosition += questionLines.length * 5 + 5;
+      
+      const options = question.querySelectorAll('.option');
+      options.forEach((option) => {
+        const optionText = option.textContent || '';
+        const optionLines = doc.splitTextToSize(`• ${optionText}`, 160);
+        doc.text(optionLines, 25, yPosition);
+        yPosition += optionLines.length * 5 + 3;
+      });
+      
+      const explanation = question.querySelector('.explanation')?.textContent || '';
+      if (explanation) {
+        const explanationLines = doc.splitTextToSize(`Explanation: ${explanation}`, 170);
+        doc.text(explanationLines, 20, yPosition);
+        yPosition += explanationLines.length * 5 + 10;
+      }
+      
+      if (yPosition > 250) {
+        doc.addPage();
+        yPosition = 20;
+      }
+    });
+  }
+  
+  // Add summary section
+  const summarySection = htmlDoc.querySelector('.section:has(h2:contains("Summary"))');
+  if (summarySection) {
+    if (yPosition > 200) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    
+    doc.setFontSize(14);
+    doc.text('Session Summary', 20, yPosition);
+    yPosition += 15;
+    
+    const summaryText = summarySection.querySelector('.summary')?.textContent || '';
+    doc.setFontSize(10);
+    const summaryLines = doc.splitTextToSize(summaryText, 170);
+    doc.text(summaryLines, 20, yPosition);
+  }
+  
+  // Convert to Uint8Array
+  const pdfOutput = doc.output('arraybuffer');
+  return new Uint8Array(pdfOutput);
 };
 
 serve(async (req) => {
