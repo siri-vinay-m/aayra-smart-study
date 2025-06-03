@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -14,6 +13,14 @@ import { useReviewSessionNavigation } from '@/hooks/useReviewSessionNavigation';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PendingReview } from '@/types/session';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const ReviewSessionPage = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -120,10 +127,22 @@ const ReviewSessionPage = () => {
   // Update current session with AI content when it's loaded
   useEffect(() => {
     if (aiContent && reviewSession) {
-      setCurrentSession(prev => prev ? {
-        ...prev,
+      const updatedSession = {
+        id: reviewSession.sessionId,
+        sessionName: reviewSession.sessionName,
+        subjectName: reviewSession.subjectName,
+        topicName: reviewSession.topicName,
+        focusDuration: 25 * 60, // Default 25 minutes
+        breakDuration: 5 * 60, // Default 5 minutes
+        focusDurationMinutes: 25,
+        breakDurationMinutes: 5,
+        status: 'completed' as const,
+        startTime: reviewSession.completedAt,
+        createdAt: reviewSession.completedAt,
+        isFavorite: false,
         aiGeneratedContent: aiContent
-      } : null);
+      };
+      setCurrentSession(updatedSession);
     }
   }, [aiContent, reviewSession, setCurrentSession]);
 
@@ -251,6 +270,25 @@ const ReviewSessionPage = () => {
         </div>
         {pageContent}
       </div>
+
+      <Dialog open={showNavigationDialog} onOpenChange={handleCancelNavigation}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Leave Review Session?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to leave this review session? Your progress will not be saved.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelNavigation}>
+              Stay
+            </Button>
+            <Button onClick={handleConfirmNavigation}>
+              Leave Session
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
