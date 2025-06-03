@@ -151,7 +151,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { sessionId, aiContent, sessionName, userId } = await req.json();
+    const { sessionId, aiContent, sessionName, userId, reviewStage = 0 } = await req.json();
 
     if (!sessionId || !aiContent || !userId) {
       return new Response(
@@ -160,11 +160,14 @@ serve(async (req) => {
       );
     }
 
+    console.log('Generating PDF for session:', sessionId, 'review stage:', reviewStage);
+
     // Generate HTML content for PDF
+    const sessionTypeLabel = reviewStage === 0 ? 'Initial Session' : `Review Stage ${reviewStage}`;
     let htmlContent = `
       <div class="header">
         <h1>Study Session Report</h1>
-        <h3>${sessionName || 'Study Session'}</h3>
+        <h3>${sessionName || 'Study Session'} - ${sessionTypeLabel}</h3>
         <p>Generated on: ${new Date().toLocaleDateString()}</p>
       </div>
     `;
@@ -234,8 +237,11 @@ serve(async (req) => {
     // Generate PDF
     const pdfData = await generatePDF(htmlContent);
     
-    // Create file path
-    const fileName = `session-${sessionId}-${Date.now()}.pdf`;
+    // Create file path with review stage for uniqueness
+    const timestamp = Date.now();
+    const fileName = reviewStage === 0 
+      ? `session-${sessionId}-${timestamp}.pdf`
+      : `session-${sessionId}-review-stage-${reviewStage}-${timestamp}.pdf`;
     const filePath = `${userId}/${fileName}`;
 
     // Upload to Supabase Storage
@@ -257,7 +263,7 @@ serve(async (req) => {
     // Calculate quiz score in the new format
     const quizScore = calculateQuizScore(aiContent.quizQuestions);
 
-    // Save PDF metadata to database
+    // Save PDF metadata to database with reviewstage
     const { data: dbData, error: dbError } = await supabaseClient
       .from('session_pdfs')
       .insert({
@@ -267,7 +273,8 @@ serve(async (req) => {
         pdf_file_size: pdfData.length,
         content_summary: aiContent.summary?.substring(0, 500) || '',
         flashcards_count: aiContent.flashcards?.length || 0,
-        quiz_count: quizScore // Now stores in "correct/total" format
+        quiz_count: quizScore, // Now stores in "correct/total" format
+        reviewstage: reviewStage
       })
       .select()
       .single();

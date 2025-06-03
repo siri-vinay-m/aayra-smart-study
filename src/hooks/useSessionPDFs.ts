@@ -10,6 +10,7 @@ interface SessionPDF {
   content_summary: string;
   flashcards_count: number;
   quiz_count: string; // Changed from quiz_questions_count to quiz_count and type to string
+  reviewstage: number; // Added reviewstage column
   generated_at: string;
   created_at: string;
 }
@@ -39,6 +40,7 @@ export const useSessionPDFs = () => {
           content_summary,
           flashcards_count,
           quiz_count,
+          reviewstage,
           generated_at,
           created_at
         `)

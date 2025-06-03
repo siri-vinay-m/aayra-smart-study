@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Calendar, Hash } from 'lucide-react';
+import { FileText, Download, Calendar, Hash, RefreshCw } from 'lucide-react';
 import { useSessionPDFs } from '@/hooks/useSessionPDFs';
 import { useToast } from '@/hooks/use-toast';
 
@@ -10,9 +10,11 @@ const SessionPDFList: React.FC = () => {
   const { sessionPDFs, isLoading, downloadPDF } = useSessionPDFs();
   const { toast } = useToast();
 
-  const handleDownload = async (pdfPath: string, sessionId: string) => {
+  const handleDownload = async (pdfPath: string, sessionId: string, reviewStage: number) => {
     try {
-      const fileName = `session-${sessionId}-${Date.now()}.pdf`;
+      const fileName = reviewStage === 0 
+        ? `session-${sessionId}-${Date.now()}.pdf`
+        : `session-${sessionId}-review-stage-${reviewStage}-${Date.now()}.pdf`;
       await downloadPDF(pdfPath, fileName);
       toast({
         title: "Download Started",
@@ -33,6 +35,11 @@ const SessionPDFList: React.FC = () => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getSessionTypeLabel = (reviewStage: number): string => {
+    if (reviewStage === 0) return 'Initial Session';
+    return `Review Stage ${reviewStage}`;
   };
 
   if (isLoading) {
@@ -62,8 +69,12 @@ const SessionPDFList: React.FC = () => {
         <Card key={pdf.id}>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-600" />
-              Session Report
+              {pdf.reviewstage === 0 ? (
+                <FileText className="h-5 w-5 text-blue-600" />
+              ) : (
+                <RefreshCw className="h-5 w-5 text-green-600" />
+              )}
+              {getSessionTypeLabel(pdf.reviewstage)} Report
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -83,7 +94,7 @@ const SessionPDFList: React.FC = () => {
                 <span className="font-medium">Flashcards:</span> {pdf.flashcards_count}
               </div>
               <div>
-                <span className="font-medium">Quiz Count:</span> {pdf.quiz_count}
+                <span className="font-medium">Quiz Score:</span> {pdf.quiz_count}
               </div>
             </div>
             
@@ -96,7 +107,7 @@ const SessionPDFList: React.FC = () => {
             )}
             
             <Button
-              onClick={() => handleDownload(pdf.pdf_file_path, pdf.session_id)}
+              onClick={() => handleDownload(pdf.pdf_file_path, pdf.session_id, pdf.reviewstage)}
               className="flex items-center gap-2"
               variant="outline"
             >

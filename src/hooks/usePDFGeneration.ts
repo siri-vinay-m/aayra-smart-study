@@ -10,7 +10,8 @@ export const usePDFGeneration = () => {
   const generateSessionPDF = async (
     sessionId: string,
     sessionName: string,
-    aiContent: AIGeneratedContent
+    aiContent: AIGeneratedContent,
+    reviewStage: number = 0
   ): Promise<string | null> => {
     setIsGenerating(true);
     setError(null);
@@ -22,7 +23,7 @@ export const usePDFGeneration = () => {
         throw new Error('User not authenticated');
       }
 
-      console.log('Generating PDF for session:', sessionId);
+      console.log('Generating PDF for session:', sessionId, 'review stage:', reviewStage);
 
       const response = await fetch(
         'https://ouyilgvqbwcekkajrrug.supabase.co/functions/v1/generate-session-pdf',
@@ -36,7 +37,8 @@ export const usePDFGeneration = () => {
             sessionId,
             sessionName,
             aiContent,
-            userId: user.id
+            userId: user.id,
+            reviewStage
           }),
         }
       );
@@ -78,7 +80,7 @@ export const usePDFGeneration = () => {
         .eq('userid', user.id)
         .eq('status', 'completed')
         .not('sessionid', 'in', `(
-          SELECT session_id FROM session_pdfs WHERE user_id = '${user.id}'
+          SELECT session_id FROM session_pdfs WHERE user_id = '${user.id}' AND reviewstage = 0
         )`);
 
       if (sessionsError) {
@@ -115,7 +117,7 @@ export const usePDFGeneration = () => {
             summary: `This study session on "${session.sessionname}" covered ${session.subjectname} - ${session.topicname}. ${materials?.length ? `Materials were uploaded for this session.` : 'Continue studying this topic to reinforce your learning.'}`
           };
 
-          await generateSessionPDF(session.sessionid, session.sessionname, fallbackContent);
+          await generateSessionPDF(session.sessionid, session.sessionname, fallbackContent, 0);
           
           // Add a small delay to avoid overwhelming the system
           await new Promise(resolve => setTimeout(resolve, 1000));

@@ -157,6 +157,7 @@ const ValidationPage = () => {
         summary={summary}
         onFinish={handleFinishValidation}
         isReviewSession={currentSession.status === 'completed'}
+        reviewStage={0} // For new sessions, always use stage 0
       />
     );
   }

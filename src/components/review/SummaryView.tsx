@@ -14,6 +14,7 @@ interface SummaryViewProps {
   isReviewSession?: boolean;
   reviewId?: string;
   sessionId?: string;
+  reviewStage?: number;
 }
 
 const SummaryView: React.FC<SummaryViewProps> = ({
@@ -21,7 +22,8 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   onFinish,
   isReviewSession = false,
   reviewId,
-  sessionId
+  sessionId,
+  reviewStage = 0
 }) => {
   const { currentSession } = useSession();
   const { completeReview } = useReviewCompletion();
@@ -33,25 +35,26 @@ const SummaryView: React.FC<SummaryViewProps> = ({
     setIsProcessing(true);
     
     try {
-      // Generate PDF for new sessions (not review sessions)
-      if (!isReviewSession && currentSession && currentSession.aiGeneratedContent) {
-        console.log('Generating PDF for session completion...');
+      // Generate PDF for both new sessions and review sessions
+      if (currentSession && currentSession.aiGeneratedContent) {
+        console.log('Generating PDF for session completion...', isReviewSession ? `review stage: ${reviewStage}` : 'new session');
         
         const pdfId = await generateSessionPDF(
           currentSession.id,
           currentSession.sessionName,
-          currentSession.aiGeneratedContent
+          currentSession.aiGeneratedContent,
+          isReviewSession ? reviewStage : 0
         );
         
         if (pdfId) {
           toast({
-            title: "Session Complete!",
-            description: "Your study session has been saved as a PDF for future reference.",
+            title: isReviewSession ? "Review Complete!" : "Session Complete!",
+            description: `Your ${isReviewSession ? 'review' : 'study'} session has been saved as a PDF for future reference.`,
           });
         } else {
           toast({
-            title: "Session Complete!",
-            description: "Session completed, but PDF generation encountered an issue.",
+            title: isReviewSession ? "Review Complete!" : "Session Complete!",
+            description: `${isReviewSession ? 'Review' : 'Session'} completed, but PDF generation encountered an issue.`,
             variant: "destructive"
           });
         }
@@ -105,18 +108,16 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             </>
           ) : (
             <>
-              {!isReviewSession && <FileText className="h-4 w-4" />}
+              <FileText className="h-4 w-4" />
               {isReviewSession ? 'Complete Review' : 'Take a Break'}
             </>
           )}
         </Button>
       </div>
       
-      {!isReviewSession && (
-        <div className="text-center mt-4 text-sm text-gray-600">
-          <p>Your session summary will be saved as a PDF for future reference</p>
-        </div>
-      )}
+      <div className="text-center mt-4 text-sm text-gray-600">
+        <p>Your session summary will be saved as a PDF for future reference</p>
+      </div>
     </>
   );
 };

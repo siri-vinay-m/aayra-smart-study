@@ -237,6 +237,7 @@ export type Database = {
           pdf_file_path: string
           pdf_file_size: number | null
           quiz_count: string | null
+          reviewstage: number
           session_id: string
           user_id: string
         }
@@ -249,6 +250,7 @@ export type Database = {
           pdf_file_path: string
           pdf_file_size?: number | null
           quiz_count?: string | null
+          reviewstage?: number
           session_id: string
           user_id: string
         }
@@ -261,6 +263,7 @@ export type Database = {
           pdf_file_path?: string
           pdf_file_size?: number | null
           quiz_count?: string | null
+          reviewstage?: number
           session_id?: string
           user_id?: string
         }
