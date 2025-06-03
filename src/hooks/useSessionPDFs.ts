@@ -9,7 +9,7 @@ interface SessionPDF {
   pdf_file_size: number;
   content_summary: string;
   flashcards_count: number;
-  quiz_questions_count: number;
+  quiz_count: string; // Changed from quiz_questions_count to quiz_count and type to string
   generated_at: string;
   created_at: string;
 }
@@ -38,7 +38,7 @@ export const useSessionPDFs = () => {
           pdf_file_size,
           content_summary,
           flashcards_count,
-          quiz_questions_count,
+          quiz_count,
           generated_at,
           created_at
         `)

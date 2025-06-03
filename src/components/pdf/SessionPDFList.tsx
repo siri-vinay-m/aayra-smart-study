@@ -83,7 +83,7 @@ const SessionPDFList: React.FC = () => {
                 <span className="font-medium">Flashcards:</span> {pdf.flashcards_count}
               </div>
               <div>
-                <span className="font-medium">Quiz Questions:</span> {pdf.quiz_questions_count}
+                <span className="font-medium">Quiz Count:</span> {pdf.quiz_count}
               </div>
             </div>
             
