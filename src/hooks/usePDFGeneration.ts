@@ -24,6 +24,14 @@ export const usePDFGeneration = () => {
       }
 
       console.log('Generating PDF for session:', sessionId, 'review stage:', reviewStage);
+      console.log('AI Content being sent:', {
+        hasFlashcards: !!aiContent.flashcards,
+        flashcardsCount: aiContent.flashcards?.length || 0,
+        hasQuizQuestions: !!aiContent.quizQuestions,
+        quizQuestionsCount: aiContent.quizQuestions?.length || 0,
+        hasSummary: !!aiContent.summary,
+        summaryLength: aiContent.summary?.length || 0
+      });
 
       const response = await fetch(
         'https://ouyilgvqbwcekkajrrug.supabase.co/functions/v1/generate-session-pdf',
@@ -45,7 +53,12 @@ export const usePDFGeneration = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate PDF');
+        console.error('PDF generation failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
+        throw new Error(errorData.error || `Failed to generate PDF (${response.status})`);
       }
 
       const result = await response.json();
