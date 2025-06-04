@@ -162,6 +162,27 @@ serve(async (req) => {
 
     console.log('Generating PDF for session:', sessionId, 'review stage:', reviewStage);
 
+    // Ensure the storage bucket exists
+    const { data: buckets } = await supabaseClient.storage.listBuckets();
+    const sessionPdfsBucket = buckets?.find(bucket => bucket.name === 'session-pdfs');
+    
+    if (!sessionPdfsBucket) {
+      console.log('Creating session-pdfs bucket...');
+      const { error: bucketError } = await supabaseClient.storage.createBucket('session-pdfs', {
+        public: true,
+        allowedMimeTypes: ['application/pdf'],
+        fileSizeLimit: 10485760 // 10MB
+      });
+      
+      if (bucketError) {
+        console.error('Error creating bucket:', bucketError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to create storage bucket' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // Generate HTML content for PDF
     const sessionTypeLabel = reviewStage === 0 ? 'Initial Session' : `Review Stage ${reviewStage}`;
     let htmlContent = `
@@ -255,7 +276,7 @@ serve(async (req) => {
     if (uploadError) {
       console.error('Upload error:', uploadError);
       return new Response(
-        JSON.stringify({ error: 'Failed to upload PDF' }),
+        JSON.stringify({ error: 'Failed to upload PDF', details: uploadError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -273,7 +294,7 @@ serve(async (req) => {
         pdf_file_size: pdfData.length,
         content_summary: aiContent.summary?.substring(0, 500) || '',
         flashcards_count: aiContent.flashcards?.length || 0,
-        quiz_count: quizScore, // Now stores in "correct/total" format
+        quiz_count: quizScore,
         reviewstage: reviewStage
       })
       .select()
@@ -282,10 +303,12 @@ serve(async (req) => {
     if (dbError) {
       console.error('Database error:', dbError);
       return new Response(
-        JSON.stringify({ error: 'Failed to save PDF metadata' }),
+        JSON.stringify({ error: 'Failed to save PDF metadata', details: dbError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('PDF generated and saved successfully:', dbData.id);
 
     return new Response(
       JSON.stringify({ 
@@ -302,7 +325,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error generating PDF:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
