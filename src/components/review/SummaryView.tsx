@@ -46,11 +46,11 @@ const SummaryView: React.FC<SummaryViewProps> = ({
         return;
       }
 
-      // For new sessions, try to generate PDF if we have session data
+      // For new sessions, generate PDF if we have session data
       if (currentSession) {
         console.log('Generating PDF for new session completion...', currentSession);
         
-        // Use AI content if available, otherwise create comprehensive fallback content
+        // Create comprehensive content with proper structure
         const contentToUse = currentSession.aiGeneratedContent || {
           flashcards: [
             {
@@ -64,6 +64,10 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             {
               question: `How long was your focus session?`,
               answer: `You focused for ${currentSession.focusDurationMinutes} minutes on ${currentSession.topicName}, followed by a ${currentSession.breakDurationMinutes}-minute break. This time management approach helps maintain concentration.`
+            },
+            {
+              question: `What are the key learning objectives for this study session?`,
+              answer: `The primary objectives included understanding core concepts in ${currentSession.topicName}, practicing problem-solving techniques, and building foundational knowledge in ${currentSession.subjectName}.`
             }
           ],
           quizQuestions: [
@@ -84,10 +88,22 @@ const SummaryView: React.FC<SummaryViewProps> = ({
               options: [`${currentSession.focusDurationMinutes} minutes`, "30 minutes", "45 minutes", "60 minutes"],
               correctAnswer: `${currentSession.focusDurationMinutes} minutes`,
               explanation: `You maintained focus for ${currentSession.focusDurationMinutes} minutes, which is an effective duration for concentrated learning.`
+            },
+            {
+              question: `What is the recommended approach for effective study sessions?`,
+              options: ["Study without breaks", "Focus intensely then take breaks", "Study casually all day", "Only review notes briefly"],
+              correctAnswer: "Focus intensely then take breaks",
+              explanation: `The Pomodoro technique of focused study periods followed by breaks helps maintain concentration and prevents mental fatigue.`
             }
           ],
-          summary: summary || `Study session "${currentSession.sessionName}" completed successfully on ${new Date().toLocaleDateString()}. You studied ${currentSession.subjectName} with a focus on ${currentSession.topicName}. The session lasted ${currentSession.focusDurationMinutes} minutes of focused study time. This structured approach to learning helps build knowledge systematically. Continue with regular review sessions to reinforce what you've learned and maintain long-term retention of the material.`
+          summary: summary || `Study session "${currentSession.sessionName}" completed successfully on ${new Date().toLocaleDateString()}. You studied ${currentSession.subjectName} with a focus on ${currentSession.topicName}. The session lasted ${currentSession.focusDurationMinutes} minutes of focused study time with a ${currentSession.breakDurationMinutes}-minute break period. This structured approach to learning helps build knowledge systematically and maintains optimal concentration levels. Continue with regular review sessions to reinforce what you've learned and maintain long-term retention of the material. The spaced repetition approach will help consolidate this information into long-term memory.`
         };
+        
+        console.log('Content prepared for PDF generation:', {
+          flashcardsCount: contentToUse.flashcards?.length || 0,
+          quizQuestionsCount: contentToUse.quizQuestions?.length || 0,
+          hasSummary: !!contentToUse.summary
+        });
         
         const pdfId = await generateSessionPDF(
           currentSession.id,
@@ -97,15 +113,16 @@ const SummaryView: React.FC<SummaryViewProps> = ({
         );
         
         if (pdfId) {
+          console.log('PDF generated successfully with ID:', pdfId);
           toast({
             title: "Session Complete!",
             description: "Your study session has been saved as a PDF for future reference.",
           });
         } else {
-          // Don't show error toast, just success
+          console.warn('PDF generation returned null but no error thrown');
           toast({
             title: "Session Complete!",
-            description: "Session completed successfully.",
+            description: "Session completed successfully. PDF generation may have encountered an issue.",
           });
         }
       }
@@ -113,10 +130,10 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       onFinish();
     } catch (error) {
       console.error('Error in handleFinish:', error);
-      // Don't show error toast to user, just complete the session
       toast({
         title: "Session Complete!",
-        description: "Session completed successfully.",
+        description: "Session completed successfully, but PDF generation encountered an issue.",
+        variant: "destructive",
       });
       // Still call onFinish to prevent user from being stuck
       onFinish();
