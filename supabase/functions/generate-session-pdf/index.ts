@@ -8,12 +8,16 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Simple PDF generation using jsPDF
+// Simple PDF generation using jsPDF with correct import
 const generatePDF = async (htmlContent: string): Promise<Uint8Array> => {
   try {
-    // Use jsPDF to create a proper PDF
+    // Import jsPDF with the correct syntax for Deno
     const jsPDFModule = await import('https://esm.sh/jspdf@2.5.1');
-    const { jsPDF } = jsPDFModule.default || jsPDFModule;
+    const jsPDF = jsPDFModule.jsPDF || jsPDFModule.default?.jsPDF || jsPDFModule.default;
+    
+    if (!jsPDF) {
+      throw new Error('Failed to import jsPDF');
+    }
     
     const doc = new jsPDF();
     
@@ -34,36 +38,38 @@ const generatePDF = async (htmlContent: string): Promise<Uint8Array> => {
     yPosition += 20;
     
     // Add flashcards section
-    const flashcardsSection = htmlDoc.querySelector('.section:has(h2:contains("Flashcards"))');
+    const flashcardsSection = htmlDoc.querySelector('.section');
     if (flashcardsSection) {
-      doc.setFontSize(14);
-      doc.text('Flashcards', 20, yPosition);
-      yPosition += 15;
-      
-      const flashcards = flashcardsSection.querySelectorAll('.flashcard');
-      flashcards.forEach((card, index) => {
-        const question = card.querySelector('.question')?.textContent || '';
-        const answer = card.querySelector('.answer')?.textContent || '';
+      const flashcardElements = flashcardsSection.querySelectorAll('.flashcard');
+      if (flashcardElements.length > 0) {
+        doc.setFontSize(14);
+        doc.text('Flashcards', 20, yPosition);
+        yPosition += 15;
         
-        doc.setFontSize(10);
-        const questionLines = doc.splitTextToSize(`Q${index + 1}: ${question}`, 170);
-        doc.text(questionLines, 20, yPosition);
-        yPosition += questionLines.length * 5 + 5;
-        
-        const answerLines = doc.splitTextToSize(`A: ${answer}`, 170);
-        doc.text(answerLines, 20, yPosition);
-        yPosition += answerLines.length * 5 + 10;
-        
-        if (yPosition > 250) {
-          doc.addPage();
-          yPosition = 20;
-        }
-      });
+        flashcardElements.forEach((card, index) => {
+          const question = card.querySelector('.question')?.textContent || '';
+          const answer = card.querySelector('.answer')?.textContent || '';
+          
+          doc.setFontSize(10);
+          const questionLines = doc.splitTextToSize(`Q${index + 1}: ${question}`, 170);
+          doc.text(questionLines, 20, yPosition);
+          yPosition += questionLines.length * 5 + 5;
+          
+          const answerLines = doc.splitTextToSize(`A: ${answer}`, 170);
+          doc.text(answerLines, 20, yPosition);
+          yPosition += answerLines.length * 5 + 10;
+          
+          if (yPosition > 250) {
+            doc.addPage();
+            yPosition = 20;
+          }
+        });
+      }
     }
     
     // Add quiz questions section
-    const quizSection = htmlDoc.querySelector('.section:has(h2:contains("Quiz"))');
-    if (quizSection) {
+    const quizElements = htmlDoc.querySelectorAll('.quiz-question');
+    if (quizElements.length > 0) {
       if (yPosition > 200) {
         doc.addPage();
         yPosition = 20;
@@ -73,8 +79,7 @@ const generatePDF = async (htmlContent: string): Promise<Uint8Array> => {
       doc.text('Quiz Questions', 20, yPosition);
       yPosition += 15;
       
-      const questions = quizSection.querySelectorAll('.quiz-question');
-      questions.forEach((question, index) => {
+      quizElements.forEach((question, index) => {
         const questionText = question.querySelector('.question')?.textContent || '';
         
         doc.setFontSize(10);
@@ -105,8 +110,8 @@ const generatePDF = async (htmlContent: string): Promise<Uint8Array> => {
     }
     
     // Add summary section
-    const summarySection = htmlDoc.querySelector('.section:has(h2:contains("Summary"))');
-    if (summarySection) {
+    const summaryElement = htmlDoc.querySelector('.summary');
+    if (summaryElement) {
       if (yPosition > 200) {
         doc.addPage();
         yPosition = 20;
@@ -116,7 +121,7 @@ const generatePDF = async (htmlContent: string): Promise<Uint8Array> => {
       doc.text('Session Summary', 20, yPosition);
       yPosition += 15;
       
-      const summaryText = summarySection.querySelector('.summary')?.textContent || '';
+      const summaryText = summaryElement.textContent || '';
       doc.setFontSize(10);
       const summaryLines = doc.splitTextToSize(summaryText, 170);
       doc.text(summaryLines, 20, yPosition);
@@ -174,18 +179,6 @@ serve(async (req) => {
       quizQuestionsCount: aiContent.quizQuestions?.length || 0,
       hasSummary: !!aiContent.summary
     });
-
-    // Verify the storage bucket exists (it should already exist)
-    const { data: buckets } = await supabaseClient.storage.listBuckets();
-    const sessionPdfsBucket = buckets?.find(bucket => bucket.name === 'session-pdfs');
-    
-    if (!sessionPdfsBucket) {
-      console.error('session-pdfs bucket not found');
-      return new Response(
-        JSON.stringify({ error: 'Storage bucket not found. Please contact support.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     // Generate HTML content for PDF
     const sessionTypeLabel = reviewStage === 0 ? 'Initial Session' : `Review Stage ${reviewStage}`;

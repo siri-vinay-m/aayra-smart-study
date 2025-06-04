@@ -50,23 +50,43 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       if (currentSession) {
         console.log('Generating PDF for new session completion...', currentSession);
         
-        // Create fallback content if AI content is not available
+        // Use AI content if available, otherwise create comprehensive fallback content
         const contentToUse = currentSession.aiGeneratedContent || {
           flashcards: [
             {
               question: `What was the main focus of your "${currentSession.sessionName}" study session?`,
-              answer: `This session covered ${currentSession.subjectName} - ${currentSession.topicName}. Continue reviewing these concepts to reinforce your learning.`
+              answer: `This session covered ${currentSession.subjectName} - ${currentSession.topicName}. The key concepts and materials studied during this session should be reviewed regularly to reinforce learning.`
+            },
+            {
+              question: `What subject area did you study in this session?`,
+              answer: `${currentSession.subjectName} was the primary subject, with specific focus on ${currentSession.topicName}. This forms part of your ongoing study plan.`
+            },
+            {
+              question: `How long was your focus session?`,
+              answer: `You focused for ${currentSession.focusDurationMinutes} minutes on ${currentSession.topicName}, followed by a ${currentSession.breakDurationMinutes}-minute break. This time management approach helps maintain concentration.`
             }
           ],
           quizQuestions: [
             {
-              question: `What subject did you study in this session?`,
-              options: [currentSession.subjectName, "Other subject", "No specific subject", "Multiple subjects"],
+              question: `What was the primary subject of your "${currentSession.sessionName}" session?`,
+              options: [currentSession.subjectName, "Mathematics", "Science", "Literature"],
               correctAnswer: currentSession.subjectName,
-              explanation: `This session focused on ${currentSession.topicName} in ${currentSession.subjectName}.`
+              explanation: `This session was specifically focused on ${currentSession.subjectName}, covering the topic of ${currentSession.topicName}.`
+            },
+            {
+              question: `What specific topic did you study in ${currentSession.subjectName}?`,
+              options: [currentSession.topicName, "General concepts", "Basic principles", "Advanced topics"],
+              correctAnswer: currentSession.topicName,
+              explanation: `The session concentrated on ${currentSession.topicName} within the broader subject of ${currentSession.subjectName}.`
+            },
+            {
+              question: `How many minutes did you focus during this study session?`,
+              options: [`${currentSession.focusDurationMinutes} minutes`, "30 minutes", "45 minutes", "60 minutes"],
+              correctAnswer: `${currentSession.focusDurationMinutes} minutes`,
+              explanation: `You maintained focus for ${currentSession.focusDurationMinutes} minutes, which is an effective duration for concentrated learning.`
             }
           ],
-          summary: summary || `Study session "${currentSession.sessionName}" completed successfully. You studied ${currentSession.subjectName} - ${currentSession.topicName}. Keep up the great work!`
+          summary: summary || `Study session "${currentSession.sessionName}" completed successfully on ${new Date().toLocaleDateString()}. You studied ${currentSession.subjectName} with a focus on ${currentSession.topicName}. The session lasted ${currentSession.focusDurationMinutes} minutes of focused study time. This structured approach to learning helps build knowledge systematically. Continue with regular review sessions to reinforce what you've learned and maintain long-term retention of the material.`
         };
         
         const pdfId = await generateSessionPDF(
@@ -82,9 +102,10 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             description: "Your study session has been saved as a PDF for future reference.",
           });
         } else {
+          // Don't show error toast, just success
           toast({
             title: "Session Complete!",
-            description: "Session completed successfully. PDF will be generated in the background.",
+            description: "Session completed successfully.",
           });
         }
       }
@@ -92,6 +113,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       onFinish();
     } catch (error) {
       console.error('Error in handleFinish:', error);
+      // Don't show error toast to user, just complete the session
       toast({
         title: "Session Complete!",
         description: "Session completed successfully.",
