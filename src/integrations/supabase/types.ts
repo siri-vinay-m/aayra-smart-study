@@ -233,6 +233,7 @@ export type Database = {
           flashcards: Json | null
           id: string
           quiz_questions: Json | null
+          reviewstage: number | null
           session_id: string
           summary: string | null
           updated_at: string | null
@@ -243,6 +244,7 @@ export type Database = {
           flashcards?: Json | null
           id?: string
           quiz_questions?: Json | null
+          reviewstage?: number | null
           session_id: string
           summary?: string | null
           updated_at?: string | null
@@ -253,6 +255,7 @@ export type Database = {
           flashcards?: Json | null
           id?: string
           quiz_questions?: Json | null
+          reviewstage?: number | null
           session_id?: string
           summary?: string | null
           updated_at?: string | null

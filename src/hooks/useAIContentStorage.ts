@@ -88,9 +88,23 @@ export const useAIContentStorage = () => {
 
       if (error || !data) return null;
 
+      // Type-safe conversion from database JSON to our types
+      const flashcards = Array.isArray(data.flashcards) 
+        ? data.flashcards as Array<{ question: string; answer: string }>
+        : [];
+
+      const quizQuestions = Array.isArray(data.quiz_questions)
+        ? data.quiz_questions as Array<{
+            question: string;
+            options: string[];
+            correctAnswer: string;
+            explanation: string;
+          }>
+        : [];
+
       return {
-        flashcards: data.flashcards || [],
-        quizQuestions: data.quiz_questions || [],
+        flashcards,
+        quizQuestions,
         summary: data.summary || ''
       };
     } catch (error) {
