@@ -20,7 +20,7 @@ export const useReviewCompletion = () => {
   const { toast } = useToast();
   const { storeAIContent } = useAIContentStorage();
   const { storeAllQuizResponses } = useQuizResponses();
-  const { generatePDFForSession } = usePDFGeneration();
+  const { generateSessionPDF } = usePDFGeneration();
 
   const completeReviewSession = useCallback(async (
     sessionId: string,
@@ -45,7 +45,13 @@ export const useReviewCompletion = () => {
       }
 
       // Generate PDF for the session
-      await generatePDFForSession(sessionId);
+      const { data: sessionData } = await supabase
+        .from('studysessions')
+        .select('sessionname')
+        .eq('sessionid', sessionId)
+        .single();
+
+      await generateSessionPDF(sessionId, sessionData?.sessionname || 'Review Session', aiContent, reviewStage);
 
       // Mark the review cycle entry as completed
       const { data: { user } } = await supabase.auth.getUser();
@@ -79,7 +85,7 @@ export const useReviewCompletion = () => {
       // Still navigate to home even if there's an error
       navigate('/home');
     }
-  }, [navigate, toast, storeAIContent, storeAllQuizResponses, generatePDFForSession]);
+  }, [navigate, toast, storeAIContent, storeAllQuizResponses, generateSessionPDF]);
 
   const completeNewSession = useCallback(async (
     sessionId: string,
@@ -103,7 +109,13 @@ export const useReviewCompletion = () => {
       }
 
       // Generate PDF for the session
-      await generatePDFForSession(sessionId);
+      const { data: sessionData } = await supabase
+        .from('studysessions')
+        .select('sessionname')
+        .eq('sessionid', sessionId)
+        .single();
+
+      await generateSessionPDF(sessionId, sessionData?.sessionname || 'Study Session', aiContent, 0);
 
       // Navigate to home page
       navigate('/home');
@@ -122,7 +134,7 @@ export const useReviewCompletion = () => {
       // Still navigate to home even if there's an error
       navigate('/home');
     }
-  }, [navigate, toast, storeAIContent, storeAllQuizResponses, generatePDFForSession]);
+  }, [navigate, toast, storeAIContent, storeAllQuizResponses, generateSessionPDF]);
 
   return {
     completeReviewSession,
