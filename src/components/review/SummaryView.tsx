@@ -8,6 +8,13 @@ import { useSession } from '@/contexts/SessionContext';
 import { Loader2, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+interface QuizResponse {
+  questionIndex: number;
+  selectedAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+}
+
 interface SummaryViewProps {
   summary: string;
   onFinish: () => void;
@@ -15,6 +22,7 @@ interface SummaryViewProps {
   reviewId?: string;
   sessionId?: string;
   reviewStage?: number;
+  quizResponses?: QuizResponse[];
 }
 
 const SummaryView: React.FC<SummaryViewProps> = ({
@@ -23,13 +31,19 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   isReviewSession = false,
   reviewId,
   sessionId,
-  reviewStage = 0
+  reviewStage = 0,
+  quizResponses = []
 }) => {
   const { currentSession } = useSession();
   const { completeReview } = useReviewCompletion();
   const { generateSessionPDF, isGenerating } = usePDFGeneration();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Calculate quiz results
+  const correctCount = quizResponses.filter(r => r.isCorrect).length;
+  const totalCount = quizResponses.length;
+  const scorePercentage = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
 
   const handleFinish = async () => {
     setIsProcessing(true);
@@ -50,7 +64,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       if (currentSession) {
         console.log('Generating PDF for new session completion...', currentSession);
         
-        // Create comprehensive content with proper structure
+        // Create comprehensive content with proper structure including quiz responses
         const contentToUse = currentSession.aiGeneratedContent || {
           flashcards: [
             {
@@ -99,16 +113,29 @@ const SummaryView: React.FC<SummaryViewProps> = ({
           summary: summary || `Study session "${currentSession.sessionName}" completed successfully on ${new Date().toLocaleDateString()}. You studied ${currentSession.subjectName} with a focus on ${currentSession.topicName}. The session lasted ${currentSession.focusDurationMinutes} minutes of focused study time with a ${currentSession.breakDurationMinutes}-minute break period. This structured approach to learning helps build knowledge systematically and maintains optimal concentration levels. Continue with regular review sessions to reinforce what you've learned and maintain long-term retention of the material. The spaced repetition approach will help consolidate this information into long-term memory.`
         };
         
+        // Add quiz results to the content
+        const contentWithQuizResults = {
+          ...contentToUse,
+          quizResults: {
+            responses: quizResponses,
+            correctCount,
+            totalCount,
+            scorePercentage
+          }
+        };
+        
         console.log('Content prepared for PDF generation:', {
-          flashcardsCount: contentToUse.flashcards?.length || 0,
-          quizQuestionsCount: contentToUse.quizQuestions?.length || 0,
-          hasSummary: !!contentToUse.summary
+          flashcardsCount: contentWithQuizResults.flashcards?.length || 0,
+          quizQuestionsCount: contentWithQuizResults.quizQuestions?.length || 0,
+          quizResponsesCount: quizResponses.length,
+          scorePercentage,
+          hasSummary: !!contentWithQuizResults.summary
         });
         
         const pdfId = await generateSessionPDF(
           currentSession.id,
           currentSession.sessionName,
-          contentToUse,
+          contentWithQuizResults,
           0 // New sessions are always stage 0
         );
         
@@ -116,7 +143,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
           console.log('PDF generated successfully with ID:', pdfId);
           toast({
             title: "Session Complete!",
-            description: "Your study session has been saved as a PDF for future reference.",
+            description: `Your study session has been saved as a PDF. Quiz Score: ${scorePercentage}%`,
           });
         } else {
           console.warn('PDF generation returned null but no error thrown');
@@ -149,7 +176,22 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       <Card className="mb-6">
         <CardContent className="p-6">
           <h3 className="text-lg font-medium mb-4">Session Summary</h3>
-          <p className="text-gray-700 leading-relaxed">{summary}</p>
+          <p className="text-gray-700 leading-relaxed mb-4">{summary}</p>
+          
+          {totalCount > 0 && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="font-medium text-blue-800 mb-2">Quiz Results</h4>
+              <div className="text-blue-700">
+                <p>Score: {correctCount}/{totalCount} ({scorePercentage}%)</p>
+                <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${scorePercentage}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
       
@@ -174,7 +216,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       </div>
       
       <div className="text-center mt-4 text-sm text-gray-600">
-        <p>Your session summary will be saved as a PDF for future reference</p>
+        <p>Your session summary and quiz results will be saved as a PDF for future reference</p>
       </div>
     </>
   );

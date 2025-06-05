@@ -227,6 +227,39 @@ export type Database = {
           },
         ]
       }
+      session_ai_content: {
+        Row: {
+          created_at: string | null
+          flashcards: Json | null
+          id: string
+          quiz_questions: Json | null
+          session_id: string
+          summary: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          flashcards?: Json | null
+          id?: string
+          quiz_questions?: Json | null
+          session_id: string
+          summary?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          flashcards?: Json | null
+          id?: string
+          quiz_questions?: Json | null
+          session_id?: string
+          summary?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       session_pdfs: {
         Row: {
           content_summary: string | null
@@ -456,6 +489,45 @@ export type Database = {
             referencedColumns: ["sessionid"]
           },
         ]
+      }
+      user_quiz_responses: {
+        Row: {
+          correct_answer: string
+          created_at: string | null
+          id: string
+          is_correct: boolean
+          question_index: number
+          question_text: string
+          review_stage: number | null
+          selected_answer: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string | null
+          id?: string
+          is_correct: boolean
+          question_index: number
+          question_text: string
+          review_stage?: number | null
+          selected_answer: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean
+          question_index?: number
+          question_text?: string
+          review_stage?: number | null
+          selected_answer?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_session_usage: {
         Row: {

@@ -18,6 +18,7 @@ interface QuizViewProps {
   onAnswerSelect: (answer: string) => void;
   onSubmitAnswer: () => void;
   onNext: () => void;
+  onQuizResponse?: (questionIndex: number, selectedAnswer: string, correctAnswer: string) => void;
 }
 
 const QuizView: React.FC<QuizViewProps> = ({
@@ -27,19 +28,20 @@ const QuizView: React.FC<QuizViewProps> = ({
   isAnswerSubmitted,
   onAnswerSelect,
   onSubmitAnswer,
-  onNext
+  onNext,
+  onQuizResponse
 }) => {
   const currentQuestion = quizQuestions[currentQuestionIndex];
+  const isLastQuestion = currentQuestionIndex === quizQuestions.length - 1;
 
-  if (!currentQuestion) {
-    return (
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <p className="text-center text-gray-600">No quiz questions available.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  const handleSubmitAnswer = () => {
+    onSubmitAnswer();
+    
+    // Track the quiz response
+    if (selectedAnswer && onQuizResponse) {
+      onQuizResponse(currentQuestionIndex, selectedAnswer, currentQuestion.correctAnswer);
+    }
+  };
 
   return (
     <>
@@ -48,54 +50,67 @@ const QuizView: React.FC<QuizViewProps> = ({
           Question {currentQuestionIndex + 1} of {quizQuestions.length}
         </span>
       </div>
-      <Card className="mb-6 min-h-[300px]">
+      
+      <Card className="mb-6">
         <CardContent className="p-6">
           <h3 className="text-lg font-medium mb-4">{currentQuestion.question}</h3>
           
-          <div className="space-y-3 mb-6">
-            {currentQuestion.options.map((option, index) => (
-              <div 
-                key={index} 
-                className={`p-3 border rounded-md cursor-pointer transition-colors ${
-                  selectedAnswer === option
-                    ? 'border-primary bg-primary/10'
-                    : 'hover:bg-gray-50'
-                } ${
-                  isAnswerSubmitted && option === currentQuestion.correctAnswer
-                    ? 'border-green-500 bg-green-50'
-                    : ''
-                } ${
-                  isAnswerSubmitted && selectedAnswer === option && option !== currentQuestion.correctAnswer
-                    ? 'border-red-500 bg-red-50'
-                    : ''
-                }`}
-                onClick={() => onAnswerSelect(option)}
-              >
-                <span>{option}</span>
-              </div>
-            ))}
+          <div className="space-y-3">
+            {currentQuestion.options.map((option, index) => {
+              const isSelected = selectedAnswer === option;
+              const isCorrect = option === currentQuestion.correctAnswer;
+              const showCorrect = isAnswerSubmitted && isCorrect;
+              const showIncorrect = isAnswerSubmitted && isSelected && !isCorrect;
+              
+              return (
+                <button
+                  key={index}
+                  onClick={() => onAnswerSelect(option)}
+                  disabled={isAnswerSubmitted}
+                  className={`w-full p-3 text-left border rounded-lg transition-colors ${
+                    showCorrect
+                      ? 'bg-green-100 border-green-500 text-green-800'
+                      : showIncorrect
+                      ? 'bg-red-100 border-red-500 text-red-800'
+                      : isSelected
+                      ? 'bg-blue-100 border-blue-500 text-blue-800'
+                      : 'bg-white border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {option}
+                </button>
+              );
+            })}
           </div>
-
+          
           {isAnswerSubmitted && (
-            <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-md">
-              <p className="font-medium mb-1">Explanation:</p>
-              <p>{currentQuestion.explanation}</p>
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Explanation:</strong> {currentQuestion.explanation}
+              </p>
             </div>
           )}
-          
-          <div className="flex justify-center">
-            {!isAnswerSubmitted ? (
-              <Button onClick={onSubmitAnswer} disabled={!selectedAnswer}>
-                Submit Answer
-              </Button>
-            ) : (
-              <Button onClick={onNext}>
-                {currentQuestionIndex < quizQuestions.length - 1 ? 'Next Question' : 'View Summary'}
-              </Button>
-            )}
-          </div>
         </CardContent>
       </Card>
+      
+      <div className="flex justify-center">
+        {!isAnswerSubmitted ? (
+          <Button
+            onClick={handleSubmitAnswer}
+            disabled={!selectedAnswer}
+            className="bg-blue-500 hover:bg-blue-600 px-6 py-3"
+          >
+            Submit Answer
+          </Button>
+        ) : (
+          <Button
+            onClick={onNext}
+            className="bg-orange-500 hover:bg-orange-600 px-6 py-3"
+          >
+            {isLastQuestion ? 'View Summary' : 'Next Question'}
+          </Button>
+        )}
+      </div>
     </>
   );
 };

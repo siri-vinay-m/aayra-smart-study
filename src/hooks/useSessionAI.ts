@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { useAI } from '@/hooks/useAI';
 import { supabase } from '@/integrations/supabase/client';
 import { AIGeneratedContent } from '@/types/session';
+import { useAIContentStorage } from '@/hooks/useAIContentStorage';
 
 interface StudyMaterial {
   id: string;
@@ -14,23 +15,26 @@ interface StudyMaterial {
 export const useSessionAI = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { processStudyMaterials } = useAI();
+  const { storeAIContent } = useAIContentStorage();
   const generatingSessionsRef = useRef<Set<string>>(new Set());
 
   const generateAIContentForSession = async (
     sessionId: string,
-    sessionName: string
+    sessionName: string,
+    reviewStage: number = 0
   ): Promise<AIGeneratedContent | null> => {
     // Prevent duplicate calls for the same session
-    if (generatingSessionsRef.current.has(sessionId)) {
-      console.log('Already generating content for session:', sessionId);
+    const sessionKey = `${sessionId}-${reviewStage}`;
+    if (generatingSessionsRef.current.has(sessionKey)) {
+      console.log('Already generating content for session:', sessionId, 'stage:', reviewStage);
       return null;
     }
 
-    generatingSessionsRef.current.add(sessionId);
+    generatingSessionsRef.current.add(sessionKey);
     setIsGenerating(true);
     
     try {
-      console.log('Fetching materials for session:', sessionId);
+      console.log('Fetching materials for session:', sessionId, 'review stage:', reviewStage);
       
       // Fetch uploaded materials for this session
       const { data: materials, error } = await supabase
@@ -69,6 +73,9 @@ export const useSessionAI = () => {
           ],
           summary: `This study session "${sessionName}" was designed to help you practice effective learning techniques. Continue to use active study methods and regular review to maximize your learning potential.`
         };
+        
+        // Store the AI content
+        await storeAIContent(sessionId, defaultContent, reviewStage);
         return defaultContent;
       }
 
@@ -105,16 +112,22 @@ export const useSessionAI = () => {
           ],
           summary: `The "${sessionName}" session included your uploaded study materials. Continue to review and practice with these materials for better learning outcomes.`
         };
+        
+        // Store the AI content
+        await storeAIContent(sessionId, fallbackContent, reviewStage);
         return fallbackContent;
       }
 
       console.log('AI content generated successfully');
+      
+      // Store the AI content
+      await storeAIContent(sessionId, aiResponse, reviewStage);
       return aiResponse;
     } catch (error) {
       console.error('Error in generateAIContentForSession:', error);
       return null;
     } finally {
-      generatingSessionsRef.current.delete(sessionId);
+      generatingSessionsRef.current.delete(sessionKey);
       setIsGenerating(false);
     }
   };

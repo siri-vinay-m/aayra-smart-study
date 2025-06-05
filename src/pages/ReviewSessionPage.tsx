@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -10,6 +11,8 @@ import ReviewSessionLoading from '@/components/review/ReviewSessionLoading';
 import ReviewSessionError from '@/components/review/ReviewSessionError';
 import { useReviewSessionContent } from '@/hooks/useReviewSessionContent';
 import { useReviewSessionNavigation } from '@/hooks/useReviewSessionNavigation';
+import { useAIContentStorage } from '@/hooks/useAIContentStorage';
+import { useQuizResponses } from '@/hooks/useQuizResponses';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PendingReview } from '@/types/session';
@@ -33,8 +36,16 @@ const ReviewSessionPage = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+  const [quizResponses, setQuizResponses] = useState<Array<{
+    questionIndex: number;
+    selectedAnswer: string;
+    correctAnswer: string;
+    isCorrect: boolean;
+  }>>([]);
   
   const { aiContent, isLoadingContent, hasError } = useReviewSessionContent(reviewSession, sessionId);
+  const { storeAIContent } = useAIContentStorage();
+  const { storeAllQuizResponses } = useQuizResponses();
   
   const {
     showNavigationDialog,
@@ -164,6 +175,27 @@ const ReviewSessionPage = () => {
     }
   };
 
+  const handleQuizResponse = (questionIndex: number, selectedAnswer: string, correctAnswer: string) => {
+    const isCorrect = selectedAnswer === correctAnswer;
+    const response = {
+      questionIndex,
+      selectedAnswer,
+      correctAnswer,
+      isCorrect
+    };
+    
+    setQuizResponses(prev => {
+      const updated = [...prev];
+      const existingIndex = updated.findIndex(r => r.questionIndex === questionIndex);
+      if (existingIndex >= 0) {
+        updated[existingIndex] = response;
+      } else {
+        updated.push(response);
+      }
+      return updated;
+    });
+  };
+
   const handleSubmitAnswer = () => {
     if (selectedAnswer) {
       setIsAnswerSubmitted(true);
@@ -183,7 +215,23 @@ const ReviewSessionPage = () => {
     }
   };
   
-  const handleFinishReview = () => {
+  const handleFinishReview = async () => {
+    if (reviewSession && aiContent) {
+      // Store AI content and quiz responses for this review stage
+      await storeAIContent(reviewSession.sessionId, aiContent, reviewStage);
+      
+      if (quizResponses.length > 0) {
+        const formattedResponses = quizResponses.map(response => ({
+          questionIndex: response.questionIndex,
+          questionText: aiContent.quizQuestions[response.questionIndex]?.question || '',
+          selectedAnswer: response.selectedAnswer,
+          correctAnswer: response.correctAnswer,
+          isCorrect: response.isCorrect
+        }));
+        await storeAllQuizResponses(reviewSession.sessionId, formattedResponses, reviewStage);
+      }
+    }
+    
     navigate('/pending-reviews');
   };
 
@@ -232,6 +280,7 @@ const ReviewSessionPage = () => {
         onAnswerSelect={handleAnswerSelect}
         onSubmitAnswer={handleSubmitAnswer}
         onNext={handleNextQuestion}
+        onQuizResponse={handleQuizResponse}
       />
     );
   } else {
@@ -243,6 +292,7 @@ const ReviewSessionPage = () => {
         reviewId={reviewSession.id}
         sessionId={reviewSession.sessionId}
         reviewStage={reviewStage}
+        quizResponses={quizResponses}
       />
     );
   }

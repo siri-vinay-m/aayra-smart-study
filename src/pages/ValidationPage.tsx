@@ -10,6 +10,8 @@ import SummaryView from '@/components/review/SummaryView';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSessionDiscard } from '@/hooks/useSessionDiscard';
+import { useAIContentStorage } from '@/hooks/useAIContentStorage';
+import { useQuizResponses } from '@/hooks/useQuizResponses';
 import DiscardSessionDialog from '@/components/dialogs/DiscardSessionDialog';
 
 const ValidationPage = () => {
@@ -21,6 +23,15 @@ const ValidationPage = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
+  const [quizResponses, setQuizResponses] = useState<Array<{
+    questionIndex: number;
+    selectedAnswer: string;
+    correctAnswer: string;
+    isCorrect: boolean;
+  }>>([]);
+  
+  const { storeAIContent } = useAIContentStorage();
+  const { storeAllQuizResponses } = useQuizResponses();
   
   const {
     showDiscardDialog,
@@ -86,6 +97,27 @@ const ValidationPage = () => {
     }
   };
 
+  const handleQuizResponse = (questionIndex: number, selectedAnswer: string, correctAnswer: string) => {
+    const isCorrect = selectedAnswer === correctAnswer;
+    const response = {
+      questionIndex,
+      selectedAnswer,
+      correctAnswer,
+      isCorrect
+    };
+    
+    setQuizResponses(prev => {
+      const updated = [...prev];
+      const existingIndex = updated.findIndex(r => r.questionIndex === questionIndex);
+      if (existingIndex >= 0) {
+        updated[existingIndex] = response;
+      } else {
+        updated.push(response);
+      }
+      return updated;
+    });
+  };
+
   const handleSubmitAnswer = () => {
     if (selectedAnswer) {
       setIsAnswerSubmitted(true);
@@ -106,6 +138,22 @@ const ValidationPage = () => {
   const handleFinishValidation = async () => {
     if (currentSession) {
       console.log('Finishing validation, session status:', currentSession.status);
+      
+      // Store AI content and quiz responses before finishing
+      if (currentSession.aiGeneratedContent) {
+        await storeAIContent(currentSession.id, currentSession.aiGeneratedContent, 0);
+      }
+      
+      if (quizResponses.length > 0) {
+        const formattedResponses = quizResponses.map(response => ({
+          questionIndex: response.questionIndex,
+          questionText: quizQuestions[response.questionIndex]?.question || '',
+          selectedAnswer: response.selectedAnswer,
+          correctAnswer: response.correctAnswer,
+          isCorrect: response.isCorrect
+        }));
+        await storeAllQuizResponses(currentSession.id, formattedResponses, 0);
+      }
       
       // Check if this is a completed session being reviewed (no longer using 'incomplete' status)
       if (currentSession.status === 'completed') {
@@ -149,6 +197,7 @@ const ValidationPage = () => {
         onAnswerSelect={handleAnswerSelect}
         onSubmitAnswer={handleSubmitAnswer}
         onNext={handleNextQuestion}
+        onQuizResponse={handleQuizResponse}
       />
     );
   } else {
@@ -158,6 +207,8 @@ const ValidationPage = () => {
         onFinish={handleFinishValidation}
         isReviewSession={currentSession.status === 'completed'}
         reviewStage={0} // For new sessions, always use stage 0
+        sessionId={currentSession.id}
+        quizResponses={quizResponses}
       />
     );
   }

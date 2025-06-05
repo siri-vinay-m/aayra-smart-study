@@ -27,8 +27,45 @@ const generatePDF = async (content: any, sessionName: string): Promise<Uint8Arra
     doc.text(sessionName || 'Study Session', 20, yPosition);
     yPosition += 20;
     
+    // Add quiz results if available
+    if (content.quizResults && content.quizResults.totalCount > 0) {
+      doc.setFontSize(14);
+      doc.text('Quiz Results', 20, yPosition);
+      yPosition += 15;
+      
+      const { correctCount, totalCount, scorePercentage } = content.quizResults;
+      
+      doc.setFontSize(12);
+      doc.text(`Score: ${correctCount}/${totalCount} (${scorePercentage}%)`, 20, yPosition);
+      yPosition += 10;
+      
+      // Add individual quiz responses
+      if (content.quizResults.responses && content.quizResults.responses.length > 0) {
+        doc.setFontSize(10);
+        content.quizResults.responses.forEach((response: any, index: number) => {
+          const statusIcon = response.isCorrect ? '✓' : '✗';
+          const statusColor = response.isCorrect ? 'green' : 'red';
+          
+          const responseText = `Q${index + 1}: ${statusIcon} ${response.selectedAnswer}`;
+          doc.text(responseText, 25, yPosition);
+          yPosition += 7;
+          
+          if (yPosition > 250) {
+            doc.addPage();
+            yPosition = 20;
+          }
+        });
+        yPosition += 10;
+      }
+    }
+    
     // Add flashcards section
     if (content.flashcards && content.flashcards.length > 0) {
+      if (yPosition > 200) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
       doc.setFontSize(14);
       doc.text(`Flashcards (${content.flashcards.length})`, 20, yPosition);
       yPosition += 15;
@@ -121,12 +158,17 @@ const generatePDF = async (content: any, sessionName: string): Promise<Uint8Arra
 };
 
 // Helper function to calculate quiz score
-const calculateQuizScore = (quizQuestions: any[]): string => {
-  if (!quizQuestions || quizQuestions.length === 0) {
+const calculateQuizScore = (content: any): string => {
+  if (content.quizResults && content.quizResults.totalCount > 0) {
+    const { correctCount, totalCount } = content.quizResults;
+    return `${correctCount}/${totalCount}`;
+  }
+  
+  if (!content.quizQuestions || content.quizQuestions.length === 0) {
     return '0/0';
   }
   
-  const totalQuestions = quizQuestions.length;
+  const totalQuestions = content.quizQuestions.length;
   const correctAnswers = Math.floor(totalQuestions * 0.7); // Simulate 70% correct rate
   
   return `${correctAnswers}/${totalQuestions}`;
@@ -151,7 +193,8 @@ serve(async (req) => {
       userId,
       reviewStage,
       hasAiContent: !!aiContent,
-      aiContentKeys: Object.keys(aiContent || {})
+      aiContentKeys: Object.keys(aiContent || {}),
+      hasQuizResults: !!(aiContent?.quizResults)
     });
 
     if (!sessionId || !aiContent || !userId) {
@@ -168,6 +211,8 @@ serve(async (req) => {
       flashcardsCount: aiContent.flashcards?.length || 0,
       hasQuizQuestions: !!aiContent.quizQuestions,
       quizQuestionsCount: aiContent.quizQuestions?.length || 0,
+      hasQuizResults: !!aiContent.quizResults,
+      quizScore: aiContent.quizResults ? `${aiContent.quizResults.correctCount}/${aiContent.quizResults.totalCount}` : 'N/A',
       hasSummary: !!aiContent.summary
     });
 
@@ -203,8 +248,8 @@ serve(async (req) => {
 
     console.log('PDF uploaded successfully to:', uploadData.path);
 
-    // Calculate quiz score in the new format
-    const quizScore = calculateQuizScore(aiContent.quizQuestions);
+    // Calculate quiz score
+    const quizScore = calculateQuizScore(aiContent);
 
     // Save PDF metadata to database with reviewstage
     const { data: dbData, error: dbError } = await supabaseClient
