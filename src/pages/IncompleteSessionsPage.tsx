@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -32,9 +33,9 @@ const IncompleteSessionsPage = () => {
   const handleSessionClick = (session: any) => {
     console.log('Resuming incomplete session:', session.id, 'Status:', session.status);
     
-    // Set current session and navigate to review page to start AI content generation
+    // Set current session and navigate to validation page to complete the session
     setCurrentSession(session);
-    navigate(`/review/${session.id}`);
+    navigate('/validation');
   };
 
   const handleSubjectClick = (subject: string) => {
@@ -59,7 +60,7 @@ const IncompleteSessionsPage = () => {
             <div className="flex items-center mb-6">
               <button
                 onClick={handleBackToSubjects}
-                className="flex items-center text-blue-600 hover:text-blue-800 mr-4"
+                className="flex items-center text-primary hover:text-primary/80 mr-4"
               >
                 <ArrowLeft size={20} className="mr-2" />
                 Back to Subjects
@@ -71,7 +72,7 @@ const IncompleteSessionsPage = () => {
               {sessionsBySubject[selectedSubject].map((session) => (
                 <div 
                   key={session.id}
-                  className="bg-white shadow-sm rounded-lg p-4 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+                  className="bg-white shadow-sm rounded-lg p-4 border border-gray-200 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all"
                   onClick={() => handleSessionClick(session)}
                 >
                   <div className="flex justify-between items-start">
@@ -81,7 +82,7 @@ const IncompleteSessionsPage = () => {
                         Topic: {session.topicName}
                       </p>
                     </div>
-                    <div className="text-blue-600">
+                    <div className="text-primary">
                       <span className="text-sm font-medium">
                         {getStartDateDisplay(session)}
                       </span>
@@ -108,11 +109,11 @@ const IncompleteSessionsPage = () => {
                 {subjects.map((subject) => (
                   <div 
                     key={subject}
-                    className="bg-white shadow-sm rounded-lg p-4 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+                    className="bg-white shadow-sm rounded-lg p-4 border border-gray-200 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all"
                     onClick={() => handleSubjectClick(subject)}
                   >
                     <div className="flex items-center">
-                      <Folder size={24} className="text-orange-500 mr-3" />
+                      <Folder size={24} className="text-primary mr-3" />
                       <div>
                         <h3 className="font-medium text-gray-900">{subject}</h3>
                         <p className="text-sm text-gray-500">
