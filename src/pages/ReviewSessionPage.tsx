@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -135,7 +134,6 @@ const ReviewSessionPage = () => {
     loadReviewSession();
   }, [sessionId, navigate, setCurrentSession]);
 
-  // Update current session with AI content when it's loaded
   useEffect(() => {
     if (aiContent && reviewSession) {
       const updatedSession = {
@@ -197,8 +195,12 @@ const ReviewSessionPage = () => {
   };
 
   const handleSubmitAnswer = () => {
-    if (selectedAnswer) {
+    if (selectedAnswer && aiContent?.quizQuestions) {
       setIsAnswerSubmitted(true);
+      const currentQuestion = aiContent.quizQuestions[currentQuestionIndex];
+      if (currentQuestion) {
+        handleQuizResponse(currentQuestionIndex, selectedAnswer, currentQuestion.correctAnswer);
+      }
     }
   };
 
