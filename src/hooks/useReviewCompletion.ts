@@ -31,6 +31,11 @@ export const useReviewCompletion = () => {
     try {
       console.log('Starting review session completion:', { sessionId, reviewStage });
       
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       // Store AI content with quiz results included
       const aiContentWithResults = {
         ...aiContent,
@@ -56,48 +61,49 @@ export const useReviewCompletion = () => {
         await storeAllQuizResponses(sessionId, formattedResponses, reviewStage);
       }
 
-      // Generate PDF for the session
+      // Get session name for PDF generation
       const { data: sessionData } = await supabase
         .from('studysessions')
         .select('sessionname')
         .eq('sessionid', sessionId)
         .single();
 
+      // Generate PDF for the session
+      console.log('Generating PDF for review session...');
       await generateSessionPDF(sessionId, sessionData?.sessionname || 'Review Session', aiContentWithResults, reviewStage);
 
-      // Mark the review cycle entry as completed and update session
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Mark review cycle entry as completed
-        const { error: reviewError } = await supabase
-          .from('reviewcycleentries')
-          .update({ 
-            status: 'completed',
-            updatedat: new Date().toISOString()
-          })
-          .eq('sessionid', sessionId)
-          .eq('userid', user.id)
-          .eq('status', 'pending');
+      // Update the review cycle entry status to completed
+      console.log('Updating review cycle entry status...');
+      const { error: reviewUpdateError } = await supabase
+        .from('reviewcycleentries')
+        .update({ 
+          status: 'completed',
+          updatedat: new Date().toISOString()
+        })
+        .eq('sessionid', sessionId)
+        .eq('userid', user.id)
+        .eq('reviewstage', reviewStage)
+        .eq('status', 'pending');
 
-        if (reviewError) {
-          console.error('Error updating review cycle entry:', reviewError);
-        } else {
-          console.log('Successfully marked review cycle entry as completed');
-        }
-
-        // Update session last reviewed date
-        const { error: sessionError } = await supabase
-          .from('studysessions')
-          .update({ 
-            lastreviewedat: new Date().toISOString(),
-            updatedat: new Date().toISOString()
-          })
-          .eq('sessionid', sessionId);
-
-        if (sessionError) {
-          console.error('Error updating session last reviewed date:', sessionError);
-        }
+      if (reviewUpdateError) {
+        console.error('Error updating review cycle entry:', reviewUpdateError);
+        throw reviewUpdateError;
       }
+
+      // Update session last reviewed date
+      const { error: sessionError } = await supabase
+        .from('studysessions')
+        .update({ 
+          lastreviewedat: new Date().toISOString(),
+          updatedat: new Date().toISOString()
+        })
+        .eq('sessionid', sessionId);
+
+      if (sessionError) {
+        console.error('Error updating session last reviewed date:', sessionError);
+      }
+
+      console.log('Review session completed successfully');
 
       // Navigate to home page
       navigate('/home');
@@ -126,6 +132,11 @@ export const useReviewCompletion = () => {
     try {
       console.log('Starting new session completion:', { sessionId });
       
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
       // Store AI content with quiz results for new session (review stage 0)
       const aiContentWithResults = {
         ...aiContent,
@@ -151,13 +162,15 @@ export const useReviewCompletion = () => {
         await storeAllQuizResponses(sessionId, formattedResponses, 0);
       }
 
-      // Generate PDF for the session
+      // Get session name for PDF generation
       const { data: sessionData } = await supabase
         .from('studysessions')
         .select('sessionname')
         .eq('sessionid', sessionId)
         .single();
 
+      // Generate PDF for the session
+      console.log('Generating PDF for new session...');
       await generateSessionPDF(sessionId, sessionData?.sessionname || 'Study Session', aiContentWithResults, 0);
 
       // Navigate to home page

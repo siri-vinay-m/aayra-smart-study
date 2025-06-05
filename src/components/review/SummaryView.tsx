@@ -60,7 +60,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
             <div className="text-center">
               <div className={`text-3xl font-bold mb-2 ${
                 score >= 80 ? 'text-green-600' : 
-                score >= 60 ? 'text-yellow-600' : 'text-red-600'
+                score >= 60 ? 'text-orange-600' : 'text-red-600'
               }`}>
                 {score}%
               </div>
@@ -79,7 +79,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       <div className="flex justify-center">
         <Button
           onClick={onFinish}
-          className="bg-primary hover:bg-primary-light px-8 py-3 text-lg text-white"
+          className="bg-primary hover:bg-primary/90 px-8 py-3 text-lg text-white"
         >
           {isReviewSession ? 'Complete Review' : 'Complete Session'}
         </Button>

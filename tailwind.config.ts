@@ -48,7 +48,7 @@ export default {
           foreground: "#000000"
         },
         info: {
-          DEFAULT: "#17A2B8",
+          DEFAULT: "#FF6600",
           foreground: "#FFFFFF"
         },
         muted: {
