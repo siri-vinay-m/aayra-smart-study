@@ -3,18 +3,39 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
-import { useReviewOperations } from '@/hooks/useReviewOperations';
 import { format } from 'date-fns';
 
 const PendingReviewsPage = () => {
-  const { pendingReviews } = useSession();
-  const { loadPendingReviews } = useReviewOperations();
+  const { pendingReviews, loadPendingReviews } = useSession();
   const navigate = useNavigate();
   
-  // Reload pending reviews when the page loads
+  // Reload pending reviews when the page loads and when returning from reviews
   useEffect(() => {
     console.log('PendingReviewsPage mounted, loading pending reviews...');
     loadPendingReviews();
+  }, [loadPendingReviews]);
+
+  // Also reload when the component becomes visible again (user returns from review)
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('Window focused, reloading pending reviews...');
+      loadPendingReviews();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Page became visible, reloading pending reviews...');
+        loadPendingReviews();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [loadPendingReviews]);
   
   const handleReviewClick = (sessionId: string) => {
@@ -25,7 +46,15 @@ const PendingReviewsPage = () => {
   return (
     <MainLayout>
       <div className="px-4">
-        <h1 className="text-2xl font-semibold mb-6 text-gray-900">Pending Reviews</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900">Pending Reviews</h1>
+          <button
+            onClick={loadPendingReviews}
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
         
         {pendingReviews.length === 0 ? (
           <div className="text-center py-8">

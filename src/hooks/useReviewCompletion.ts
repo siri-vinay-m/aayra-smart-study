@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAIContentStorage } from '@/hooks/useAIContentStorage';
 import { useQuizResponses } from '@/hooks/useQuizResponses';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
+import { useSession } from '@/contexts/SessionContext';
 import { AIGeneratedContent } from '@/types/session';
 
 interface QuizResponse {
@@ -21,6 +22,7 @@ export const useReviewCompletion = () => {
   const { storeAIContent } = useAIContentStorage();
   const { storeAllQuizResponses } = useQuizResponses();
   const { generateSessionPDF } = usePDFGeneration();
+  const { loadPendingReviews } = useSession();
 
   const completeReviewSession = useCallback(async (
     sessionId: string,
@@ -137,13 +139,17 @@ export const useReviewCompletion = () => {
 
       console.log('Review session completed successfully');
 
-      // Navigate to pending reviews to see updated list
-      navigate('/pending-reviews');
+      // Refresh pending reviews list
+      console.log('Refreshing pending reviews list...');
+      await loadPendingReviews();
       
       toast({
         title: "Review Completed!",
         description: "Your review session has been completed and saved.",
       });
+      
+      // Navigate to pending reviews to see updated list
+      navigate('/pending-reviews');
     } catch (error) {
       console.error('Error completing review session:', error);
       toast({
@@ -154,7 +160,7 @@ export const useReviewCompletion = () => {
       // Still navigate back to pending reviews
       navigate('/pending-reviews');
     }
-  }, [navigate, toast, storeAIContent, storeAllQuizResponses, generateSessionPDF]);
+  }, [navigate, toast, storeAIContent, storeAllQuizResponses, generateSessionPDF, loadPendingReviews]);
 
   // Helper function to calculate next review date based on spaced repetition
   const calculateNextReviewDate = (currentStage: number): string => {
