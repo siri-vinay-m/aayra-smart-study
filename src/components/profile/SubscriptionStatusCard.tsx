@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Crown, Calendar, Zap, Clock, Shield } from 'lucide-react';
+import { Crown, Calendar, Clock, Shield } from 'lucide-react';
 import { User } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,16 +72,15 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
   };
 
   const getPlanDisplayName = () => {
-    switch (user?.subscriptionPlan) {
-      case 'premium':
-        return 'Premium';
-      case 'free':
-        return user?.isTrial ? 'Free Trial' : 'Free';
-      case 'free-for-life':
-        return 'Free for Life';
-      default:
-        return 'Free';
+    const basePlan = user?.subscriptionPlan === 'premium' ? 'Premium' : 
+                    user?.subscriptionPlan === 'free-for-life' ? 'Free for Life' : 'Free';
+    
+    // Add trial days remaining to free plan display
+    if (user?.subscriptionPlan === 'free' && user?.isTrial && user?.subscriptionDaysRemaining !== null && user?.subscriptionDaysRemaining !== undefined) {
+      return `${basePlan} (${user.subscriptionDaysRemaining} days)`;
     }
+    
+    return basePlan;
   };
 
   const renderPlanDetails = () => {
@@ -102,35 +101,9 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <div className="text-sm text-gray-600">Ads:</div>
-            <div className="font-medium">
-              {user?.adsEnabled ? 'Enabled' : 'Disabled'}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="text-sm text-gray-600">Status:</div>
-            <div className={`font-medium capitalize ${
-              user?.subscriptionStatus === 'active' ? 'text-green-600' : 'text-gray-600'
-            }`}>
-              {user?.subscriptionStatus || 'Unknown'}
-            </div>
-          </div>
-        </div>
-
-        {user?.subscriptionDaysRemaining !== null && user?.subscriptionDaysRemaining !== undefined && user?.subscriptionPlan !== 'premium' && user?.subscriptionPlan !== 'free-for-life' && (
-          <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 p-2 rounded">
-            <Calendar size={16} />
-            <span>
-              Trial days remaining: {user.subscriptionDaysRemaining} days
-            </span>
-          </div>
-        )}
-
         {user?.subscriptionPlan !== 'premium' && user?.subscriptionPlan !== 'free-for-life' && (
           <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-            After the current plan you will have 2 sessions per week
+            After this plan you will have 2 sessions per week
           </div>
         )}
       </div>

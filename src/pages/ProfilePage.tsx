@@ -31,7 +31,6 @@ const ProfilePage = () => {
     }
   }, []);
 
-  // Check for payment success/cancellation in URL params
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const paymentStatus = urlParams.get('payment');
@@ -41,12 +40,10 @@ const ProfilePage = () => {
         title: "Payment Successful!",
         description: "Your subscription has been upgraded to Premium. Checking status...",
       });
-      // Check subscription status after successful payment
       setTimeout(() => {
         checkSubscriptionStatus();
       }, 2000);
       
-      // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (paymentStatus === 'cancelled') {
       toast({
@@ -55,7 +52,6 @@ const ProfilePage = () => {
         variant: "destructive"
       });
       
-      // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [checkSubscriptionStatus, toast]);
@@ -277,11 +273,6 @@ const ProfilePage = () => {
         />
         
         <SubscriptionStatusCard user={user} />
-
-        <NotificationCard
-          notificationPermission={notificationPermission}
-          onEnableNotifications={handleEnableNotifications}
-        />
         
         <ProfileForm
           displayName={displayName}
@@ -292,6 +283,11 @@ const ProfilePage = () => {
           setPreferredStudyWeekdays={setPreferredStudyWeekdays}
           preferredStudyStartTime={preferredStudyStartTime}
           setPreferredStudyStartTime={setPreferredStudyStartTime}
+        />
+
+        <NotificationCard
+          notificationPermission={notificationPermission}
+          onEnableNotifications={handleEnableNotifications}
         />
         
         <ProfileActions

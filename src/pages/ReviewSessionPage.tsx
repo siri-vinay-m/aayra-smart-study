@@ -10,8 +10,7 @@ import ReviewSessionLoading from '@/components/review/ReviewSessionLoading';
 import ReviewSessionError from '@/components/review/ReviewSessionError';
 import { useReviewSessionContent } from '@/hooks/useReviewSessionContent';
 import { useReviewSessionNavigation } from '@/hooks/useReviewSessionNavigation';
-import { useAIContentStorage } from '@/hooks/useAIContentStorage';
-import { useQuizResponses } from '@/hooks/useQuizResponses';
+import { useReviewCompletion } from '@/hooks/useReviewCompletion';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PendingReview } from '@/types/session';
@@ -43,8 +42,7 @@ const ReviewSessionPage = () => {
   }>>([]);
   
   const { aiContent, isLoadingContent, hasError } = useReviewSessionContent(reviewSession, sessionId);
-  const { storeAIContent } = useAIContentStorage();
-  const { storeAllQuizResponses } = useQuizResponses();
+  const { completeReviewSession } = useReviewCompletion();
   
   const {
     showNavigationDialog,
@@ -64,7 +62,6 @@ const ReviewSessionPage = () => {
           return;
         }
 
-        // Get review cycle entry for this session - get the most recent one
         const { data: reviewEntry, error: reviewError } = await supabase
           .from('reviewcycleentries')
           .select('*')
@@ -81,7 +78,6 @@ const ReviewSessionPage = () => {
           return;
         }
 
-        // Get session details
         const { data: sessionData, error: sessionError } = await supabase
           .from('studysessions')
           .select('*')
@@ -108,7 +104,6 @@ const ReviewSessionPage = () => {
         setReviewSession(pendingReview);
         setReviewStage(reviewEntry.reviewstage);
         
-        // Set up the current session for PDF generation
         setCurrentSession({
           id: sessionData.sessionid,
           sessionName: sessionData.sessionname,
@@ -122,7 +117,7 @@ const ReviewSessionPage = () => {
           startTime: new Date(sessionData.createdat),
           createdAt: new Date(sessionData.createdat),
           isFavorite: sessionData.isfavorite || false,
-          aiGeneratedContent: null // Will be populated by useReviewSessionContent
+          aiGeneratedContent: null
         });
 
       } catch (error) {
@@ -141,8 +136,8 @@ const ReviewSessionPage = () => {
         sessionName: reviewSession.sessionName,
         subjectName: reviewSession.subjectName,
         topicName: reviewSession.topicName,
-        focusDuration: 25 * 60, // Default 25 minutes
-        breakDuration: 5 * 60, // Default 5 minutes
+        focusDuration: 25 * 60,
+        breakDuration: 5 * 60,
         focusDurationMinutes: 25,
         breakDurationMinutes: 5,
         status: 'completed' as const,
@@ -159,7 +154,7 @@ const ReviewSessionPage = () => {
     if (currentStep !== 'summary') {
       handleNavigationAttempt('/pending-reviews');
     } else {
-      navigate('/pending-reviews');
+      navigate('/home');
     }
   };
   
@@ -219,22 +214,8 @@ const ReviewSessionPage = () => {
   
   const handleFinishReview = async () => {
     if (reviewSession && aiContent) {
-      // Store AI content and quiz responses for this review stage
-      await storeAIContent(reviewSession.sessionId, aiContent, reviewStage);
-      
-      if (quizResponses.length > 0) {
-        const formattedResponses = quizResponses.map(response => ({
-          questionIndex: response.questionIndex,
-          questionText: aiContent.quizQuestions[response.questionIndex]?.question || '',
-          selectedAnswer: response.selectedAnswer,
-          correctAnswer: response.correctAnswer,
-          isCorrect: response.isCorrect
-        }));
-        await storeAllQuizResponses(reviewSession.sessionId, formattedResponses, reviewStage);
-      }
+      await completeReviewSession(reviewSession.sessionId, aiContent, quizResponses, reviewStage);
     }
-    
-    navigate('/pending-reviews');
   };
 
   const handleAnswerSelect = (answer: string) => {
