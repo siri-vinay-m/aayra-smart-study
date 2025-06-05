@@ -29,8 +29,20 @@ export const useReviewCompletion = () => {
     reviewStage: number
   ) => {
     try {
-      // Store AI content
-      await storeAIContent(sessionId, aiContent, reviewStage);
+      console.log('Starting review session completion:', { sessionId, reviewStage });
+      
+      // Store AI content with quiz results included
+      const aiContentWithResults = {
+        ...aiContent,
+        quizResults: {
+          responses: quizResponses,
+          correctCount: quizResponses.filter(r => r.isCorrect).length,
+          totalCount: quizResponses.length,
+          scorePercentage: quizResponses.length > 0 ? Math.round((quizResponses.filter(r => r.isCorrect).length / quizResponses.length) * 100) : 0
+        }
+      };
+      
+      await storeAIContent(sessionId, aiContentWithResults, reviewStage);
       
       // Store quiz responses
       if (quizResponses.length > 0) {
@@ -51,24 +63,43 @@ export const useReviewCompletion = () => {
         .eq('sessionid', sessionId)
         .single();
 
-      await generateSessionPDF(sessionId, sessionData?.sessionname || 'Review Session', aiContent, reviewStage);
+      await generateSessionPDF(sessionId, sessionData?.sessionname || 'Review Session', aiContentWithResults, reviewStage);
 
-      // Mark the review cycle entry as completed
+      // Mark the review cycle entry as completed and update session
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { error } = await supabase
+        // Mark review cycle entry as completed
+        const { error: reviewError } = await supabase
           .from('reviewcycleentries')
-          .update({ status: 'completed' })
+          .update({ 
+            status: 'completed',
+            updatedat: new Date().toISOString()
+          })
           .eq('sessionid', sessionId)
           .eq('userid', user.id)
           .eq('status', 'pending');
 
-        if (error) {
-          console.error('Error updating review cycle entry:', error);
+        if (reviewError) {
+          console.error('Error updating review cycle entry:', reviewError);
+        } else {
+          console.log('Successfully marked review cycle entry as completed');
+        }
+
+        // Update session last reviewed date
+        const { error: sessionError } = await supabase
+          .from('studysessions')
+          .update({ 
+            lastreviewedat: new Date().toISOString(),
+            updatedat: new Date().toISOString()
+          })
+          .eq('sessionid', sessionId);
+
+        if (sessionError) {
+          console.error('Error updating session last reviewed date:', sessionError);
         }
       }
 
-      // Navigate to home page instead of pending reviews
+      // Navigate to home page
       navigate('/home');
       
       toast({
@@ -93,8 +124,20 @@ export const useReviewCompletion = () => {
     quizResponses: QuizResponse[]
   ) => {
     try {
-      // Store AI content for new session (review stage 0)
-      await storeAIContent(sessionId, aiContent, 0);
+      console.log('Starting new session completion:', { sessionId });
+      
+      // Store AI content with quiz results for new session (review stage 0)
+      const aiContentWithResults = {
+        ...aiContent,
+        quizResults: {
+          responses: quizResponses,
+          correctCount: quizResponses.filter(r => r.isCorrect).length,
+          totalCount: quizResponses.length,
+          scorePercentage: quizResponses.length > 0 ? Math.round((quizResponses.filter(r => r.isCorrect).length / quizResponses.length) * 100) : 0
+        }
+      };
+      
+      await storeAIContent(sessionId, aiContentWithResults, 0);
       
       // Store quiz responses
       if (quizResponses.length > 0) {
@@ -115,7 +158,7 @@ export const useReviewCompletion = () => {
         .eq('sessionid', sessionId)
         .single();
 
-      await generateSessionPDF(sessionId, sessionData?.sessionname || 'Study Session', aiContent, 0);
+      await generateSessionPDF(sessionId, sessionData?.sessionname || 'Study Session', aiContentWithResults, 0);
 
       // Navigate to home page
       navigate('/home');

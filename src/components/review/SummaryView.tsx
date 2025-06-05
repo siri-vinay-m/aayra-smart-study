@@ -42,9 +42,9 @@ const SummaryView: React.FC<SummaryViewProps> = ({
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="bg-white border border-gray-200">
         <CardContent className="p-6">
-          <h3 className="text-lg font-medium mb-4">Session Summary</h3>
+          <h3 className="text-lg font-medium mb-4 text-gray-900">Session Summary</h3>
           <div className="prose prose-sm max-w-none">
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
               {summary}
@@ -54,9 +54,9 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       </Card>
 
       {score !== null && (
-        <Card>
+        <Card className="bg-white border border-gray-200">
           <CardContent className="p-6">
-            <h3 className="text-lg font-medium mb-4">Quiz Performance</h3>
+            <h3 className="text-lg font-medium mb-4 text-gray-900">Quiz Performance</h3>
             <div className="text-center">
               <div className={`text-3xl font-bold mb-2 ${
                 score >= 80 ? 'text-green-600' : 
@@ -79,7 +79,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
       <div className="flex justify-center">
         <Button
           onClick={onFinish}
-          className="bg-orange-500 hover:bg-orange-600 px-8 py-3 text-lg"
+          className="bg-primary hover:bg-primary-light px-8 py-3 text-lg text-white"
         >
           {isReviewSession ? 'Complete Review' : 'Complete Session'}
         </Button>
