@@ -1,15 +1,24 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
+import { useReviewOperations } from '@/hooks/useReviewOperations';
 import { format } from 'date-fns';
 
 const PendingReviewsPage = () => {
   const { pendingReviews } = useSession();
+  const { loadPendingReviews } = useReviewOperations();
   const navigate = useNavigate();
   
+  // Reload pending reviews when the page loads
+  useEffect(() => {
+    console.log('PendingReviewsPage mounted, loading pending reviews...');
+    loadPendingReviews();
+  }, [loadPendingReviews]);
+  
   const handleReviewClick = (sessionId: string) => {
+    console.log('Starting review for session:', sessionId);
     navigate(`/review/${sessionId}`);
   };
   
@@ -21,12 +30,15 @@ const PendingReviewsPage = () => {
         {pendingReviews.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-600">No pending reviews</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Complete some study sessions to see reviews here!
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
             {pendingReviews.map((review) => (
               <div 
-                key={review.id}
+                key={`${review.sessionId}-${review.reviewStage}`}
                 className="bg-white shadow-sm rounded-lg p-4 border border-gray-200 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all"
                 onClick={() => handleReviewClick(review.sessionId)}
               >
@@ -34,11 +46,16 @@ const PendingReviewsPage = () => {
                   <div>
                     <h3 className="font-medium text-gray-900">{review.sessionName}</h3>
                     <p className="text-sm text-gray-500">
-                      Review stage: {review.reviewStage}
+                      {review.reviewStage}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Subject: {review.subjectName} • Topic: {review.topicName}
                     </p>
                   </div>
-                  <div className="text-sm font-medium text-primary">
-                    Due {format(new Date(review.dueDate), 'MMM d')}
+                  <div className="text-primary">
+                    <span className="text-sm font-medium">
+                      Due {format(new Date(review.dueDate), 'MMM d')}
+                    </span>
                   </div>
                 </div>
               </div>

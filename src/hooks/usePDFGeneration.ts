@@ -30,7 +30,8 @@ export const usePDFGeneration = () => {
         hasQuizQuestions: !!aiContent.quizQuestions,
         quizQuestionsCount: aiContent.quizQuestions?.length || 0,
         hasSummary: !!aiContent.summary,
-        summaryLength: aiContent.summary?.length || 0
+        summaryLength: aiContent.summary?.length || 0,
+        hasQuizResults: !!(aiContent as any).quizResults
       });
 
       const response = await fetch(
@@ -39,7 +40,7 @@ export const usePDFGeneration = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91eWlsZ3ZxYndjZWtrYWpycnVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5NzU4MzgsImV4cCI6MjA2MzU1MTgzOH0.HPv36VVU0WpAXidt2ZrjzUSuiNPCMaXk2tI8SryitbE'}`,
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91eWlsZ3ZxYndjZWtrYWpycnVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5NzU4MzgsImV4cCI6MjA2MzU1MTgzOH0.HPv36VVU0WpAXidt2ZrjzUSuiNPCMaXk2tI8SryitbE`,
           },
           body: JSON.stringify({
             sessionId,
@@ -52,7 +53,7 @@ export const usePDFGeneration = () => {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('PDF generation failed:', {
           status: response.status,
           statusText: response.statusText,

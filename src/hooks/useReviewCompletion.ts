@@ -47,6 +47,7 @@ export const useReviewCompletion = () => {
         }
       };
       
+      console.log('Storing AI content with review stage:', reviewStage);
       await storeAIContent(sessionId, aiContentWithResults, reviewStage);
       
       // Store quiz responses
@@ -58,6 +59,7 @@ export const useReviewCompletion = () => {
           correctAnswer: response.correctAnswer,
           isCorrect: response.isCorrect
         }));
+        console.log('Storing quiz responses with review stage:', reviewStage);
         await storeAllQuizResponses(sessionId, formattedResponses, reviewStage);
       }
 
@@ -69,11 +71,17 @@ export const useReviewCompletion = () => {
         .single();
 
       // Generate PDF for the session
-      console.log('Generating PDF for review session...');
-      await generateSessionPDF(sessionId, sessionData?.sessionname || 'Review Session', aiContentWithResults, reviewStage);
+      console.log('Generating PDF for review session with stage:', reviewStage);
+      try {
+        await generateSessionPDF(sessionId, sessionData?.sessionname || 'Review Session', aiContentWithResults, reviewStage);
+        console.log('PDF generation completed successfully');
+      } catch (pdfError) {
+        console.error('PDF generation failed, but continuing with completion:', pdfError);
+        // Don't fail the entire completion if PDF generation fails
+      }
 
       // Update the review cycle entry status to completed
-      console.log('Updating review cycle entry status...');
+      console.log('Updating review cycle entry status to completed...');
       const { error: reviewUpdateError } = await supabase
         .from('reviewcycleentries')
         .update({ 
@@ -90,6 +98,8 @@ export const useReviewCompletion = () => {
         throw reviewUpdateError;
       }
 
+      console.log('Review cycle entry updated successfully');
+
       // Update session last reviewed date
       const { error: sessionError } = await supabase
         .from('studysessions')
@@ -103,10 +113,32 @@ export const useReviewCompletion = () => {
         console.error('Error updating session last reviewed date:', sessionError);
       }
 
+      // Create next review cycle entry if needed
+      console.log('Creating next review cycle entry...');
+      if (reviewStage < 6) { // Maximum stage is 6
+        const nextReviewDate = calculateNextReviewDate(reviewStage);
+        const { error: nextEntryError } = await supabase
+          .from('reviewcycleentries')
+          .insert({
+            sessionid: sessionId,
+            userid: user.id,
+            initialappearancedate: new Date().toISOString().split('T')[0],
+            currentreviewduedate: nextReviewDate,
+            reviewstage: reviewStage + 1,
+            status: 'pending'
+          });
+
+        if (nextEntryError) {
+          console.error('Error creating next review cycle entry:', nextEntryError);
+        } else {
+          console.log('Next review cycle entry created for stage:', reviewStage + 1);
+        }
+      }
+
       console.log('Review session completed successfully');
 
-      // Navigate to home page
-      navigate('/home');
+      // Navigate to pending reviews to see updated list
+      navigate('/pending-reviews');
       
       toast({
         title: "Review Completed!",
@@ -119,10 +151,28 @@ export const useReviewCompletion = () => {
         description: "Failed to complete review session. Please try again.",
         variant: "destructive"
       });
-      // Still navigate to home even if there's an error
-      navigate('/home');
+      // Still navigate back to pending reviews
+      navigate('/pending-reviews');
     }
   }, [navigate, toast, storeAIContent, storeAllQuizResponses, generateSessionPDF]);
+
+  // Helper function to calculate next review date based on spaced repetition
+  const calculateNextReviewDate = (currentStage: number): string => {
+    const now = new Date();
+    let daysToAdd = 1;
+    
+    switch (currentStage) {
+      case 1: daysToAdd = 3; break;
+      case 2: daysToAdd = 7; break;
+      case 3: daysToAdd = 14; break;
+      case 4: daysToAdd = 30; break;
+      case 5: daysToAdd = 90; break;
+      default: daysToAdd = 180; break;
+    }
+    
+    now.setDate(now.getDate() + daysToAdd);
+    return now.toISOString().split('T')[0];
+  };
 
   const completeNewSession = useCallback(async (
     sessionId: string,
@@ -171,7 +221,13 @@ export const useReviewCompletion = () => {
 
       // Generate PDF for the session
       console.log('Generating PDF for new session...');
-      await generateSessionPDF(sessionId, sessionData?.sessionname || 'Study Session', aiContentWithResults, 0);
+      try {
+        await generateSessionPDF(sessionId, sessionData?.sessionname || 'Study Session', aiContentWithResults, 0);
+        console.log('PDF generation completed successfully');
+      } catch (pdfError) {
+        console.error('PDF generation failed, but continuing with completion:', pdfError);
+        // Don't fail the entire completion if PDF generation fails
+      }
 
       // Navigate to home page
       navigate('/home');
