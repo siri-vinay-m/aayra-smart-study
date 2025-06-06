@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PendingReview } from '@/types/session';
@@ -46,7 +45,7 @@ export const useReviewOperations = () => {
           subjectName: entry.studysessions.subjectname,
           topicName: entry.studysessions.topicname,
           completedAt: new Date(entry.studysessions.lastreviewedat || entry.studysessions.createdat),
-          dueDate: new Date(entry.currentreviewduedate),
+          dueDate: entry.currentreviewduedate, // Keep as string to match PendingReview interface
           reviewStage: `Stage ${entry.reviewstage}`,
         }));
 

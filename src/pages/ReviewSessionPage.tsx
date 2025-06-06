@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -77,10 +76,9 @@ const ReviewSessionPage = () => {
         breakDuration: 5,
         focusDurationMinutes: 25,
         breakDurationMinutes: 5,
-        createdAt: new Date().toISOString(),
-        startTime: new Date().toISOString(),
-        endTime: null,
-        userId: '',
+        createdAt: new Date(),
+        startTime: new Date(), // Changed from string to Date to match StudySession interface
+        completedAt: undefined,
         isFavorite: false
       };
       setCurrentSession(sessionForValidation);
