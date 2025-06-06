@@ -40,6 +40,7 @@ const mockSessionContextValue = {
   loadIncompleteSessions: vi.fn(),
   loadPendingReviews: vi.fn(),
   toggleFavorite: vi.fn(),
+  markReviewAsCompleted: vi.fn(),
 };
 
 // Mock the TimerContext - updated to match the actual TimerContextType interface

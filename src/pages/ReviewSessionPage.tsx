@@ -72,8 +72,8 @@ const ReviewSessionPage = () => {
         status: isFromCompletedSessions ? 'completed' as const : 'validating' as const,
         reviewStage: reviewStageNumber,
         aiGeneratedContent: aiContent,
-        focusDuration: 25,
-        breakDuration: 5,
+        focusDuration: 25 * 60,
+        breakDuration: 5 * 60,
         focusDurationMinutes: 25,
         breakDurationMinutes: 5,
         createdAt: new Date(),
@@ -98,14 +98,6 @@ const ReviewSessionPage = () => {
       <MainLayout>
         <ReviewSessionError
           onRetry={() => window.location.reload()}
-          onBackToReviews={() => {
-            const isFromCompletedSessions = completedSessions.some(session => session.id === sessionId);
-            if (isFromCompletedSessions) {
-              navigate('/completed-sessions');
-            } else {
-              navigate('/pending-reviews');
-            }
-          }}
         />
       </MainLayout>
     );

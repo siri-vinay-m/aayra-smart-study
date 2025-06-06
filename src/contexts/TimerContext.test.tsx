@@ -39,6 +39,7 @@ const mockSessionContextValue = {
   loadIncompleteSessions: vi.fn(),
   loadPendingReviews: vi.fn(),
   toggleFavorite: vi.fn(),
+  markReviewAsCompleted: vi.fn(),
 };
 
 const TestComponent = () => {
