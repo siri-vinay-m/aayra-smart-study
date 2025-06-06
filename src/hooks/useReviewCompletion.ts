@@ -148,8 +148,8 @@ export const useReviewCompletion = () => {
         description: "Your review session has been completed and saved.",
       });
       
-      // Navigate to pending reviews to see updated list
-      navigate('/pending-reviews');
+      // Navigate to home for pending reviews (not pending reviews page)
+      navigate('/home');
     } catch (error) {
       console.error('Error completing review session:', error);
       toast({
@@ -157,8 +157,8 @@ export const useReviewCompletion = () => {
         description: "Failed to complete review session. Please try again.",
         variant: "destructive"
       });
-      // Still navigate back to pending reviews
-      navigate('/pending-reviews');
+      // Navigate to home on error too
+      navigate('/home');
     }
   }, [navigate, toast, storeAIContent, storeAllQuizResponses, generateSessionPDF, loadPendingReviews]);
 

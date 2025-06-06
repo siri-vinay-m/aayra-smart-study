@@ -144,7 +144,7 @@ const ValidationPage = () => {
         setCurrentSession(null);
         navigate('/home');
       } else if (currentSession.reviewStage && currentSession.reviewStage > 0) {
-        // Case: Pending Reviews Flow - Generate PDF and complete review
+        // Case: Pending Reviews Flow - Generate PDF and complete review, then go to home
         console.log('Completing pending review session');
         if (currentSession.aiGeneratedContent) {
           await completeReviewSession(
@@ -154,6 +154,7 @@ const ValidationPage = () => {
             currentSession.reviewStage
           );
         }
+        // Navigation handled in completeReviewSession - goes to home
       } else {
         // Case: New Session Flow or Incomplete Session Flow - Generate PDF and take break
         console.log('New session or incomplete session flow - generating PDF and taking break');
@@ -174,6 +175,13 @@ const ValidationPage = () => {
     if (!isAnswerSubmitted) {
       setSelectedAnswer(answer);
     }
+  };
+
+  // Determine session type for proper flow handling
+  const getSessionType = () => {
+    if (currentSession.status === 'completed') return 'completed';
+    if (currentSession.reviewStage && currentSession.reviewStage > 0) return 'pending';
+    return 'new_or_incomplete';
   };
   
   let pageContent;
@@ -204,11 +212,9 @@ const ValidationPage = () => {
       <SummaryView
         summary={summary}
         onFinish={handleFinishValidation}
-        isReviewSession={!!(currentSession.reviewStage && currentSession.reviewStage > 0)}
-        reviewStage={currentSession.reviewStage || 0}
+        sessionType={getSessionType()}
         sessionId={currentSession.id}
         quizResponses={quizResponses}
-        sessionStatus={currentSession.status}
       />
     );
   }

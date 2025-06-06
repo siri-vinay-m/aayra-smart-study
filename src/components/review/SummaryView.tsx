@@ -2,7 +2,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useReviewCompletion } from '@/hooks/useReviewCompletion';
 
 interface QuizResponse {
   questionIndex: number;
@@ -14,26 +13,18 @@ interface QuizResponse {
 interface SummaryViewProps {
   summary: string;
   onFinish: () => void;
-  isReviewSession?: boolean;
-  reviewId?: string;
+  sessionType: 'completed' | 'pending' | 'new_or_incomplete';
   sessionId?: string;
-  reviewStage?: number;
   quizResponses?: QuizResponse[];
-  sessionStatus?: string; // Add this to identify the source flow
 }
 
 const SummaryView: React.FC<SummaryViewProps> = ({
   summary,
   onFinish,
-  isReviewSession = false,
-  reviewId,
+  sessionType,
   sessionId,
-  reviewStage = 0,
-  quizResponses = [],
-  sessionStatus
+  quizResponses = []
 }) => {
-  const { completeReviewSession, completeNewSession } = useReviewCompletion();
-
   const calculateScore = () => {
     if (quizResponses.length === 0) return null;
     const correctCount = quizResponses.filter(response => response.isCorrect).length;
@@ -43,16 +34,16 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   const score = calculateScore();
 
   const getButtonText = () => {
-    // If this is from completed sessions flow, show "Complete Review"
-    if (sessionStatus === 'completed') {
-      return 'Back to Home';
+    switch (sessionType) {
+      case 'completed':
+        return 'Back to Home';
+      case 'pending':
+        return 'Complete Review';
+      case 'new_or_incomplete':
+        return 'Take a Break';
+      default:
+        return 'Continue';
     }
-    // For pending reviews
-    if (isReviewSession) {
-      return 'Complete Review';
-    }
-    // For new sessions and incomplete sessions
-    return 'Take a Break';
   };
 
   return (

@@ -1,121 +1,113 @@
 
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
-import { AIGeneratedContent, StudySession } from '@/types/session';
-import { useAIContentStorage } from '@/hooks/useAIContentStorage';
+import { useReviewSessionContent } from '@/hooks/useReviewSessionContent';
 import FlashcardView from '@/components/review/FlashcardView';
 import QuizView from '@/components/review/QuizView';
 import SummaryView from '@/components/review/SummaryView';
-import MainLayout from '@/components/layout/MainLayout';
-import { supabase } from '@/integrations/supabase/client';
-import ReviewSessionLoading from '@/components/review/ReviewSessionLoading';
+import LoadingState from '@/components/review/LoadingState';
+import ReviewSessionError from '@/components/review/ReviewSessionError';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useReviewCompletion } from '@/hooks/useReviewCompletion';
 
 const ReviewSessionPage = () => {
-  const { sessionId } = useParams<{ sessionId: string }>();
+  const { sessionId } = useParams();
   const navigate = useNavigate();
-  const { pendingReviews, completedSessions, loadPendingReviews } = useSession();
-  const [reviewSession, setReviewSession] = useState<StudySession | null>(null);
-  const [aiContent, setAiContent] = useState<AIGeneratedContent | null>(null);
+  const { pendingReviews, completedSessions, setCurrentSession } = useSession();
   const [currentStep, setCurrentStep] = useState<'flashcards' | 'quiz' | 'summary'>('flashcards');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [quizResponses, setQuizResponses] = useState<Array<{
     questionIndex: number;
     selectedAnswer: string;
     correctAnswer: string;
     isCorrect: boolean;
   }>>([]);
-  const { getAIContent } = useAIContentStorage();
-  const contentLoaded = useRef(false);
+
+  const { completeReviewSession } = useReviewCompletion();
+
+  // Find the review session from either pending reviews or completed sessions
+  const reviewSession = React.useMemo(() => {
+    const pendingReview = pendingReviews.find(review => review.sessionId === sessionId);
+    if (pendingReview) return pendingReview;
+    
+    const completedSession = completedSessions.find(session => session.id === sessionId);
+    if (completedSession) {
+      // Convert completed session to review session format
+      return {
+        sessionId: completedSession.id,
+        sessionName: completedSession.sessionName,
+        subjectName: completedSession.subjectName,
+        topicName: completedSession.topicName,
+        reviewStage: 'Review' as const,
+        dueDate: new Date().toISOString()
+      };
+    }
+    
+    return null;
+  }, [sessionId, pendingReviews, completedSessions]);
+
+  const { aiContent, isLoadingContent, hasError } = useReviewSessionContent(reviewSession, sessionId);
 
   useEffect(() => {
-    const fetchSessionData = async () => {
-      if (!sessionId) {
-        setLoading(false);
-        return;
-      }
+    if (reviewSession && aiContent) {
+      // Set up the session as current session for validation flow
+      const isFromCompletedSessions = completedSessions.some(session => session.id === sessionId);
+      const sessionForValidation = {
+        id: sessionId!,
+        sessionName: reviewSession.sessionName,
+        subjectName: reviewSession.subjectName,
+        topicName: reviewSession.topicName,
+        status: isFromCompletedSessions ? 'completed' as const : 'validating' as const,
+        reviewStage: typeof reviewSession.reviewStage === 'string' ? 0 : reviewSession.reviewStage,
+        aiGeneratedContent: aiContent,
+        focusDuration: 25,
+        breakDuration: 5,
+        createdAt: new Date().toISOString(),
+        startTime: new Date().toISOString(),
+        endTime: null,
+        userId: '',
+        isFavorite: false
+      };
+      setCurrentSession(sessionForValidation);
+    }
+  }, [reviewSession, aiContent, sessionId, setCurrentSession, completedSessions]);
 
-      try {
-        setLoading(true);
+  if (isLoadingContent) {
+    return (
+      <MainLayout>
+        <LoadingState />
+      </MainLayout>
+    );
+  }
 
-        // Check if session is in pending reviews (higher priority)
-        const pendingReview = pendingReviews.find(review => review.sessionId === sessionId);
-        
-        // If not in pending reviews, check if it's a completed session
-        const completedSession = completedSessions.find(session => session.id === sessionId);
+  if (hasError || !reviewSession || !aiContent) {
+    return (
+      <MainLayout>
+        <ReviewSessionError
+          onRetry={() => window.location.reload()}
+          onBackToReviews={() => navigate('/pending-reviews')}
+        />
+      </MainLayout>
+    );
+  }
 
-        if (pendingReview) {
-          // Get session details for this review
-          const { data, error } = await supabase
-            .from('studysessions')
-            .select('*')
-            .eq('sessionid', sessionId)
-            .single();
-            
-          if (error || !data) {
-            console.error('Error fetching session details:', error);
-            return;
-          }
-
-          const reviewStage = parseInt(pendingReview.reviewStage);
-          
-          // Format session with review data
-          const formattedSession: StudySession = {
-            id: data.sessionid,
-            sessionName: data.sessionname,
-            subjectName: data.subjectname,
-            topicName: data.topicname,
-            focusDuration: 0,
-            breakDuration: 0,
-            focusDurationMinutes: data.focusdurationminutes,
-            breakDurationMinutes: data.breakdurationminutes,
-            status: 'completed',
-            startTime: new Date(data.createdat),
-            completedAt: data.updatedat ? new Date(data.updatedat) : undefined,
-            createdAt: new Date(data.createdat),
-            reviewStage: reviewStage
-          };
-          
-          setReviewSession(formattedSession);
-          
-          // Get AI content for this review stage
-          const content = await getAIContent(sessionId, reviewStage);
-          if (content) {
-            setAiContent(content);
-            contentLoaded.current = true;
-          }
-        } else if (completedSession) {
-          // For completed sessions (not in review cycle)
-          setReviewSession({
-            ...completedSession,
-            status: 'completed'
-          });
-          
-          // Get AI content for the main session (stage 0)
-          const content = await getAIContent(sessionId, 0);
-          if (content) {
-            setAiContent(content);
-            contentLoaded.current = true;
-          }
-        }
-      } catch (error) {
-        console.error('Error loading review session:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSessionData();
-  }, [sessionId, pendingReviews, completedSessions, getAIContent]);
+  const handleBackButton = () => {
+    const isFromCompletedSessions = completedSessions.some(session => session.id === sessionId);
+    if (isFromCompletedSessions) {
+      navigate('/completed-sessions');
+    } else {
+      navigate('/pending-reviews');
+    }
+  };
 
   const handleNextCard = () => {
-    if (aiContent && aiContent.flashcards && currentCardIndex < aiContent.flashcards.length - 1) {
+    if (currentCardIndex < aiContent.flashcards.length - 1) {
       setCurrentCardIndex(currentCardIndex + 1);
     } else {
       setCurrentStep('quiz');
@@ -124,33 +116,23 @@ const ReviewSessionPage = () => {
 
   const handleQuizResponse = (questionIndex: number, selectedAnswer: string, correctAnswer: string) => {
     const isCorrect = selectedAnswer === correctAnswer;
+    const response = {
+      questionIndex,
+      selectedAnswer,
+      correctAnswer,
+      isCorrect
+    };
     
     setQuizResponses(prev => {
       const updated = [...prev];
       const existingIndex = updated.findIndex(r => r.questionIndex === questionIndex);
       if (existingIndex >= 0) {
-        updated[existingIndex] = {
-          questionIndex,
-          selectedAnswer,
-          correctAnswer,
-          isCorrect
-        };
+        updated[existingIndex] = response;
       } else {
-        updated.push({
-          questionIndex,
-          selectedAnswer,
-          correctAnswer,
-          isCorrect
-        });
+        updated.push(response);
       }
       return updated;
     });
-  };
-
-  const handleAnswerSelect = (answer: string) => {
-    if (!isAnswerSubmitted) {
-      setSelectedAnswer(answer);
-    }
   };
 
   const handleSubmitAnswer = () => {
@@ -163,67 +145,54 @@ const ReviewSessionPage = () => {
     setSelectedAnswer(null);
     setIsAnswerSubmitted(false);
     
-    if (aiContent && aiContent.quizQuestions && currentQuestionIndex < aiContent.quizQuestions.length - 1) {
+    if (currentQuestionIndex < aiContent.quizQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
       setCurrentStep('summary');
     }
   };
-  
-  const handleFinishReview = () => {
-    // Just navigate to the validation page to handle the actual completion
-    if (reviewSession) {
-      navigate(`/validation`, { state: { reviewSession } });
+
+  const handleAnswerSelect = (answer: string) => {
+    if (!isAnswerSubmitted) {
+      setSelectedAnswer(answer);
     }
   };
 
-  if (loading) {
-    return <ReviewSessionLoading />;
-  }
-
-  if (!reviewSession || !contentLoaded.current) {
-    // Instead of showing an error screen, use aiContent from the session data
-    // This avoids the flash of the error screen
-    if (sessionId) {
-      // Set the session as a completed session view and continue
-      const matchedSession = completedSessions.find(session => session.id === sessionId);
-      
-      if (matchedSession) {
-        // If content hasn't loaded yet but we have the session, wait a bit more
-        return <ReviewSessionLoading />;
-      }
+  const handleFinishReview = async () => {
+    const isFromCompletedSessions = completedSessions.some(session => session.id === sessionId);
+    
+    if (isFromCompletedSessions) {
+      // For completed sessions, just go back to home - no PDF generation
+      setCurrentSession(null);
+      navigate('/home');
+    } else {
+      // For pending reviews, complete the review process
+      const reviewStageNumber = typeof reviewSession.reviewStage === 'string' ? 1 : reviewSession.reviewStage;
+      await completeReviewSession(sessionId!, aiContent, quizResponses, reviewStageNumber);
+      setCurrentSession(null);
     }
-  }
+  };
 
-  // Use content from the AI or fallback to defaults if needed
-  const flashcards = aiContent?.flashcards || [
-    { question: "No flashcards available for this session", answer: "Please try again later" }
-  ];
-  
-  const quizQuestions = aiContent?.quizQuestions || [
-    { 
-      question: "No quiz questions available for this session", 
-      options: ["Option A", "Option B", "Option C", "Option D"], 
-      correctAnswer: "Option A",
-      explanation: "This is a placeholder question."
-    }
-  ];
-  
-  const summary = aiContent?.summary || "Summary not available for this session.";
+  // Determine session type for SummaryView
+  const getSessionType = () => {
+    const isFromCompletedSessions = completedSessions.some(session => session.id === sessionId);
+    return isFromCompletedSessions ? 'completed' : 'pending';
+  };
 
   let pageContent;
+
   if (currentStep === 'flashcards') {
     pageContent = (
-      <FlashcardView 
-        flashcards={flashcards}
+      <FlashcardView
+        flashcards={aiContent.flashcards}
         currentCardIndex={currentCardIndex}
         onNext={handleNextCard}
       />
     );
   } else if (currentStep === 'quiz') {
     pageContent = (
-      <QuizView 
-        quizQuestions={quizQuestions}
+      <QuizView
+        quizQuestions={aiContent.quizQuestions}
         currentQuestionIndex={currentQuestionIndex}
         selectedAnswer={selectedAnswer}
         isAnswerSubmitted={isAnswerSubmitted}
@@ -235,14 +204,12 @@ const ReviewSessionPage = () => {
     );
   } else {
     pageContent = (
-      <SummaryView 
-        summary={summary}
+      <SummaryView
+        summary={aiContent.summary}
         onFinish={handleFinishReview}
-        isReviewSession={!!(reviewSession?.reviewStage && reviewSession.reviewStage > 0)}
-        reviewStage={reviewSession?.reviewStage || 0}
-        sessionId={reviewSession?.id}
+        sessionType={getSessionType()}
+        sessionId={sessionId}
         quizResponses={quizResponses}
-        sessionStatus={reviewSession?.status}
       />
     );
   }
@@ -253,7 +220,7 @@ const ReviewSessionPage = () => {
         <div className="flex items-center justify-between mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate(-1)}
+            onClick={handleBackButton}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
           >
             <ArrowLeft size={20} />
@@ -263,7 +230,7 @@ const ReviewSessionPage = () => {
             {currentStep === 'flashcards' ? 'Review Flashcards' : 
              currentStep === 'quiz' ? 'Knowledge Check' : 'Session Summary'}
           </h1>
-          <div className="w-16" /> {/* Spacer for centering */}
+          <div className="w-16" />
         </div>
         {pageContent}
       </div>

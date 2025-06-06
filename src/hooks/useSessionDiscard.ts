@@ -20,10 +20,12 @@ export const useSessionDiscard = () => {
   };
 
   const handleNavigationAttempt = (destination: string) => {
+    // For validation phase, show confirmation dialog with specific message
     if (currentSession && (currentSession.status === 'focus_in_progress' || currentSession.status === 'uploading')) {
       setShowDiscardDialog(true);
       setPendingNavigation(destination);
     } else if (isInValidationPhase()) {
+      // Show confirmation dialog for validation phase with restart warning
       setShowDiscardDialog(true);
       setPendingNavigation(destination);
     } else if (isInBreakPhase()) {
@@ -40,17 +42,34 @@ export const useSessionDiscard = () => {
         console.log('Handling session discard:', currentSession.id, 'Status:', currentSession.status);
         
         if (isInValidationPhase()) {
-          // Mark session as incomplete for validation phase
-          const { error } = await supabase
-            .from('studysessions')
-            .update({ status: 'incomplete' })
-            .eq('sessionid', currentSession.id);
-
-          if (error) {
-            console.error('Error marking session as incomplete:', error);
+          // For validation phase, determine where to go back based on session type
+          let redirectPath = '/home';
+          
+          if (currentSession.status === 'completed') {
+            redirectPath = '/completed-sessions';
+          } else if (currentSession.reviewStage && currentSession.reviewStage > 0) {
+            redirectPath = '/pending-reviews';
           } else {
-            console.log('Session marked as incomplete successfully');
+            // For new/incomplete sessions, mark as incomplete
+            const { error } = await supabase
+              .from('studysessions')
+              .update({ status: 'incomplete' })
+              .eq('sessionid', currentSession.id);
+
+            if (error) {
+              console.error('Error marking session as incomplete:', error);
+            } else {
+              console.log('Session marked as incomplete successfully');
+            }
+            redirectPath = '/incomplete-sessions';
           }
+
+          // Clear current session from context
+          setCurrentSession(null);
+          setShowDiscardDialog(false);
+          setPendingNavigation(null);
+          navigate(redirectPath);
+          return;
         } else if (isInBreakPhase()) {
           // Mark session as completed for break phase
           const { error } = await supabase
