@@ -60,20 +60,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
                 if (error) {
                   console.error('Error creating user record:', error);
+                  // Don't throw error here as it's not critical for auth flow
+                }
+              } else {
+                // Always update lastloginat on SIGNED_IN event
+                const { error: updateError } = await supabase
+                  .from('users')
+                  .update({ lastloginat: new Date().toISOString() })
+                  .eq('userid', session.user.id);
+
+                if (updateError) {
+                  console.error('Error updating lastloginat:', updateError);
                 }
               }
-              // Always update lastloginat on SIGNED_IN event
-              const { error: updateError } = await supabase
-                .from('users')
-                .update({ lastloginat: new Date().toISOString() })
-                .eq('userid', session.user.id);
-
-              if (updateError) {
-                console.error('Error updating lastloginat:', updateError);
-              }
-              
             } catch (error) {
               console.error('Error handling user record or lastloginat:', error);
+              // Don't throw error here as it's not critical for auth flow
             }
           }, 0);
         }
