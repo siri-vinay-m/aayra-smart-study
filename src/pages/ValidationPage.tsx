@@ -10,8 +10,7 @@ import SummaryView from '@/components/review/SummaryView';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSessionDiscard } from '@/hooks/useSessionDiscard';
-import { useAIContentStorage } from '@/hooks/useAIContentStorage';
-import { useQuizResponses } from '@/hooks/useQuizResponses';
+import { useReviewCompletion } from '@/hooks/useReviewCompletion';
 import DiscardSessionDialog from '@/components/dialogs/DiscardSessionDialog';
 
 const ValidationPage = () => {
@@ -30,8 +29,7 @@ const ValidationPage = () => {
     isCorrect: boolean;
   }>>([]);
   
-  const { storeAIContent } = useAIContentStorage();
-  const { storeAllQuizResponses } = useQuizResponses();
+  const { completeReviewSession, completeNewSession } = useReviewCompletion();
   
   const {
     showDiscardDialog,
@@ -139,30 +137,31 @@ const ValidationPage = () => {
     if (currentSession) {
       console.log('Finishing validation, session status:', currentSession.status);
       
-      // Store AI content and quiz responses before finishing
-      if (currentSession.aiGeneratedContent) {
-        await storeAIContent(currentSession.id, currentSession.aiGeneratedContent, 0);
-      }
-      
-      if (quizResponses.length > 0) {
-        const formattedResponses = quizResponses.map(response => ({
-          questionIndex: response.questionIndex,
-          questionText: quizQuestions[response.questionIndex]?.question || '',
-          selectedAnswer: response.selectedAnswer,
-          correctAnswer: response.correctAnswer,
-          isCorrect: response.isCorrect
-        }));
-        await storeAllQuizResponses(currentSession.id, formattedResponses, 0);
-      }
-      
-      // Check if this is a completed session being reviewed (no longer using 'incomplete' status)
+      // Determine the flow and handle accordingly
       if (currentSession.status === 'completed') {
-        console.log('Completing review of completed session');
+        // Case: Completed Sessions Flow - No PDF generation, navigate to home
+        console.log('Completing review of completed session - no PDF generation');
         setCurrentSession(null);
         navigate('/home');
+      } else if (currentSession.reviewStage && currentSession.reviewStage > 0) {
+        // Case: Pending Reviews Flow - Generate PDF and complete review
+        console.log('Completing pending review session');
+        if (currentSession.aiGeneratedContent) {
+          await completeReviewSession(
+            currentSession.id, 
+            currentSession.aiGeneratedContent, 
+            quizResponses, 
+            currentSession.reviewStage
+          );
+        }
       } else {
-        console.log('Regular session flow - going to break');
-        // Update status to 'break_in_progress' when user clicks "Take a Break"
+        // Case: New Session Flow or Incomplete Session Flow - Generate PDF and take break
+        console.log('New session or incomplete session flow - generating PDF and taking break');
+        if (currentSession.aiGeneratedContent) {
+          await completeNewSession(currentSession.id, currentSession.aiGeneratedContent, quizResponses);
+        }
+        
+        // Update status to 'break_in_progress' and navigate to break timer
         const updatedSession = { ...currentSession, status: 'break_in_progress' as const };
         setCurrentSession(updatedSession);
         await updateCurrentSessionStatus('break_in_progress');
@@ -205,10 +204,11 @@ const ValidationPage = () => {
       <SummaryView
         summary={summary}
         onFinish={handleFinishValidation}
-        isReviewSession={currentSession.status === 'completed'}
-        reviewStage={0} // For new sessions, always use stage 0
+        isReviewSession={!!(currentSession.reviewStage && currentSession.reviewStage > 0)}
+        reviewStage={currentSession.reviewStage || 0}
         sessionId={currentSession.id}
         quizResponses={quizResponses}
+        sessionStatus={currentSession.status}
       />
     );
   }

@@ -49,34 +49,10 @@ export const useSessionAI = () => {
 
       console.log('Materials found:', materials?.length || 0);
 
-      // If no materials found, create default content
+      // If no materials found, return null to indicate no content should be generated
       if (!materials || materials.length === 0) {
-        console.log('No materials found, creating default content');
-        const defaultContent = {
-          flashcards: [
-            {
-              question: `What was the main topic covered in the "${sessionName}" session?`,
-              answer: "This session was created to help you study effectively. Use active recall and spaced repetition to improve your learning outcomes."
-            },
-            {
-              question: "How can you make the most of your study sessions?",
-              answer: "Focus on understanding core concepts, practice regularly, and connect new information to what you already know."
-            }
-          ],
-          quizQuestions: [
-            {
-              question: `What was the primary goal of the "${sessionName}" study session?`,
-              options: ["Effective learning and retention", "Passive reading", "Memorization only", "Time filling"],
-              correctAnswer: "Effective learning and retention",
-              explanation: "The goal of any study session should be to actively engage with material for better understanding and retention."
-            }
-          ],
-          summary: `This study session "${sessionName}" was designed to help you practice effective learning techniques. Continue to use active study methods and regular review to maximize your learning potential.`
-        };
-        
-        // Store the AI content
-        await storeAIContent(sessionId, defaultContent, reviewStage);
-        return defaultContent;
+        console.log('No materials found for session, cannot generate AI content');
+        return null;
       }
 
       // Convert database materials to AI processing format
@@ -93,32 +69,11 @@ export const useSessionAI = () => {
       const aiResponse = await processStudyMaterials(studyMaterials, sessionName);
       
       if (!aiResponse) {
-        console.log('AI processing failed, creating fallback content');
-        // Create fallback content if AI processing completely fails
-        const fallbackContent = {
-          flashcards: [
-            {
-              question: `What materials were studied in the "${sessionName}" session?`,
-              answer: "This session included uploaded study materials. Review them carefully and practice active recall techniques."
-            }
-          ],
-          quizQuestions: [
-            {
-              question: `What type of materials were uploaded for the "${sessionName}" session?`,
-              options: ["Study documents and materials", "Random files", "Empty content", "No materials"],
-              correctAnswer: "Study documents and materials",
-              explanation: "The session included educational materials that you uploaded for studying."
-            }
-          ],
-          summary: `The "${sessionName}" session included your uploaded study materials. Continue to review and practice with these materials for better learning outcomes.`
-        };
-        
-        // Store the AI content
-        await storeAIContent(sessionId, fallbackContent, reviewStage);
-        return fallbackContent;
+        console.log('AI processing failed, no content generated');
+        return null;
       }
 
-      console.log('AI content generated successfully');
+      console.log('AI content generated successfully based on uploaded materials');
       
       // Store the AI content
       await storeAIContent(sessionId, aiResponse, reviewStage);

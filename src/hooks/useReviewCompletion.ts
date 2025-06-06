@@ -72,7 +72,7 @@ export const useReviewCompletion = () => {
         .eq('sessionid', sessionId)
         .single();
 
-      // Generate PDF for the session
+      // Generate PDF for the review session
       console.log('Generating PDF for review session with stage:', reviewStage);
       try {
         await generateSessionPDF(sessionId, sessionData?.sessionname || 'Review Session', aiContentWithResults, reviewStage);
@@ -225,8 +225,8 @@ export const useReviewCompletion = () => {
         .eq('sessionid', sessionId)
         .single();
 
-      // Generate PDF for the session
-      console.log('Generating PDF for new session...');
+      // Generate PDF for the session (only for new sessions and incomplete sessions)
+      console.log('Generating PDF for new/incomplete session...');
       try {
         await generateSessionPDF(sessionId, sessionData?.sessionname || 'Study Session', aiContentWithResults, 0);
         console.log('PDF generation completed successfully');
@@ -235,9 +235,6 @@ export const useReviewCompletion = () => {
         // Don't fail the entire completion if PDF generation fails
       }
 
-      // Navigate to home page
-      navigate('/home');
-      
       toast({
         title: "Session Completed!",
         description: "Your study session has been completed and saved.",
@@ -249,10 +246,8 @@ export const useReviewCompletion = () => {
         description: "Failed to complete session. Please try again.",
         variant: "destructive"
       });
-      // Still navigate to home even if there's an error
-      navigate('/home');
     }
-  }, [navigate, toast, storeAIContent, storeAllQuizResponses, generateSessionPDF]);
+  }, [toast, storeAIContent, storeAllQuizResponses, generateSessionPDF]);
 
   return {
     completeReviewSession,

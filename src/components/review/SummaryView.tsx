@@ -19,6 +19,7 @@ interface SummaryViewProps {
   sessionId?: string;
   reviewStage?: number;
   quizResponses?: QuizResponse[];
+  sessionStatus?: string; // Add this to identify the source flow
 }
 
 const SummaryView: React.FC<SummaryViewProps> = ({
@@ -28,7 +29,8 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   reviewId,
   sessionId,
   reviewStage = 0,
-  quizResponses = []
+  quizResponses = [],
+  sessionStatus
 }) => {
   const { completeReviewSession, completeNewSession } = useReviewCompletion();
 
@@ -39,6 +41,19 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   };
 
   const score = calculateScore();
+
+  const getButtonText = () => {
+    // If this is from completed sessions flow, show "Complete Review"
+    if (sessionStatus === 'completed') {
+      return 'Complete Review';
+    }
+    // For pending reviews
+    if (isReviewSession) {
+      return 'Complete Review';
+    }
+    // For new sessions and incomplete sessions
+    return 'Take a Break';
+  };
 
   return (
     <div className="space-y-6">
@@ -81,7 +96,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
           onClick={onFinish}
           className="bg-primary hover:bg-primary/90 px-8 py-3 text-lg text-white"
         >
-          {isReviewSession ? 'Complete Review' : 'Complete Session'}
+          {getButtonText()}
         </Button>
       </div>
     </div>
