@@ -45,7 +45,7 @@ const SummaryView: React.FC<SummaryViewProps> = ({
   const getButtonText = () => {
     // If this is from completed sessions flow, show "Complete Review"
     if (sessionStatus === 'completed') {
-      return 'Complete Review';
+      return 'Back to Home';
     }
     // For pending reviews
     if (isReviewSession) {

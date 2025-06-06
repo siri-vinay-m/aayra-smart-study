@@ -140,7 +140,7 @@ const ValidationPage = () => {
       // Determine the flow and handle accordingly
       if (currentSession.status === 'completed') {
         // Case: Completed Sessions Flow - No PDF generation, navigate to home
-        console.log('Completing review of completed session - no PDF generation');
+        console.log('Completing review of completed session - navigating to home');
         setCurrentSession(null);
         navigate('/home');
       } else if (currentSession.reviewStage && currentSession.reviewStage > 0) {

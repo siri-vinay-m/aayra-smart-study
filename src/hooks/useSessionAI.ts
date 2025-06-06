@@ -15,7 +15,7 @@ interface StudyMaterial {
 export const useSessionAI = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { processStudyMaterials } = useAI();
-  const { storeAIContent } = useAIContentStorage();
+  const { storeAIContent, getAIContent } = useAIContentStorage();
   const generatingSessionsRef = useRef<Set<string>>(new Set());
 
   const generateAIContentForSession = async (
@@ -28,6 +28,13 @@ export const useSessionAI = () => {
     if (generatingSessionsRef.current.has(sessionKey)) {
       console.log('Already generating content for session:', sessionId, 'stage:', reviewStage);
       return null;
+    }
+    
+    // Check if we already have AI content stored
+    const existingContent = await getAIContent(sessionId, reviewStage);
+    if (existingContent) {
+      console.log('Found existing AI content for session:', sessionId, 'stage:', reviewStage);
+      return existingContent;
     }
 
     generatingSessionsRef.current.add(sessionKey);
