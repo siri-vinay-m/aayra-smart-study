@@ -113,15 +113,46 @@ export const useReviewOperations = () => {
     }
   };
 
+  // Helper function to calculate next review date based on spaced repetition
+  const calculateNextReviewDate = (currentStage: number): string => {
+    const now = new Date();
+    let daysToAdd = 1;
+    
+    switch (currentStage) {
+      case 1: daysToAdd = 3; break;
+      case 2: daysToAdd = 7; break;
+      case 3: daysToAdd = 14; break;
+      case 4: daysToAdd = 30; break;
+      case 5: daysToAdd = 90; break;
+      default: daysToAdd = 180; break;
+    }
+    
+    now.setDate(now.getDate() + daysToAdd);
+    return now.toISOString().split('T')[0];
+  };
+
   const markReviewAsCompleted = async (reviewId: string) => {
     try {
       const { data: authUser } = await supabase.auth.getUser();
-      if (!authUser.user) return;
+      if (!authUser.user) return false;
 
       console.log('Marking review as completed:', reviewId);
 
-      // Update review cycle entry status to completed
-      const { error } = await supabase
+      // First, get the current review entry to extract session info and current stage
+      const { data: currentReview, error: fetchError } = await supabase
+        .from('reviewcycleentries')
+        .select('*')
+        .eq('entryid', reviewId)
+        .eq('userid', authUser.user.id)
+        .single();
+
+      if (fetchError || !currentReview) {
+        console.error('Error fetching review entry:', fetchError);
+        return false;
+      }
+
+      // Update current review cycle entry status to completed
+      const { error: updateError } = await supabase
         .from('reviewcycleentries')
         .update({ 
           status: 'completed',
@@ -130,12 +161,49 @@ export const useReviewOperations = () => {
         .eq('entryid', reviewId)
         .eq('userid', authUser.user.id);
 
-      if (error) {
-        console.error('Error marking review as completed:', error);
+      if (updateError) {
+        console.error('Error marking review as completed:', updateError);
         return false;
       }
 
       console.log('Review marked as completed successfully');
+
+      // Create next review cycle entry if we haven't reached the maximum stage (6)
+      const currentStage = currentReview.reviewstage;
+      if (currentStage < 6) {
+        const nextStage = currentStage + 1;
+        const nextReviewDate = calculateNextReviewDate(currentStage);
+
+        const { error: nextEntryError } = await supabase
+          .from('reviewcycleentries')
+          .insert({
+            sessionid: currentReview.sessionid,
+            userid: authUser.user.id,
+            initialappearancedate: currentReview.initialappearancedate,
+            currentreviewduedate: nextReviewDate,
+            reviewstage: nextStage,
+            status: 'pending'
+          });
+
+        if (nextEntryError) {
+          console.error('Error creating next review cycle entry:', nextEntryError);
+        } else {
+          console.log('Next review cycle entry created for stage:', nextStage);
+        }
+      }
+
+      // Update session last reviewed date
+      const { error: sessionError } = await supabase
+        .from('studysessions')
+        .update({ 
+          lastreviewedat: new Date().toISOString(),
+          updatedat: new Date().toISOString()
+        })
+        .eq('sessionid', currentReview.sessionid);
+
+      if (sessionError) {
+        console.error('Error updating session last reviewed date:', sessionError);
+      }
       
       // Reload pending reviews to reflect changes
       await loadPendingReviews();
