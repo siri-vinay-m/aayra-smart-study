@@ -1,3 +1,4 @@
+
 export type SessionStatus = 'focus_in_progress' | 'uploading' | 'validating' | 'break_in_progress' | 'completed' | 'incomplete';
 
 export interface AIGeneratedContent {
@@ -29,6 +30,7 @@ export interface StudySession {
   createdAt: Date;
   isFavorite?: boolean;
   aiGeneratedContent?: AIGeneratedContent;
+  reviewStage?: number; // Added optional reviewStage property
 }
 
 export interface PendingReview {
