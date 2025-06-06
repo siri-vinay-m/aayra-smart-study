@@ -35,47 +35,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(session?.user ?? null);
         setLoading(false);
 
-        // If user signs in, create/update user record in Users table
+        // If user signs in, just update lastloginat since trigger handles user creation
         if (event === 'SIGNED_IN' && session?.user) {
           setTimeout(async () => {
             try {
-              const { data: existingUser } = await supabase
+              // Update lastloginat on SIGNED_IN event
+              const { error: updateError } = await supabase
                 .from('users')
-                .select('*')
-                .eq('userid', session.user.id)
-                .single();
+                .update({ lastloginat: new Date().toISOString() })
+                .eq('userid', session.user.id);
 
-              if (!existingUser) {
-                // Create user record if it doesn't exist
-                const { error } = await supabase
-                  .from('users')
-                  .insert({
-                    userid: session.user.id,
-                    email: session.user.email || '',
-                    displayname: session.user.user_metadata?.display_name || 'User',
-                    studentcategory: session.user.user_metadata?.student_category || 'college',
-                    passwordhash: '', // Managed by Supabase Auth
-                    emailverified: session.user.email_confirmed_at ? true : false
-                  });
-
-                if (error) {
-                  console.error('Error creating user record:', error);
-                  // Don't throw error here as it's not critical for auth flow
-                }
-              } else {
-                // Always update lastloginat on SIGNED_IN event
-                const { error: updateError } = await supabase
-                  .from('users')
-                  .update({ lastloginat: new Date().toISOString() })
-                  .eq('userid', session.user.id);
-
-                if (updateError) {
-                  console.error('Error updating lastloginat:', updateError);
-                }
+              if (updateError) {
+                console.error('Error updating lastloginat:', updateError);
               }
             } catch (error) {
-              console.error('Error handling user record or lastloginat:', error);
-              // Don't throw error here as it's not critical for auth flow
+              console.error('Error updating lastloginat:', error);
             }
           }, 0);
         }
