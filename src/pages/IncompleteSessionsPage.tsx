@@ -3,13 +3,18 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
+import { useIncompleteSession } from '@/hooks/useIncompleteSession';
 import { format } from 'date-fns';
 import { Folder, ArrowLeft } from 'lucide-react';
 
 const IncompleteSessionsPage = () => {
-  const { incompleteSessions, setCurrentSession } = useSession();
+  const { incompleteSessions } = useSession();
   const navigate = useNavigate();
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [selectedSession, setSelectedSession] = useState(null);
+  
+  // Use the hook to handle incomplete session setup
+  useIncompleteSession(selectedSession);
   
   // Group sessions by subject name
   const sessionsBySubject = incompleteSessions.reduce((acc, session) => {
@@ -32,10 +37,7 @@ const IncompleteSessionsPage = () => {
   
   const handleSessionClick = (session: any) => {
     console.log('Resuming incomplete session:', session.id, 'Status:', session.status);
-    
-    // Set current session and navigate to validation page to complete the session
-    setCurrentSession(session);
-    navigate('/validation');
+    setSelectedSession(session);
   };
 
   const handleSubjectClick = (subject: string) => {

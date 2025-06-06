@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PendingReview } from '@/types/session';
@@ -112,10 +113,44 @@ export const useReviewOperations = () => {
     }
   };
 
+  const markReviewAsCompleted = async (reviewId: string) => {
+    try {
+      const { data: authUser } = await supabase.auth.getUser();
+      if (!authUser.user) return;
+
+      console.log('Marking review as completed:', reviewId);
+
+      // Update review cycle entry status to completed
+      const { error } = await supabase
+        .from('reviewcycleentries')
+        .update({ 
+          status: 'completed',
+          updatedat: new Date().toISOString()
+        })
+        .eq('entryid', reviewId)
+        .eq('userid', authUser.user.id);
+
+      if (error) {
+        console.error('Error marking review as completed:', error);
+        return false;
+      }
+
+      console.log('Review marked as completed successfully');
+      
+      // Reload pending reviews to reflect changes
+      await loadPendingReviews();
+      return true;
+    } catch (error) {
+      console.error('Error in markReviewAsCompleted:', error);
+      return false;
+    }
+  };
+
   return {
     pendingReviews,
     setPendingReviews,
     loadPendingReviews,
     completeSession,
+    markReviewAsCompleted,
   };
 };

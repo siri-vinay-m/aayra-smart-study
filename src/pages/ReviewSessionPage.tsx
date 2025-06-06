@@ -16,7 +16,7 @@ import { PendingReview } from '@/types/session';
 const ReviewSessionPage = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
-  const { pendingReviews, completedSessions, setCurrentSession } = useSession();
+  const { pendingReviews, completedSessions, setCurrentSession, markReviewAsCompleted } = useSession();
   const [currentStep, setCurrentStep] = useState<'flashcards' | 'quiz' | 'summary'>('flashcards');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -77,7 +77,7 @@ const ReviewSessionPage = () => {
         focusDurationMinutes: 25,
         breakDurationMinutes: 5,
         createdAt: new Date(),
-        startTime: new Date(), // Changed from string to Date to match StudySession interface
+        startTime: new Date(),
         completedAt: undefined,
         isFavorite: false
       };
@@ -98,14 +98,32 @@ const ReviewSessionPage = () => {
       <MainLayout>
         <ReviewSessionError
           onRetry={() => window.location.reload()}
+          onBackToReviews={() => {
+            const isFromCompletedSessions = completedSessions.some(session => session.id === sessionId);
+            if (isFromCompletedSessions) {
+              navigate('/completed-sessions');
+            } else {
+              navigate('/pending-reviews');
+            }
+          }}
         />
       </MainLayout>
     );
   }
 
-  const handleBackButton = () => {
+  const handleBackButton = async () => {
     const isFromCompletedSessions = completedSessions.some(session => session.id === sessionId);
-    if (isFromCompletedSessions) {
+    const isPendingReview = pendingReviews.some(review => review.sessionId === sessionId);
+    
+    if (isPendingReview) {
+      // For pending reviews, mark as completed and go to home
+      const success = await markReviewAsCompleted(reviewSession.id);
+      if (success) {
+        navigate('/home');
+      } else {
+        navigate('/pending-reviews');
+      }
+    } else if (isFromCompletedSessions) {
       navigate('/completed-sessions');
     } else {
       navigate('/pending-reviews');
@@ -166,13 +184,21 @@ const ReviewSessionPage = () => {
 
   const handleFinishReview = async () => {
     const isFromCompletedSessions = completedSessions.some(session => session.id === sessionId);
+    const isPendingReview = pendingReviews.some(review => review.sessionId === sessionId);
     
     if (isFromCompletedSessions) {
       // For completed sessions, just go back to home - no PDF generation
       setCurrentSession(null);
       navigate('/home');
+    } else if (isPendingReview) {
+      // For pending reviews, complete the review process and mark as completed
+      const reviewStageNumber = typeof reviewSession.reviewStage === 'string' ? 1 : reviewSession.reviewStage;
+      await completeReviewSession(sessionId!, aiContent, quizResponses, reviewStageNumber);
+      await markReviewAsCompleted(reviewSession.id);
+      setCurrentSession(null);
+      navigate('/home');
     } else {
-      // For pending reviews, complete the review process
+      // For other sessions, complete normally
       const reviewStageNumber = typeof reviewSession.reviewStage === 'string' ? 1 : reviewSession.reviewStage;
       await completeReviewSession(sessionId!, aiContent, quizResponses, reviewStageNumber);
       setCurrentSession(null);

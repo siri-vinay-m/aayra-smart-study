@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 export const useSessionDiscard = () => {
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
-  const { currentSession, setCurrentSession } = useSession();
+  const { currentSession, setCurrentSession, loadIncompleteSessions } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -42,15 +42,23 @@ export const useSessionDiscard = () => {
         console.log('Handling session discard:', currentSession.id, 'Status:', currentSession.status);
         
         if (isInValidationPhase()) {
-          // For validation phase, determine where to go back based on session type
-          let redirectPath = '/home';
-          
-          if (currentSession.status === 'completed') {
-            redirectPath = '/completed-sessions';
-          } else if (currentSession.reviewStage && currentSession.reviewStage > 0) {
-            redirectPath = '/pending-reviews';
+          // For validation phase, determine action based on session origin
+          if (currentSession.reviewStage && currentSession.reviewStage > 0) {
+            // This is a pending review session - navigate back to pending reviews
+            setCurrentSession(null);
+            setShowDiscardDialog(false);
+            setPendingNavigation(null);
+            navigate('/pending-reviews');
+            return;
+          } else if (currentSession.status === 'completed') {
+            // This is a completed session review - navigate back to completed sessions
+            setCurrentSession(null);
+            setShowDiscardDialog(false);
+            setPendingNavigation(null);
+            navigate('/completed-sessions');
+            return;
           } else {
-            // For new/incomplete sessions, mark as incomplete
+            // This is a new session or incomplete session - mark as incomplete and go to home
             const { error } = await supabase
               .from('studysessions')
               .update({ status: 'incomplete' })
@@ -60,16 +68,16 @@ export const useSessionDiscard = () => {
               console.error('Error marking session as incomplete:', error);
             } else {
               console.log('Session marked as incomplete successfully');
+              // Reload incomplete sessions to reflect the change
+              await loadIncompleteSessions();
             }
-            redirectPath = '/incomplete-sessions';
+            
+            setCurrentSession(null);
+            setShowDiscardDialog(false);
+            setPendingNavigation(null);
+            navigate('/home'); // Always go to home for new/incomplete sessions
+            return;
           }
-
-          // Clear current session from context
-          setCurrentSession(null);
-          setShowDiscardDialog(false);
-          setPendingNavigation(null);
-          navigate(redirectPath);
-          return;
         } else if (isInBreakPhase()) {
           // Mark session as completed for break phase
           const { error } = await supabase

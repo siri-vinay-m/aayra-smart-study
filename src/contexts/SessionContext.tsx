@@ -24,6 +24,7 @@ interface SessionContextType {
   loadIncompleteSessions: () => Promise<void>;
   loadPendingReviews: () => Promise<void>;
   toggleFavorite: (sessionId: string) => Promise<void>;
+  markReviewAsCompleted: (reviewId: string) => Promise<boolean>;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -74,6 +75,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         loadIncompleteSessions: sessionOps.loadIncompleteSessions,
         loadPendingReviews: reviewOps.loadPendingReviews,
         toggleFavorite: sessionOps.toggleFavorite,
+        markReviewAsCompleted: reviewOps.markReviewAsCompleted,
       }}
     >
       {children}
