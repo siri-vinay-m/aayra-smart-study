@@ -27,10 +27,10 @@ const ReviewSessionError: React.FC<ReviewSessionErrorProps> = ({
           </Button>
         )}
         <Button 
-          onClick={() => navigate('/pending-reviews')}
+          onClick={() => navigate('/home')}
           className="bg-primary text-white hover:bg-primary/90"
         >
-          Back to Reviews
+          Back to Home
         </Button>
       </div>
     </div>

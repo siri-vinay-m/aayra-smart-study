@@ -12,6 +12,7 @@ import ReviewSessionError from '@/components/review/ReviewSessionError';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useReviewCompletion } from '@/hooks/useReviewCompletion';
+import { PendingReview } from '@/types/session';
 
 const ReviewSessionPage = () => {
   const { sessionId } = useParams();
@@ -38,15 +39,19 @@ const ReviewSessionPage = () => {
     
     const completedSession = completedSessions.find(session => session.id === sessionId);
     if (completedSession) {
-      // Convert completed session to review session format
-      return {
+      // Convert completed session to review session format with all required properties
+      const convertedSession: PendingReview = {
+        id: completedSession.id,
         sessionId: completedSession.id,
         sessionName: completedSession.sessionName,
         subjectName: completedSession.subjectName,
         topicName: completedSession.topicName,
-        reviewStage: 'Review' as const,
-        dueDate: new Date().toISOString()
+        reviewStage: 'Review',
+        dueDate: new Date().toISOString(),
+        completedAt: new Date(),
+        aiGeneratedContent: completedSession.aiGeneratedContent
       };
+      return convertedSession;
     }
     
     return null;
@@ -58,16 +63,20 @@ const ReviewSessionPage = () => {
     if (reviewSession && aiContent) {
       // Set up the session as current session for validation flow
       const isFromCompletedSessions = completedSessions.some(session => session.id === sessionId);
+      const reviewStageNumber = typeof reviewSession.reviewStage === 'string' ? 0 : reviewSession.reviewStage;
+      
       const sessionForValidation = {
         id: sessionId!,
         sessionName: reviewSession.sessionName,
         subjectName: reviewSession.subjectName,
         topicName: reviewSession.topicName,
         status: isFromCompletedSessions ? 'completed' as const : 'validating' as const,
-        reviewStage: typeof reviewSession.reviewStage === 'string' ? 0 : reviewSession.reviewStage,
+        reviewStage: reviewStageNumber,
         aiGeneratedContent: aiContent,
         focusDuration: 25,
         breakDuration: 5,
+        focusDurationMinutes: 25,
+        breakDurationMinutes: 5,
         createdAt: new Date().toISOString(),
         startTime: new Date().toISOString(),
         endTime: null,
@@ -91,7 +100,6 @@ const ReviewSessionPage = () => {
       <MainLayout>
         <ReviewSessionError
           onRetry={() => window.location.reload()}
-          onBackToReviews={() => navigate('/pending-reviews')}
         />
       </MainLayout>
     );

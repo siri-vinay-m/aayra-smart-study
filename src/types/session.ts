@@ -30,7 +30,7 @@ export interface StudySession {
   createdAt: Date;
   isFavorite?: boolean;
   aiGeneratedContent?: AIGeneratedContent;
-  reviewStage?: number; // Added optional reviewStage property
+  reviewStage?: number;
 }
 
 export interface PendingReview {
@@ -40,7 +40,7 @@ export interface PendingReview {
   subjectName: string;
   topicName: string;
   completedAt: Date;
-  dueDate: Date;
-  reviewStage: string;
+  dueDate: string;
+  reviewStage: string | number;
   aiGeneratedContent?: AIGeneratedContent;
 }
