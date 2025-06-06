@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
@@ -178,15 +179,20 @@ const ReviewSessionPage = () => {
     const isFromCompletedSessions = completedSessions.some(session => session.id === sessionId);
     const isPendingReview = pendingReviews.some(review => review.sessionId === sessionId);
     
-    if (isFromCompletedSessions) {
+    if (isPendingReview) {
+      // For pending reviews, always mark as completed first
+      const success = await markReviewAsCompleted(reviewSession.id);
+      if (success) {
+        // Then complete the review session for tracking purposes
+        const reviewStageNumber = typeof reviewSession.reviewStage === 'string' ? 1 : reviewSession.reviewStage;
+        await completeReviewSession(sessionId!, aiContent, quizResponses, reviewStageNumber);
+        setCurrentSession(null);
+        navigate('/home');
+      } else {
+        navigate('/pending-reviews');
+      }
+    } else if (isFromCompletedSessions) {
       // For completed sessions, just go back to home - no PDF generation
-      setCurrentSession(null);
-      navigate('/home');
-    } else if (isPendingReview) {
-      // For pending reviews, complete the review process and mark as completed
-      const reviewStageNumber = typeof reviewSession.reviewStage === 'string' ? 1 : reviewSession.reviewStage;
-      await completeReviewSession(sessionId!, aiContent, quizResponses, reviewStageNumber);
-      await markReviewAsCompleted(reviewSession.id);
       setCurrentSession(null);
       navigate('/home');
     } else {
