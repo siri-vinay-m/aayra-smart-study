@@ -10,6 +10,7 @@ import SubscriptionStatusCard from '@/components/profile/SubscriptionStatusCard'
 import NotificationCard from '@/components/profile/NotificationCard';
 import ProfileForm from '@/components/profile/ProfileForm';
 import ProfileActions from '@/components/profile/ProfileActions';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const ProfilePage = () => {
   const { user, setUser, loadUserData, checkSubscriptionStatus } = useUser();
@@ -289,6 +290,17 @@ const ProfilePage = () => {
           notificationPermission={notificationPermission}
           onEnableNotifications={handleEnableNotifications}
         />
+        
+        {/* Theme Settings */}
+        <div className="bg-white rounded-lg shadow-sm border p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-medium">Appearance</h3>
+              <p className="text-sm text-gray-500">Choose your preferred theme</p>
+            </div>
+            <ThemeToggle />
+          </div>
+        </div>
         
         <ProfileActions
           onSaveProfile={handleSaveProfile}

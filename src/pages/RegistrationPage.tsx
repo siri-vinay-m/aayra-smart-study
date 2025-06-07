@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PasswordInput } from '@/components/ui/password-input';
+import { PasswordStrengthIndicator } from '@/components/ui/password-strength-indicator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { type StudentCategory } from '@/contexts/UserContext';
@@ -33,10 +35,19 @@ const RegistrationPage = () => {
       return;
     }
     
-    if (password.length < 6) {
+    // Enhanced password validation
+    const passwordValidation = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /\d/.test(password),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    };
+    
+    if (!Object.values(passwordValidation).every(Boolean)) {
       toast({
         title: "Error",
-        description: "Password must be at least 6 characters long.",
+        description: "Password does not meet security requirements.",
         variant: "destructive"
       });
       return;
@@ -121,25 +132,30 @@ const RegistrationPage = () => {
             
             <div>
               <Label htmlFor="password">Password</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder="Enter your password"
               />
+              {password && (
+                <PasswordStrengthIndicator 
+                  password={password} 
+                  confirmPassword={confirmPassword}
+                  showMatchIndicator={confirmPassword.length > 0}
+                />
+              )}
             </div>
             
             <div>
               <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
+              <PasswordInput
                 id="confirmPassword"
-                type="password"
+                placeholder="Confirm your password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                placeholder="Confirm your password"
               />
             </div>
           </div>

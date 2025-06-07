@@ -1,10 +1,12 @@
 
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PasswordInput } from '@/components/ui/password-input';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -67,30 +69,34 @@ const LoginPage = () => {
             
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </div>
             
-            <Button 
-              type="submit" 
-              className="w-full bg-orange-500 hover:bg-orange-600"
-              disabled={loading}
-            >
-              {loading ? 'Logging in...' : 'Log In'}
+            <div className="flex items-center justify-between mb-4">
+              <Link 
+                to="/forgot-password" 
+                className="text-sm text-orange-500 hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+            
+            <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
           
-          <div className="mt-6 text-center">
-            <p>
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-600">
               Don't have an account?{' '}
               <Link to="/register" className="text-orange-500 hover:underline">
-                Register
+                Sign up
               </Link>
             </p>
           </div>

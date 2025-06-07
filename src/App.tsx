@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "@/components/ui/theme-toggle";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { SessionProvider } from "./contexts/SessionContext";
@@ -14,6 +15,8 @@ import RootRedirect from "./components/auth/RootRedirect";
 import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import RegistrationPage from "./pages/RegistrationPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import HomePage from "./pages/HomePage";
 import ProfilePage from "./pages/ProfilePage";
 import NewSessionPage from "./pages/NewSessionPage";
@@ -39,20 +42,23 @@ const StudyReminderManager = () => {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <UserProvider>
-              <SessionProvider>
-                <TimerProvider>
-                  <StudyReminderManager />
-                  <Routes>
+      <ThemeProvider defaultTheme="system" storageKey="aayra-ui-theme">
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <UserProvider>
+                <SessionProvider>
+                  <TimerProvider>
+                    <StudyReminderManager />
+                    <Routes>
                     <Route path="/" element={<RootRedirect />} />
                     <Route path="/index" element={<Index />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegistrationPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
                     <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
                     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                     <Route path="/new-session" element={<ProtectedRoute><NewSessionPage /></ProtectedRoute>} />
@@ -73,6 +79,7 @@ function App() {
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
