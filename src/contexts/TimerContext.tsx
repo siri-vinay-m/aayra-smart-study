@@ -75,11 +75,6 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       playAlarmSound();
       
       if (timerType === 'focus') {
-        toast({
-          title: "Focus session completed!",
-          description: "Now let's capture what you've learned.",
-          variant: "default",
-        });
         // Update status to 'uploading' when focus timer completes
         if (currentSession && updateCurrentSessionStatus) {
           updateCurrentSessionStatus('uploading');
@@ -87,11 +82,6 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         navigate('/upload');
       } else {
         // Break timer completed - mark session as completed
-        toast({
-          title: "Break completed!",
-          description: "Session completed successfully!",
-          variant: "default",
-        });
         if (currentSession && updateCurrentSessionStatus) {
           updateCurrentSessionStatus('completed');
         }

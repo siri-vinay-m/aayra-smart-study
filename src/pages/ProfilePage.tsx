@@ -108,10 +108,6 @@ const ProfilePage = () => {
     const granted = await requestNotificationPermission();
     if (granted) {
       setNotificationPermission('granted');
-      toast({
-        title: "Notifications Enabled",
-        description: "You'll receive study reminders 15 minutes before your preferred study time.",
-      });
     } else {
       toast({
         title: "Notifications Blocked",
@@ -229,11 +225,6 @@ const ProfilePage = () => {
         }));
         
         setSelectedFile(null);
-        
-        toast({
-          title: "Success",
-          description: "Profile updated successfully! Study reminders will be scheduled based on your preferences."
-        });
         
         await loadUserData();
       }

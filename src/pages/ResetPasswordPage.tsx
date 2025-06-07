@@ -82,11 +82,6 @@ const ResetPasswordPage = () => {
         throw error;
       }
 
-      toast({
-        title: "Password Updated",
-        description: "Your password has been successfully updated.",
-      });
-
       // Redirect to login page
       navigate('/login');
     } catch (error: any) {

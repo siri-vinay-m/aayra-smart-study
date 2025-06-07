@@ -44,18 +44,18 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <AayraLogo size={48} className="flex-shrink-0" />
-            <h1 className="text-4xl font-bold text-orange-500">AAYRA</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-3 sm:px-4">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8">
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
+            <AayraLogo size={40} className="sm:w-12 sm:h-12" />
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">AAYRA</h2>
           </div>
-          <p className="text-gray-600">The Smarter way to Master more.</p>
+          <p className="text-gray-600 text-sm sm:text-base">Sign in to your account</p>
         </div>
         
-        <div className="bg-white p-8 rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-6">Log In</h2>
+        <div className="bg-white p-6 sm:p-8 rounded-lg shadow-md">
+          <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Log In</h2>
           
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded">
@@ -63,7 +63,7 @@ const LoginPage = () => {
             </div>
           )}
           
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -87,22 +87,22 @@ const LoginPage = () => {
               />
             </div>
             
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
               <Link 
                 to="/forgot-password" 
-                className="text-sm text-orange-500 hover:underline"
+                className="text-xs sm:text-sm text-orange-500 hover:underline"
               >
                 Forgot password?
               </Link>
             </div>
             
-            <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={loading}>
+            <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 h-10 sm:h-11" disabled={loading}>
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
           
-          <div className="text-center mt-4">
-            <p className="text-sm text-gray-600">
+          <div className="text-center mt-3 sm:mt-4">
+            <p className="text-xs sm:text-sm text-gray-600">
               Don't have an account?{' '}
               <Link to="/register" className="text-orange-500 hover:underline">
                 Sign up
