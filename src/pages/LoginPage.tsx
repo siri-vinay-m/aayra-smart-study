@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
+import AayraLogo from '@/components/ui/aayra-logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -46,7 +47,10 @@ const LoginPage = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-orange-500 mb-2">AAYRA</h1>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <AayraLogo size={48} className="flex-shrink-0" />
+            <h1 className="text-4xl font-bold text-orange-500">AAYRA</h1>
+          </div>
           <p className="text-gray-600">The Smarter way to Master more.</p>
         </div>
         
