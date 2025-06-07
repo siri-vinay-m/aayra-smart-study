@@ -57,12 +57,10 @@ const RegistrationPage = () => {
     
     try {
       await signUp(email, password, displayName, studentCategory);
-      
       toast({
-        title: "Success",
-        description: "Registration successful! Please check your email to verify your account."
+        title: "Registration successful!",
+        description: "Please check your email to verify your account.",
       });
-      
       navigate('/login');
     } catch (error: any) {
       console.error('Registration error:', error);

@@ -28,8 +28,13 @@ const LoginPage = () => {
     }
 
     try {
-      await signIn(email, password);
-      navigate('/home');
+      const result = await signIn(email, password);
+      // Redirect based on whether this is a first-time login
+      if (result.isFirstTimeLogin) {
+        navigate('/profile');
+      } else {
+        navigate('/home');
+      }
     } catch (error: any) {
       setError(error.message || 'Login failed');
     } finally {

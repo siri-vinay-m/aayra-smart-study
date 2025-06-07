@@ -60,11 +60,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (error) throw error;
+
+    if (error) {
+      throw error;
+    }
+
+    // Check if this is a first-time login by checking if user has completed profile
+    if (data.user) {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('displayname, studentcategory')
+        .eq('userid', data.user.id)
+        .single();
+      
+      if (!userError && userData) {
+        // Mark as first-time login if profile is incomplete
+        const isFirstTimeLogin = !userData.displayname || !userData.studentcategory;
+        return { ...data, isFirstTimeLogin };
+      }
+    }
+
+    return { ...data, isFirstTimeLogin: false };
   };
 
   const signUp = async (email: string, password: string, displayName: string, studentCategory: string) => {
