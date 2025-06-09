@@ -32,9 +32,10 @@ export interface User {
   currentSubscriptionId?: string | null;
   stripeCustomerId?: string | null;
   stripeSubscriptionId?: string | null;
-  sessionsUsedToday?: number;
-  sessionsUsedThisWeek?: number;
+  // Session counts are now calculated dynamically in useSessionLimits
+  // sessionsUsedToday and sessionsUsedThisWeek removed from User interface
   premiumPrice?: number | null;
+  weeklyStudyGoal?: number | null;
 }
 
 export interface UpdateUserPayload {
@@ -202,8 +203,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           currentSubscriptionId: userData.currentsubscriptionid || null,
           stripeCustomerId: userData.stripe_customer_id,
           stripeSubscriptionId: userData.stripe_subscription_id,
-          sessionsUsedToday: userData.sessions_used_today || 0,
-          sessionsUsedThisWeek: userData.sessions_used_this_week || 0,
+          // Session counts are now calculated dynamically in useSessionLimits
+          // sessionsUsedToday and sessionsUsedThisWeek removed from UserContext
           premiumPrice: premiumPlan?.price || 9.99,
         });
         setIsAuthenticated(true);
@@ -245,8 +246,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           currentSubscriptionId: null,
           stripeCustomerId: null,
           stripeSubscriptionId: null,
-          sessionsUsedToday: 0,
-          sessionsUsedThisWeek: 0,
+          // Session counts are now calculated dynamically in useSessionLimits
+          // sessionsUsedToday and sessionsUsedThisWeek removed from UserContext
           premiumPrice: premiumPlan?.price || 9.99,
         });
         setIsAuthenticated(true);

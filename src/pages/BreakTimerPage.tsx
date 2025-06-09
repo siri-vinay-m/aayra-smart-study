@@ -9,7 +9,7 @@ import DiscardSessionDialog from '@/components/dialogs/DiscardSessionDialog';
 
 const BreakTimerPage = () => {
   const { currentSession } = useSession();
-  const { setTimerType } = useTimer();
+  const { setTimerType, startTimer, status, timerType } = useTimer();
   const {
     showDiscardDialog,
     isInBreakPhase,
@@ -21,6 +21,14 @@ const BreakTimerPage = () => {
   useEffect(() => {
     setTimerType('break');
   }, [setTimerType]);
+
+  // Auto-start break timer when coming from focus session
+  useEffect(() => {
+    if (currentSession && currentSession.status === 'break_in_progress' && status === 'idle' && timerType === 'break') {
+      console.log('BreakTimerPage: Auto-starting break timer', { status, timerType, sessionStatus: currentSession.status });
+      startTimer();
+    }
+  }, [currentSession, status, timerType]);
   
   if (!currentSession) {
     return (

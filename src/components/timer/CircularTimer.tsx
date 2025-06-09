@@ -23,12 +23,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
   const { currentSession, completeSession } = useSession();
   const navigate = useNavigate();
 
-  // Auto-start break timer when component mounts during break
-  useEffect(() => {
-    if (timerType === 'break' && status === 'idle') {
-      startTimer();
-    }
-  }, [timerType, status, startTimer]);
+  // Removed auto-start logic - now handled at page level
 
   // Convert seconds to minutes and seconds
   const minutes = Math.floor(timeLeft / 60);
@@ -101,7 +96,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
             // Only show skip button during break
             <button
               onClick={handleSkip}
-              className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors"
+              className="px-6 py-3 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium transition-colors"
             >
               Complete Session
             </button>
@@ -117,14 +112,20 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
 
               {status === 'running' ? (
                 <button
-                  onClick={pauseTimer}
+                  onClick={() => {
+                    console.log('CircularTimer: Pause button clicked');
+                    pauseTimer();
+                  }}
                   className="px-6 py-3 rounded-lg bg-primary hover:bg-primary-dark text-white font-medium transition-colors"
                 >
                   Pause
                 </button>
               ) : (
                 <button
-                  onClick={startTimer}
+                  onClick={() => {
+                    console.log('CircularTimer: Start/Resume button clicked, current status:', status);
+                    startTimer();
+                  }}
                   className="px-6 py-3 rounded-lg bg-primary hover:bg-primary-dark text-white font-medium transition-colors"
                 >
                   {status === 'paused' ? 'Resume' : 'Start'}

@@ -38,16 +38,28 @@ export const useSessionLimits = (): SessionLimits => {
       const dailyLimit = user.sessionsPerDay;
       const weeklyLimit = user.sessionsPerWeek;
 
-      // Get today's session count
-      const today = new Date().toISOString().split('T')[0];
-      const { data: todayUsage } = await supabase
-        .from('user_session_usage')
-        .select('sessions_count')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .single();
+      // Get today's session count from studysessions table
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
 
-      const sessionsUsedToday = todayUsage?.sessions_count || 0;
+      const { data: todaySessions, error: todayError } = await supabase
+        .from('studysessions')
+        .select('sessionid')
+        .eq('userid', user.id)
+        .gte('createdat', today.toISOString())
+        .lt('createdat', tomorrow.toISOString());
+
+      console.log('useSessionLimits: Today sessions query result:', {
+        data: todaySessions,
+        error: todayError,
+        userId: user.id,
+        todayStart: today.toISOString(),
+        tomorrowStart: tomorrow.toISOString()
+      });
+
+      const sessionsUsedToday = todaySessions?.length || 0;
 
       // Get this week's session count (Monday to Sunday)
       const startOfWeek = new Date();
@@ -56,13 +68,20 @@ export const useSessionLimits = (): SessionLimits => {
       startOfWeek.setDate(diff);
       startOfWeek.setHours(0, 0, 0, 0);
 
-      const { data: weekUsage } = await supabase
-        .from('user_session_usage')
-        .select('sessions_count')
-        .eq('user_id', user.id)
-        .gte('date', startOfWeek.toISOString().split('T')[0]);
+      const { data: weekSessions, error: weekError } = await supabase
+        .from('studysessions')
+        .select('sessionid')
+        .eq('userid', user.id)
+        .gte('createdat', startOfWeek.toISOString());
 
-      const sessionsUsedThisWeek = weekUsage?.reduce((sum, day) => sum + (day.sessions_count || 0), 0) || 0;
+      console.log('useSessionLimits: Week sessions query result:', {
+        data: weekSessions,
+        error: weekError,
+        userId: user.id,
+        weekStart: startOfWeek.toISOString()
+      });
+
+      const sessionsUsedThisWeek = weekSessions?.length || 0;
 
       // Check if user can create a session
       let canCreateSession = true;
@@ -96,33 +115,9 @@ export const useSessionLimits = (): SessionLimits => {
   };
 
   const incrementSessionCount = async () => {
-    if (!user?.id) return;
-
-    try {
-      const today = new Date().toISOString().split('T')[0];
-
-      // Upsert today's session count
-      const { error } = await supabase
-        .from('user_session_usage')
-        .upsert({
-          user_id: user.id,
-          date: today,
-          sessions_count: sessionLimits.sessionsUsedToday + 1,
-        }, {
-          onConflict: 'user_id,date',
-        });
-
-      if (error) {
-        console.error('Error incrementing session count:', error);
-        return;
-      }
-
-      // Refresh limits after incrementing
-      await checkSessionLimits();
-
-    } catch (error) {
-      console.error('Error incrementing session count:', error);
-    }
+    // Session count is now calculated dynamically from studysessions table
+    // Just refresh the limits to get updated counts
+    await checkSessionLimits();
   };
 
   useEffect(() => {

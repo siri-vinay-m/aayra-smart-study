@@ -109,13 +109,8 @@ const ReviewSessionPage = () => {
     const isPendingReview = pendingReviews.some(review => review.sessionId === sessionId);
     
     if (isPendingReview) {
-      // For pending reviews, mark as completed and go to home
-      const success = await markReviewAsCompleted(reviewSession.id);
-      if (success) {
-        navigate('/home');
-      } else {
-        navigate('/pending-reviews');
-      }
+      // For pending reviews, just navigate back without changing status
+      navigate('/pending-reviews');
     } else if (isFromCompletedSessions) {
       navigate('/completed-sessions');
     } else {
@@ -180,17 +175,12 @@ const ReviewSessionPage = () => {
     const isPendingReview = pendingReviews.some(review => review.sessionId === sessionId);
     
     if (isPendingReview) {
-      // For pending reviews, always mark as completed first
-      const success = await markReviewAsCompleted(reviewSession.id);
-      if (success) {
-        // Then complete the review session for tracking purposes
-        const reviewStageNumber = typeof reviewSession.reviewStage === 'string' ? 1 : reviewSession.reviewStage;
-        await completeReviewSession(sessionId!, aiContent, quizResponses, reviewStageNumber);
-        setCurrentSession(null);
-        navigate('/home');
-      } else {
-        navigate('/pending-reviews');
-      }
+      // For pending reviews, use completeReviewSession which handles everything
+      // including marking as completed and creating next review entry
+      const reviewStageNumber = typeof reviewSession.reviewStage === 'string' ? 1 : reviewSession.reviewStage;
+      await completeReviewSession(sessionId!, aiContent, quizResponses, reviewStageNumber);
+      setCurrentSession(null);
+      navigate('/home');
     } else if (isFromCompletedSessions) {
       // For completed sessions, just go back to home - no PDF generation
       setCurrentSession(null);

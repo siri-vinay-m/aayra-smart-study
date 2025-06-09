@@ -36,7 +36,9 @@ export const useSessionData = () => {
           breakDurationMinutes: session.breakdurationminutes,
           status: session.status as SessionStatus,
           startTime: new Date(session.createdat),
-          completedAt: session.lastreviewedat ? new Date(session.lastreviewedat) : undefined,
+          completedAt: session.lastreviewedat ? new Date(session.lastreviewedat) : 
+                      session.updatedat ? new Date(session.updatedat) : 
+                      new Date(session.createdat), // Use updatedat or createdat as fallback
           createdAt: new Date(session.createdat),
           isFavorite: session.isfavorite || false,
         }));

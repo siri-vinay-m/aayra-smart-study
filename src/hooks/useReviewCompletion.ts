@@ -82,6 +82,22 @@ export const useReviewCompletion = () => {
         // Don't fail the entire completion if PDF generation fails
       }
 
+      // Get the current review entry to preserve the original initialappearancedate
+      console.log('Fetching current review cycle entry...');
+      const { data: currentReview, error: fetchError } = await supabase
+        .from('reviewcycleentries')
+        .select('*')
+        .eq('sessionid', sessionId)
+        .eq('userid', user.id)
+        .eq('reviewstage', reviewStage)
+        .eq('status', 'pending')
+        .single();
+
+      if (fetchError || !currentReview) {
+        console.error('Error fetching current review entry:', fetchError);
+        throw fetchError || new Error('Current review entry not found');
+      }
+
       // Update the review cycle entry status to completed
       console.log('Updating review cycle entry status to completed...');
       const { error: reviewUpdateError } = await supabase
@@ -124,7 +140,7 @@ export const useReviewCompletion = () => {
           .insert({
             sessionid: sessionId,
             userid: user.id,
-            initialappearancedate: new Date().toISOString().split('T')[0],
+            initialappearancedate: currentReview.initialappearancedate, // Preserve original date
             currentreviewduedate: nextReviewDate,
             reviewstage: reviewStage + 1,
             status: 'pending'

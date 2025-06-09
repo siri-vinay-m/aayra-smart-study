@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useSession } from './SessionContext';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { useTimerAlerts } from '@/hooks/useTimerAlerts';
 
 export type TimerType = 'focus' | 'break';
 type TimerStatus = 'idle' | 'running' | 'paused' | 'completed';
@@ -29,6 +30,7 @@ export const WARNING_TIME = 5 * 60; // 5 minutes warning in seconds (at 20 minut
 
 export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { currentSession, updateCurrentSessionStatus, completeSession } = useSession();
+  const { checkForFiveMinuteAlert, resetAlertState } = useTimerAlerts();
   const [timerType, setTimerType] = useState<TimerType>('focus');
   
   const getInitialTime = (type: TimerType) => {
@@ -50,7 +52,8 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setTimeLeft(newTime);
     setStatus('idle');
     setProgress(0);
-  }, [timerType, currentSession]);
+    resetAlertState(); // Reset alert state when timer type changes
+  }, [timerType, currentSession, resetAlertState]);
 
   useEffect(() => {
     const totalTime = getInitialTime(timerType);
@@ -63,9 +66,9 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (status === 'running' && timeLeft > 0) {
       interval = window.setInterval(() => {
         setTimeLeft((prevTime) => {
-          if (prevTime === WARNING_TIME && timerType === 'focus') {
-            playAlarmSound();
-            console.log("Alarm sound played - 5 minutes remaining in focus session");
+          // Check for 5-minute alert during focus sessions
+          if (timerType === 'focus') {
+            checkForFiveMinuteAlert(prevTime);
           }
           return prevTime - 1;
         });
@@ -95,10 +98,13 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [status, timeLeft, timerType, navigate, currentSession, completeSession, updateCurrentSessionStatus]);
+  }, [status, timeLeft, timerType, navigate, currentSession, completeSession, updateCurrentSessionStatus, checkForFiveMinuteAlert]);
 
   const startTimer = () => {
+    console.log('TimerContext: startTimer called, current status:', status, 'timeLeft:', timeLeft, 'timerType:', timerType);
     setStatus('running');
+    resetAlertState(); // Reset alert state when timer starts
+    console.log('TimerContext: Timer started, new status should be running');
   };
 
   const pauseTimer = () => {
@@ -109,6 +115,7 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setTimeLeft(getInitialTime(timerType));
     setStatus('idle');
     setProgress(0);
+    resetAlertState(); // Reset alert state when timer is reset
   };
 
   const skipTimer = async () => {

@@ -49,7 +49,7 @@ const LoginPage = () => {
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
             <AayraLogo size={40} className="sm:w-12 sm:h-12" />
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">AAYRA</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-orange-500">AAYRA</h2>
           </div>
           <p className="text-gray-600 text-sm sm:text-base">Sign in to your account</p>
         </div>
