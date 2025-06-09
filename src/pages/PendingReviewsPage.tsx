@@ -46,14 +46,8 @@ const PendingReviewsPage = () => {
   return (
     <MainLayout>
       <div className="px-4">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-900">Pending Reviews</h1>
-          <button
-            onClick={loadPendingReviews}
-            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            Refresh
-          </button>
         </div>
         
         {pendingReviews.length === 0 ? (

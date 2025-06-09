@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSession } from '@/contexts/SessionContext';
-import { useToast } from '@/hooks/use-toast';
+
 import { useSessionLimits } from '@/hooks/useSessionLimits';
 import { AlertCircle, Clock } from 'lucide-react';
 
 const NewSessionPage = () => {
   const navigate = useNavigate();
   const { createNewSession, setCurrentSession } = useSession();
-  const { toast } = useToast();
+
   const sessionLimits = useSessionLimits();
   
   const [subjectName, setSubjectName] = useState('');
@@ -26,20 +26,10 @@ const NewSessionPage = () => {
     e.preventDefault();
     
     if (!sessionLimits.canCreateSession) {
-      toast({
-        title: "Session Limit Reached",
-        description: "You have reached your session limit for today or this week.",
-        variant: "destructive"
-      });
       return;
     }
     
     if (!subjectName.trim() || !topicName.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in both subject and topic names.",
-        variant: "destructive"
-      });
       return;
     }
     
@@ -61,20 +51,9 @@ const NewSessionPage = () => {
         
         // Navigate to focus timer page
         navigate('/focus-timer');
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to create session. Please try again.",
-          variant: "destructive"
-        });
       }
     } catch (error) {
       console.error('Error creating session:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive"
-      });
     } finally {
       setIsLoading(false);
     }

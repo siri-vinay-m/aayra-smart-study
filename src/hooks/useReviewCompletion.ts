@@ -2,7 +2,6 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { useAIContentStorage } from '@/hooks/useAIContentStorage';
 import { useQuizResponses } from '@/hooks/useQuizResponses';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
@@ -18,7 +17,6 @@ interface QuizResponse {
 
 export const useReviewCompletion = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { storeAIContent } = useAIContentStorage();
   const { storeAllQuizResponses } = useQuizResponses();
   const { generateSessionPDF } = usePDFGeneration();
@@ -159,24 +157,14 @@ export const useReviewCompletion = () => {
       console.log('Refreshing pending reviews list...');
       await loadPendingReviews();
       
-      toast({
-        title: "Review Completed!",
-        description: "Your review session has been completed and saved.",
-      });
-      
       // Navigate to home for pending reviews (not pending reviews page)
       navigate('/home');
     } catch (error) {
       console.error('Error completing review session:', error);
-      toast({
-        title: "Error",
-        description: "Failed to complete review session. Please try again.",
-        variant: "destructive"
-      });
       // Navigate to home on error too
       navigate('/home');
     }
-  }, [navigate, toast, storeAIContent, storeAllQuizResponses, generateSessionPDF, loadPendingReviews]);
+  }, [navigate, storeAIContent, storeAllQuizResponses, generateSessionPDF, loadPendingReviews]);
 
   // Helper function to calculate next review date based on spaced repetition
   const calculateNextReviewDate = (currentStage: number): string => {
@@ -202,14 +190,14 @@ export const useReviewCompletion = () => {
     quizResponses: QuizResponse[]
   ) => {
     try {
-      console.log('Starting new session completion:', { sessionId });
+      console.log('Starting new session completion:', sessionId);
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
       }
-      
-      // Store AI content with quiz results for new session (review stage 0)
+
+      // Store AI content with quiz results included
       const aiContentWithResults = {
         ...aiContent,
         quizResults: {
@@ -219,26 +207,38 @@ export const useReviewCompletion = () => {
           scorePercentage: quizResponses.length > 0 ? Math.round((quizResponses.filter(r => r.isCorrect).length / quizResponses.length) * 100) : 0
         }
       };
-      
+
+      // Store AI content and quiz responses
+      console.log('Storing AI content and quiz responses...');
       await storeAIContent(sessionId, aiContentWithResults, 0);
+      await storeAllQuizResponses(sessionId, quizResponses, 0);
+
+      // Create the first review cycle entry (stage 1)
+      const firstReviewDate = calculateNextReviewDate(0);
+      console.log('Creating first review cycle for stage 1, due on:', firstReviewDate);
       
-      // Store quiz responses
-      if (quizResponses.length > 0) {
-        const formattedResponses = quizResponses.map(response => ({
-          questionIndex: response.questionIndex,
-          questionText: aiContent.quizQuestions[response.questionIndex]?.question || '',
-          selectedAnswer: response.selectedAnswer,
-          correctAnswer: response.correctAnswer,
-          isCorrect: response.isCorrect
-        }));
-        await storeAllQuizResponses(sessionId, formattedResponses, 0);
+      const { error: insertError } = await supabase
+        .from('review_sessions')
+        .insert({
+          session_id: sessionId,
+          review_stage: 1,
+          due_date: firstReviewDate,
+          status: 'pending',
+          user_id: user.id
+        });
+
+      if (insertError) {
+        console.error('Error creating first review cycle:', insertError);
+        // Don't throw here - the session was completed successfully
+      } else {
+        console.log('First review cycle entry created for stage 1');
       }
 
-      // Get session name for PDF generation
+      // Get session data for PDF generation
       const { data: sessionData } = await supabase
-        .from('studysessions')
+        .from('sessions')
         .select('sessionname')
-        .eq('sessionid', sessionId)
+        .eq('id', sessionId)
         .single();
 
       // Generate PDF for the session (only for new sessions and incomplete sessions)
@@ -251,19 +251,10 @@ export const useReviewCompletion = () => {
         // Don't fail the entire completion if PDF generation fails
       }
 
-      toast({
-        title: "Session Completed!",
-        description: "Your study session has been completed and saved.",
-      });
     } catch (error) {
       console.error('Error completing new session:', error);
-      toast({
-        title: "Error",
-        description: "Failed to complete session. Please try again.",
-        variant: "destructive"
-      });
     }
-  }, [toast, storeAIContent, storeAllQuizResponses, generateSessionPDF]);
+  }, [storeAIContent, storeAllQuizResponses, generateSessionPDF]);
 
   return {
     completeReviewSession,
