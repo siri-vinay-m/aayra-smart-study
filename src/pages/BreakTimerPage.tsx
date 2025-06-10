@@ -28,7 +28,7 @@ const BreakTimerPage = () => {
       console.log('BreakTimerPage: Auto-starting break timer', { status, timerType, sessionStatus: currentSession.status });
       startTimer();
     }
-  }, [currentSession, status, timerType]);
+  }, [currentSession, status, timerType, startTimer]);
   
   if (!currentSession) {
     return (

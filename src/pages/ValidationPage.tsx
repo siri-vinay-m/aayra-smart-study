@@ -163,9 +163,9 @@ const ValidationPage = () => {
         }
         
         // Update status to 'break_in_progress' and navigate to break timer
+        await updateCurrentSessionStatus('break_in_progress');
         const updatedSession = { ...currentSession, status: 'break_in_progress' as const };
         setCurrentSession(updatedSession);
-        await updateCurrentSessionStatus('break_in_progress');
         navigate('/break-timer');
       }
     }

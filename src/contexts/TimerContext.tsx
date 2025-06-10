@@ -47,64 +47,106 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
 
+  // Reset timer when session changes or is cancelled
   useEffect(() => {
     const newTime = getInitialTime(timerType);
     setTimeLeft(newTime);
     setStatus('idle');
     setProgress(0);
+    resetAlertState();
+  }, [currentSession]);
+
+  useEffect(() => {
+    const newTime = getInitialTime(timerType);
+    setTimeLeft(newTime);
+    // Only reset status to idle if timer is not currently running
+    setStatus(prevStatus => prevStatus === 'running' ? 'running' : 'idle');
+    setProgress(0);
     resetAlertState(); // Reset alert state when timer type changes
-  }, [timerType, currentSession, resetAlertState]);
+  }, [timerType]);
 
   useEffect(() => {
     const totalTime = getInitialTime(timerType);
-    setProgress(totalTime > 0 ? (totalTime - timeLeft) / totalTime : 0);
-  }, [timeLeft, timerType, currentSession]);
+    const newProgress = totalTime > 0 ? (totalTime - timeLeft) / totalTime : 0;
+    console.log('TimerContext: Progress update - timeLeft:', timeLeft, 'totalTime:', totalTime, 'progress:', newProgress);
+    setProgress(newProgress);
+  }, [timeLeft]);
 
   useEffect(() => {
+    console.log('TimerContext: Timer useEffect triggered - status:', status, 'timeLeft:', timeLeft);
     let interval: number | undefined;
 
-    if (status === 'running' && timeLeft > 0) {
+    if (status === 'running') {
+      console.log('TimerContext: Starting interval timer');
+      // Capture current session values at the time the interval starts
+      const sessionAtStart = currentSession;
+      const updateStatusAtStart = updateCurrentSessionStatus;
+      const completeSessionAtStart = completeSession;
+      
       interval = window.setInterval(() => {
         setTimeLeft((prevTime) => {
+          const newTime = prevTime - 1;
+          console.log('TimerContext: Timer tick - prevTime:', prevTime, 'newTime:', newTime, 'status:', status);
+          
           // Check for 5-minute alert during focus sessions
           if (timerType === 'focus') {
             checkForFiveMinuteAlert(prevTime);
           }
-          return prevTime - 1;
+          
+          // Check if timer completed
+          if (newTime <= 0) {
+            console.log('TimerContext: Timer completed, triggering completion logic');
+            // Use setTimeout to handle completion logic after state update
+            setTimeout(() => {
+              console.log('TimerContext: Setting status to completed');
+              setStatus('completed');
+              playAlarmSound();
+              
+              if (timerType === 'focus') {
+                console.log('TimerContext: Focus timer completed, navigating to upload');
+                // Update status to 'uploading' when focus timer completes
+                if (sessionAtStart && updateStatusAtStart) {
+                  updateStatusAtStart('uploading');
+                }
+                navigate('/upload');
+              } else {
+                console.log('TimerContext: Break timer completed, navigating to home');
+                // Break timer completed - mark session as completed
+                if (sessionAtStart && updateStatusAtStart) {
+                  updateStatusAtStart('completed');
+                }
+                if (sessionAtStart && completeSessionAtStart) {
+                  completeSessionAtStart(sessionAtStart.id);
+                }
+                navigate('/home');
+              }
+            }, 0);
+            return 0;
+          }
+          
+          return newTime;
         });
       }, 1000);
-    } else if (timeLeft === 0 && status === 'running') {
-      setStatus('completed');
-      playAlarmSound();
-      
-      if (timerType === 'focus') {
-        // Update status to 'uploading' when focus timer completes
-        if (currentSession && updateCurrentSessionStatus) {
-          updateCurrentSessionStatus('uploading');
-        }
-        navigate('/upload');
-      } else {
-        // Break timer completed - mark session as completed
-        if (currentSession && updateCurrentSessionStatus) {
-          updateCurrentSessionStatus('completed');
-        }
-        if (currentSession && completeSession) {
-          completeSession(currentSession.id);
-        }
-        navigate('/home');
-      }
     }
 
     return () => {
-      if (interval) clearInterval(interval);
+      if (interval) {
+        console.log('TimerContext: Clearing interval');
+        clearInterval(interval);
+      }
     };
-  }, [status, timeLeft, timerType, navigate, currentSession, completeSession, updateCurrentSessionStatus, checkForFiveMinuteAlert]);
+  }, [status, timerType, navigate]);
 
   const startTimer = () => {
     console.log('TimerContext: startTimer called, current status:', status, 'timeLeft:', timeLeft, 'timerType:', timerType);
-    setStatus('running');
-    resetAlertState(); // Reset alert state when timer starts
-    console.log('TimerContext: Timer started, new status should be running');
+    if (status !== 'running') {
+      console.log('TimerContext: Setting status to running');
+      setStatus('running');
+      resetAlertState(); // Reset alert state when timer starts
+      console.log('TimerContext: Timer started, new status should be running');
+    } else {
+      console.log('TimerContext: Timer already running, ignoring start request');
+    }
   };
 
   const pauseTimer = () => {

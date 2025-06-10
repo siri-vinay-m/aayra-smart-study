@@ -211,20 +211,32 @@ export const useReviewCompletion = () => {
       // Store AI content and quiz responses
       console.log('Storing AI content and quiz responses...');
       await storeAIContent(sessionId, aiContentWithResults, 0);
-      await storeAllQuizResponses(sessionId, quizResponses, 0);
+      
+      // Format quiz responses with question text for storage
+      if (quizResponses.length > 0) {
+        const formattedResponses = quizResponses.map(response => ({
+          questionIndex: response.questionIndex,
+          questionText: aiContent.quizQuestions[response.questionIndex]?.question || '',
+          selectedAnswer: response.selectedAnswer,
+          correctAnswer: response.correctAnswer,
+          isCorrect: response.isCorrect
+        }));
+        await storeAllQuizResponses(sessionId, formattedResponses, 0);
+      }
 
       // Create the first review cycle entry (stage 1)
       const firstReviewDate = calculateNextReviewDate(0);
       console.log('Creating first review cycle for stage 1, due on:', firstReviewDate);
       
       const { error: insertError } = await supabase
-        .from('review_sessions')
+        .from('reviewcycleentries')
         .insert({
-          session_id: sessionId,
-          review_stage: 1,
-          due_date: firstReviewDate,
-          status: 'pending',
-          user_id: user.id
+          sessionid: sessionId,
+          userid: user.id,
+          initialappearancedate: new Date().toISOString().split('T')[0],
+          currentreviewduedate: firstReviewDate,
+          reviewstage: 1,
+          status: 'pending'
         });
 
       if (insertError) {
@@ -236,9 +248,9 @@ export const useReviewCompletion = () => {
 
       // Get session data for PDF generation
       const { data: sessionData } = await supabase
-        .from('sessions')
+        .from('studysessions')
         .select('sessionname')
-        .eq('id', sessionId)
+        .eq('sessionid', sessionId)
         .single();
 
       // Generate PDF for the session (only for new sessions and incomplete sessions)

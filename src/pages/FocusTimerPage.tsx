@@ -13,13 +13,7 @@ const FocusTimerPage = () => {
     setTimerType('focus');
   }, [setTimerType]);
 
-  // Auto-start focus timer when coming from new session creation
-  useEffect(() => {
-    if (currentSession && currentSession.status === 'focus_in_progress' && status === 'idle' && timerType === 'focus') {
-      console.log('FocusTimerPage: Auto-starting focus timer for new session', { status, timerType, sessionStatus: currentSession.status });
-      startTimer();
-    }
-  }, [currentSession, status, timerType]);
+  // Timer should not auto-start - user must click Start button
   
   return (
     <MainLayout>

@@ -29,6 +29,9 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  
+  // Debug log to see if timeLeft is updating in the UI
+  console.log('CircularTimer: timeLeft:', timeLeft, 'status:', status, 'formattedTime:', formattedTime);
 
   // Calculate circle circumference and stroke-dashoffset
   const radius = 100;
@@ -122,10 +125,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
                 </button>
               ) : (
                 <button
-                  onClick={() => {
-                    console.log('CircularTimer: Start/Resume button clicked, current status:', status);
-                    startTimer();
-                  }}
+                  onClick={startTimer}
                   className="px-6 py-3 rounded-lg bg-primary hover:bg-primary-dark text-white font-medium transition-colors"
                 >
                   {status === 'paused' ? 'Resume' : 'Start'}

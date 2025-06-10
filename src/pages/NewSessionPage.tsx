@@ -42,12 +42,8 @@ const NewSessionPage = () => {
         // Increment session count
         await (sessionLimits as any).incrementSessionCount();
         
-        // Update the session with focus_in_progress status and set as current
-        const updatedSession = {
-          ...newSession,
-          status: 'focus_in_progress' as const
-        };
-        setCurrentSession(updatedSession);
+        // Set as current session (status is already 'focus_in_progress' from creation)
+        setCurrentSession(newSession);
         
         // Navigate to focus timer page
         navigate('/focus-timer');
