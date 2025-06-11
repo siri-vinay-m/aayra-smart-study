@@ -47,7 +47,7 @@ export const useReviewOperations = () => {
           topicName: entry.studysessions.topicname,
           completedAt: new Date(entry.studysessions.lastreviewedat || entry.studysessions.createdat),
           dueDate: entry.currentreviewduedate, // Keep as string to match PendingReview interface
-          reviewStage: `Stage ${entry.reviewstage}`,
+          reviewStage: entry.reviewstage,
         }));
 
         setPendingReviews(formattedReviews);

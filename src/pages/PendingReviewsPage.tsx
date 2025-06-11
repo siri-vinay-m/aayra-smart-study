@@ -69,7 +69,7 @@ const PendingReviewsPage = () => {
                   <div>
                     <h3 className="font-medium text-gray-900">{review.sessionName}</h3>
                     <p className="text-sm text-gray-500">
-                      {review.reviewStage}
+                      Stage {review.reviewStage}
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
                       Subject: {review.subjectName} • Topic: {review.topicName}

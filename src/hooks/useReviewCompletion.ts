@@ -70,15 +70,11 @@ export const useReviewCompletion = () => {
         .eq('sessionid', sessionId)
         .single();
 
-      // Generate PDF for the review session
-      console.log('Generating PDF for review session with stage:', reviewStage);
-      try {
-        await generateSessionPDF(sessionId, sessionData?.sessionname || 'Review Session', aiContentWithResults, reviewStage);
-        console.log('PDF generation completed successfully');
-      } catch (pdfError) {
-        console.error('PDF generation failed, but continuing with completion:', pdfError);
-        // Don't fail the entire completion if PDF generation fails
-      }
+      // Generate PDF for the review session (non-blocking)
+      console.log('Starting PDF generation for review session with stage:', reviewStage);
+      generateSessionPDF(sessionId, sessionData?.sessionname || 'Review Session', aiContentWithResults, reviewStage)
+        .then(() => console.log('PDF generation completed successfully'))
+        .catch(pdfError => console.error('PDF generation failed:', pdfError));
 
       // Get the current review entry to preserve the original initialappearancedate
       console.log('Fetching current review cycle entry...');
@@ -253,15 +249,11 @@ export const useReviewCompletion = () => {
         .eq('sessionid', sessionId)
         .single();
 
-      // Generate PDF for the session (only for new sessions and incomplete sessions)
-      console.log('Generating PDF for new/incomplete session...');
-      try {
-        await generateSessionPDF(sessionId, sessionData?.sessionname || 'Study Session', aiContentWithResults, 0);
-        console.log('PDF generation completed successfully');
-      } catch (pdfError) {
-        console.error('PDF generation failed, but continuing with completion:', pdfError);
-        // Don't fail the entire completion if PDF generation fails
-      }
+      // Generate PDF for the session (non-blocking, only for new sessions and incomplete sessions)
+      console.log('Starting PDF generation for new/incomplete session...');
+      generateSessionPDF(sessionId, sessionData?.sessionname || 'Study Session', aiContentWithResults, 0)
+        .then(() => console.log('PDF generation completed successfully'))
+        .catch(pdfError => console.error('PDF generation failed:', pdfError));
 
     } catch (error) {
       console.error('Error completing new session:', error);

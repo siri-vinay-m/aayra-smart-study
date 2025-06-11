@@ -195,6 +195,13 @@ const ReviewSessionPage = () => {
 
   // Determine session type for SummaryView
   const getSessionType = () => {
+    // Check if this is a pending review first (takes priority)
+    const isPendingReview = pendingReviews.some(review => review.sessionId === sessionId);
+    if (isPendingReview) {
+      return 'pending';
+    }
+    
+    // If not a pending review, check if it's from completed sessions
     const isFromCompletedSessions = completedSessions.some(session => session.id === sessionId);
     return isFromCompletedSessions ? 'completed' : 'pending';
   };
