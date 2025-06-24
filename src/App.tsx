@@ -10,6 +10,7 @@ import { UserProvider } from "./contexts/UserContext";
 import { SessionProvider } from "./contexts/SessionContext";
 import { TimerProvider } from "./contexts/TimerContext";
 import { useStudyReminders } from "./hooks/useStudyReminders";
+import { useMobileFeatures } from "./hooks/useMobileFeatures";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RootRedirect from "./components/auth/RootRedirect";
 import Index from "./pages/Index";
@@ -33,9 +34,10 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Component to handle study reminders
+// Component to handle study reminders and mobile features
 const StudyReminderManager = () => {
   useStudyReminders();
+  useMobileFeatures();
   return null;
 };
 

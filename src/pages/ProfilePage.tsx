@@ -5,18 +5,29 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useStudyReminders } from '@/hooks/useStudyReminders';
+import { usePerformanceOptimization } from '@/hooks/usePerformanceOptimization';
+import { useNavigationBehavior } from '@/hooks/useNavigationBehavior';
 import ProfileImageSection from '@/components/profile/ProfileImageSection';
 import SubscriptionStatusCard from '@/components/profile/SubscriptionStatusCard';
 import NotificationCard from '@/components/profile/NotificationCard';
 import ProfileForm from '@/components/profile/ProfileForm';
 import ProfileActions from '@/components/profile/ProfileActions';
+import UserSupportCard from '@/components/profile/UserSupportCard';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
+/**
+ * ProfilePage component with performance optimizations and user support features
+ */
 const ProfilePage = () => {
   const { user, setUser, loadUserData, checkSubscriptionStatus } = useUser();
   const { signOut, user: authUser } = useAuth();
   const { toast } = useToast(); 
   const { requestNotificationPermission } = useStudyReminders();
+  
+  // Performance and navigation hooks
+  const { performanceMetrics, createLazyLoader, prefetchContent } = usePerformanceOptimization();
+  const { isIOS, isAndroid } = useNavigationBehavior();
+  
   const [displayName, setDisplayName] = useState('');
   const [studentCategory, setStudentCategory] = useState<StudentCategory>('college');
   const [profilePictureURL, setProfilePictureURL] = useState('');
@@ -100,6 +111,15 @@ const ProfilePage = () => {
     updateLastLogin();
   }, [authUser]);
   
+  useEffect(() => {
+    // Prefetch commonly accessed content
+    prefetchContent([
+      '/home',
+      '/pending-reviews',
+      '/completed-sessions'
+    ]);
+  }, [prefetchContent]);
+
   const handleFileSelect = (file: File | null) => {
     setSelectedFile(file);
   };
@@ -282,6 +302,9 @@ const ProfilePage = () => {
           onEnableNotifications={handleEnableNotifications}
         />
         
+        {/* User Support Card */}
+        <UserSupportCard />
+        
         {/* Theme Settings */}
         <div className="bg-white rounded-lg shadow-sm border p-4 mb-4">
           <div className="flex items-center justify-between">
@@ -292,6 +315,17 @@ const ProfilePage = () => {
             <ThemeToggle />
           </div>
         </div>
+        
+        {/* Performance Info (Development only) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="bg-gray-50 rounded-lg p-3 mb-4 text-xs">
+            <div className="font-medium mb-1">Performance Metrics:</div>
+            <div>Load Time: {performanceMetrics.loadTime}ms</div>
+            <div>FPS: {performanceMetrics.fps}</div>
+            <div>Platform: {isIOS ? 'iOS' : isAndroid ? 'Android' : 'Web'}</div>
+            <div>Slow Connection: {performanceMetrics.isSlowConnection ? 'Yes' : 'No'}</div>
+          </div>
+        )}
         
         <ProfileActions
           onSaveProfile={handleSaveProfile}

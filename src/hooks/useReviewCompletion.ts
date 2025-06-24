@@ -149,6 +149,9 @@ export const useReviewCompletion = () => {
 
       console.log('Review session completed successfully');
 
+      // Add a small delay to ensure database transaction is committed
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Refresh pending reviews list
       console.log('Refreshing pending reviews list...');
       await loadPendingReviews();

@@ -72,6 +72,15 @@ export const useSessionData = () => {
 
       if (sessions) {
         console.log('Found incomplete/validating sessions:', sessions.length);
+        sessions.forEach(session => {
+          console.log('Incomplete session:', {
+            id: session.sessionid,
+            name: session.sessionname,
+            status: session.status,
+            createdAt: session.createdat
+          });
+        });
+        
         const formattedSessions: StudySession[] = sessions.map(session => ({
           id: session.sessionid,
           sessionName: session.sessionname,
