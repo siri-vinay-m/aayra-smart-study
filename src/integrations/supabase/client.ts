@@ -4,17 +4,23 @@ import type { Database } from './types';
 import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
 
-const SUPABASE_URL = "https://ouyilgvqbwcekkajrrug.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91eWlsZ3ZxYndjZWtrYWpycnVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5NzU4MzgsImV4cCI6MjA2MzU1MTgzOH0.HPv36VVU0WpAXidt2ZrjzUSuiNPCMaXk2tI8SryitbE";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://ouyilgvqbwcekkajrrug.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
+// Validate required environment variables
+if (!SUPABASE_PUBLISHABLE_KEY) {
+  throw new Error('Missing VITE_SUPABASE_ANON_KEY environment variable. Please check your .env file.');
+}
 
 // Custom storage adapter for Capacitor mobile apps
 const CapacitorStorage = {
   async getItem(key: string): Promise<string | null> {
     if (Capacitor.isNativePlatform()) {
       const { value } = await Preferences.get({ key });
-      return value;
+      return value || null;
+    } else {
+      return localStorage.getItem(key);
     }
-    return localStorage.getItem(key);
   },
   async setItem(key: string, value: string): Promise<void> {
     if (Capacitor.isNativePlatform()) {
@@ -52,24 +58,3 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     debug: true
   }
 });
-
-// Add debug logging for storage operations
-const originalGetItem = CapacitorStorage.getItem;
-const originalSetItem = CapacitorStorage.setItem;
-const originalRemoveItem = CapacitorStorage.removeItem;
-
-CapacitorStorage.getItem = async (key: string) => {
-  const result = await originalGetItem(key);
-  console.log(`Storage GET ${key}:`, result ? 'Found' : 'Not found');
-  return result;
-};
-
-CapacitorStorage.setItem = async (key: string, value: string) => {
-  console.log(`Storage SET ${key}:`, value.length, 'characters');
-  return await originalSetItem(key, value);
-};
-
-CapacitorStorage.removeItem = async (key: string) => {
-   console.log(`Storage REMOVE ${key}`);
-   return await originalRemoveItem(key);
- };

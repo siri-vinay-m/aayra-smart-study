@@ -7,14 +7,12 @@ import { useToast } from '@/hooks/use-toast';
 interface ImageUploadProps {
   currentImageUrl?: string | null; // This will be the URL from Supabase or a local preview URL
   onFileSelect: (file: File | null) => void; // Changed to pass File object
-  isLoading?: boolean; // Controlled by parent for actual upload
   className?: string;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({ 
   currentImageUrl, 
   onFileSelect, 
-  isLoading = false,
   className = "" 
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +65,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   };
 
   const handleClick = () => {
-    if (!isLoading && fileInputRef.current) {
+    if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
@@ -79,9 +77,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   return (
     <div className={`relative ${className}`} data-testid="profile-image-upload"> {/* Added data-testid */}
       <div 
-        className={`w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center relative overflow-hidden border-2 border-gray-300 transition-colors ${!isLoading ? 'cursor-pointer hover:border-orange-500' : 'cursor-default'}`}
+        className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center relative overflow-hidden border-2 border-gray-300 transition-colors cursor-pointer hover:border-orange-500"
         onClick={handleClick}
-        title={isLoading ? "Uploading..." : "Change profile picture"}
+        title="Change profile picture"
       >
         {showPlaceholderIcon ? (
           <Camera size={32} className="text-gray-400" />
@@ -93,11 +91,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
           />
         )}
         
-        {!isLoading && (
-          <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
-            <Upload size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-        )}
+        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+          <Upload size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
       </div>
       
       <input
@@ -106,14 +102,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         accept="image/*"
         onChange={handleFileChange} // Changed handler
         className="hidden"
-        disabled={isLoading}
       />
       
-      {isLoading && (
-        <div className="absolute inset-0 bg-white bg-opacity-75 rounded-full flex items-center justify-center">
-          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      )}
+
     </div>
   );
 };

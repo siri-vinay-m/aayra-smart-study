@@ -14,6 +14,7 @@ import ProfileForm from '@/components/profile/ProfileForm';
 import ProfileActions from '@/components/profile/ProfileActions';
 import UserSupportCard from '@/components/profile/UserSupportCard';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useLoading } from '@/contexts/LoadingContext';
 
 /**
  * ProfilePage component with performance optimizations and user support features
@@ -21,7 +22,8 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 const ProfilePage = () => {
   const { user, setUser, loadUserData, checkSubscriptionStatus } = useUser();
   const { signOut, user: authUser } = useAuth();
-  const { toast } = useToast(); 
+  const { toast } = useToast();
+  const { withLoading } = useLoading(); 
   const { requestNotificationPermission } = useStudyReminders();
   
   // Performance and navigation hooks
@@ -34,7 +36,7 @@ const ProfilePage = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preferredStudyWeekdays, setPreferredStudyWeekdays] = useState<string[]>([]);
   const [preferredStudyStartTime, setPreferredStudyStartTime] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  // Removed local isLoading state - now using global loading context
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
 
   useEffect(() => {
@@ -147,7 +149,7 @@ const ProfilePage = () => {
       return;
     }
     
-    setIsLoading(true);
+    await withLoading(async () => {
     let newProfilePictureUrl = profilePictureURL;
 
     try {
@@ -255,9 +257,9 @@ const ProfilePage = () => {
         description: `Profile save failed: ${error.message}`,
         variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
+      throw error; // Re-throw to let withLoading handle the finally block
     }
+    }, 'Saving profile...');
   };
   
   const handleSignOut = async () => {
@@ -281,7 +283,6 @@ const ProfilePage = () => {
         <ProfileImageSection
           profilePictureURL={profilePictureURL}
           onFileSelect={handleFileSelect}
-          isLoading={isLoading}
         />
         
         <SubscriptionStatusCard user={user} />
@@ -330,7 +331,6 @@ const ProfilePage = () => {
         <ProfileActions
           onSaveProfile={handleSaveProfile}
           onSignOut={handleSignOut}
-          isLoading={isLoading}
         />
       </div>
     </MainLayout>

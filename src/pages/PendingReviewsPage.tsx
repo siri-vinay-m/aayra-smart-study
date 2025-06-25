@@ -3,10 +3,12 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
+import { useLoading } from '@/contexts/LoadingContext';
 import { format } from 'date-fns';
 
 const PendingReviewsPage = () => {
   const { pendingReviews, loadPendingReviews } = useSession();
+  const { withLoading } = useLoading();
   const navigate = useNavigate();
   
   // Reload pending reviews when the page loads and when returning from reviews
@@ -38,9 +40,13 @@ const PendingReviewsPage = () => {
     };
   }, [loadPendingReviews]);
   
-  const handleReviewClick = (sessionId: string) => {
-    console.log('Starting review for session:', sessionId);
-    navigate(`/review/${sessionId}`);
+  const handleReviewClick = async (sessionId: string) => {
+    await withLoading(async () => {
+      console.log('Starting review for session:', sessionId);
+      // Add a small delay to simulate loading time for better UX
+      await new Promise(resolve => setTimeout(resolve, 500));
+      navigate(`/review/${sessionId}`);
+    }, 'Loading review session...');
   };
   
   return (

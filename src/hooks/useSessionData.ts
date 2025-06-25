@@ -55,7 +55,7 @@ export const useSessionData = () => {
       const { data: authUser } = await supabase.auth.getUser();
       if (!authUser.user) return;
 
-      console.log('Loading incomplete sessions for user:', authUser.user.id);
+      // Loading incomplete sessions
 
       // Load sessions with both 'incomplete' and 'validating' status
       const { data: sessions, error } = await supabase

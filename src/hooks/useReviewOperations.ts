@@ -14,7 +14,7 @@ export const useReviewOperations = () => {
       // Get current date in YYYY-MM-DD format for comparison
       const currentDate = new Date().toISOString().split('T')[0];
 
-      console.log('Loading pending reviews for user:', authUser.user.id, 'Current date:', currentDate);
+      // Loading pending reviews
       
       // Load pending review cycle entries that are due today or overdue
       const { data: reviewEntries, error } = await supabase

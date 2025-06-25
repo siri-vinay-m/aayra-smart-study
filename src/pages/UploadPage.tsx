@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import ContentModerationAlert from '@/components/moderation/ContentModerationAlert';
+import { useLoading } from '@/contexts/LoadingContext';
 
 interface UploadItem {
   id: string;
@@ -37,7 +38,7 @@ const UploadPage = () => {
   const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const { withLoading } = useLoading();
   const [uploadedItems, setUploadedItems] = useState<UploadItem[]>([]);
   const [moderationAlert, setModerationAlert] = useState<{ reason: string; category: string } | null>(null);
   
@@ -56,9 +57,44 @@ const UploadPage = () => {
     );
   }
   
-  const handleUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      
+      // File size validation (10MB limit)
+      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      if (selectedFile.size > maxSize) {
+        toast({
+          title: "File Too Large",
+          description: "Please select a file smaller than 10MB.",
+          variant: "destructive"
+        });
+        e.target.value = ''; // Clear the input
+        return;
+      }
+      
+      // File type validation
+      const allowedTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/jpg', 
+        'image/png',
+        'text/plain',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ];
+      
+      if (!allowedTypes.includes(selectedFile.type)) {
+        toast({
+          title: "Invalid File Type",
+          description: "Please select a PDF, image, text, or Word document.",
+          variant: "destructive"
+        });
+        e.target.value = ''; // Clear the input
+        return;
+      }
+      
+      setFile(selectedFile);
     }
   };
   
@@ -252,9 +288,7 @@ const UploadPage = () => {
       return;
     }
     
-    setIsLoading(true);
-    
-    try {
+    await withLoading(async () => {
       // Update session status to 'validating' when user clicks "Submit to AI"
       if (currentSession && updateCurrentSessionStatus) {
         await updateCurrentSessionStatus('validating');
@@ -314,16 +348,7 @@ const UploadPage = () => {
       } else {
         throw new Error('Failed to process study materials - no response received');
       }
-    } catch (error) {
-      console.error('Error processing materials:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to process study materials. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    }, 'Processing study materials with AI...');
   };
   
   return (
@@ -379,7 +404,7 @@ const UploadPage = () => {
                 type="file"
                 id="file-upload"
                 className="hidden"
-                onChange={handleUploadFile}
+                onChange={handleFileChange}
                 accept=".pdf,.jpg,.jpeg,.png,.txt,.doc,.docx"
               />
               <label 
@@ -410,7 +435,36 @@ const UploadPage = () => {
             <Input 
               placeholder="Paste a URL to study material..."
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => {
+                const inputUrl = e.target.value;
+                
+                // Basic URL validation
+                if (inputUrl && inputUrl.trim()) {
+                  try {
+                    const urlObj = new URL(inputUrl);
+                    // Only allow http and https protocols
+                    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+                      toast({
+                        title: "Invalid URL",
+                        description: "Please enter a valid HTTP or HTTPS URL.",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                  } catch (error) {
+                    // Invalid URL format
+                    if (inputUrl.length > 10) { // Only show error for longer inputs
+                      toast({
+                        title: "Invalid URL",
+                        description: "Please enter a valid URL starting with http:// or https://",
+                        variant: "destructive"
+                      });
+                    }
+                  }
+                }
+                
+                setUrl(inputUrl);
+              }}
             />
             
             <Button 
@@ -521,9 +575,9 @@ const UploadPage = () => {
           <Button 
             onClick={handleSubmit} 
             className="w-full bg-primary hover:bg-primary-dark"
-            disabled={isLoading || isProcessing || uploadedItems.length === 0}
+            disabled={isProcessing || uploadedItems.length === 0}
           >
-            {isLoading || isProcessing ? 'Processing with AI...' : 'Submit to AI'}
+            {isProcessing ? 'Processing with AI...' : 'Submit to AI'}
           </Button>
         </div>
       </div>

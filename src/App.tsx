@@ -9,6 +9,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { SessionProvider } from "./contexts/SessionContext";
 import { TimerProvider } from "./contexts/TimerContext";
+import { LoadingProvider } from "./contexts/LoadingContext";
 import { useStudyReminders } from "./hooks/useStudyReminders";
 import { useMobileFeatures } from "./hooks/useMobileFeatures";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -53,7 +54,8 @@ function App() {
               <UserProvider>
                 <SessionProvider>
                   <TimerProvider>
-                    <StudyReminderManager />
+                    <LoadingProvider>
+                      <StudyReminderManager />
                     <Routes>
                     <Route path="/" element={<RootRedirect />} />
                     <Route path="/index" element={<Index />} />
@@ -74,11 +76,12 @@ function App() {
                     <Route path="/pending-reviews" element={<ProtectedRoute><PendingReviewsPage /></ProtectedRoute>} />
                     <Route path="/favorites" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </TimerProvider>
-              </SessionProvider>
-            </UserProvider>
-          </AuthProvider>
+                      </Routes>
+                    </LoadingProvider>
+                  </TimerProvider>
+                </SessionProvider>
+              </UserProvider>
+            </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
       </ThemeProvider>
