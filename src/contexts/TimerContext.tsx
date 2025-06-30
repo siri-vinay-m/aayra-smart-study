@@ -1,8 +1,10 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useSession } from './SessionContext';
-import { toast } from '@/hooks/use-toast';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { TimerType, TimerStatus } from '@/types/timer';
+import { useSession } from './SessionContext';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useLoadingPopup } from '@/hooks/useLoadingPopup';
 import { useTimerAlerts } from '@/hooks/useTimerAlerts';
 
 export type TimerType = 'focus' | 'break';
@@ -29,7 +31,10 @@ export const BREAK_TIME = 5 * 60; // 5 minutes in seconds (fallback)
 export const WARNING_TIME = 5 * 60; // 5 minutes warning in seconds (at 20 minutes)
 
 export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
   const { currentSession, updateCurrentSessionStatus, completeSession } = useSession();
+  const { requestNotificationPermission, scheduleNotification } = useNotifications();
+  const { withLoading } = useLoadingPopup();
   const { checkForFiveMinuteAlert, resetAlertState } = useTimerAlerts();
   const [timerType, setTimerType] = useState<TimerType>('focus');
   
@@ -45,7 +50,6 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [timeLeft, setTimeLeft] = useState(getInitialTime(timerType));
   const [status, setStatus] = useState<TimerStatus>('idle');
   const [progress, setProgress] = useState(0);
-  const navigate = useNavigate();
 
   // Reset timer when session changes or is cancelled
   useEffect(() => {
@@ -97,7 +101,7 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           if (newTime <= 0) {
             console.log('TimerContext: Timer completed, triggering completion logic');
             // Use setTimeout to handle completion logic after state update
-            setTimeout(() => {
+            setTimeout(async () => {
               console.log('TimerContext: Setting status to completed');
               setStatus('completed');
               playAlarmSound();
@@ -112,13 +116,20 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               } else {
                 console.log('TimerContext: Break timer completed, navigating to home');
                 // Break timer completed - mark session as completed
-                if (sessionAtStart && updateStatusAtStart) {
-                  updateStatusAtStart('completed');
-                }
-                if (sessionAtStart && completeSessionAtStart) {
-                  completeSessionAtStart(sessionAtStart.id);
-                }
-                navigate('/home');
+                await withLoading(
+                  async () => {
+                    if (sessionAtStart && updateStatusAtStart) {
+                      updateStatusAtStart('completed');
+                    }
+                    if (sessionAtStart && completeSessionAtStart) {
+                      completeSessionAtStart(sessionAtStart.id);
+                    }
+                    // Add a small delay to ensure the session is properly completed
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    navigate('/home');
+                  },
+                  'Completing session...'
+                );
               }
             }, 0);
             return 0;

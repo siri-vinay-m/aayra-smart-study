@@ -194,7 +194,7 @@ Timestamp: ${new Date().toISOString()}`;
               rows={4}
               maxLength={1000}
             />
-            <div className="text-xs text-gray-500 text-right">
+            <div className="text-xs text-muted-foreground text-right">
               {formData.description.length}/1000 characters
             </div>
           </div>

@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ isFirstTimeLogin: boolean; user: User; session: Session; weakPassword?: any; }>;
   signUp: (email: string, password: string, displayName: string, studentCategory: string) => Promise<void>;
   signOut: () => Promise<void>;
 }

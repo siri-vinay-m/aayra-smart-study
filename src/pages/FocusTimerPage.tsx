@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
-import CircularTimer from '@/components/timer/CircularTimer';
+import EnhancedFocusTimer from '@/components/timer/EnhancedFocusTimer';
 import { useSession } from '@/contexts/SessionContext';
 import { useTimer } from '@/contexts/TimerContext';
 
@@ -24,21 +24,7 @@ const FocusTimerPage = () => {
           <h1 className="text-xl font-semibold mb-8 text-center">Focus Timer</h1>
         )}
         
-        <CircularTimer />
-        
-        <div className="mt-8 text-center text-gray-600">
-          {currentSession ? (
-            <>
-              <p>Focus on your study materials.</p>
-              <p className="mt-2">You'll be prompted to upload your notes when the timer ends.</p>
-            </>
-          ) : (
-            <>
-              <p>Start a focus session to begin studying.</p>
-              <p className="mt-2">Create a new session first to track your progress.</p>
-            </>
-          )}
-        </div>
+        <EnhancedFocusTimer />
       </div>
     </MainLayout>
   );

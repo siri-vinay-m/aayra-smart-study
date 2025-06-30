@@ -16,7 +16,7 @@ export const useMobileFeatures = () => {
     if (Capacitor.isNativePlatform()) {
       // Configure status bar to prevent full-screen mode
       StatusBar.setStyle({ style: Style.Default });
-      StatusBar.setBackgroundColor({ color: '#ffffff' });
+      StatusBar.setBackgroundColor({ color: 'hsl(var(--background))' });
       StatusBar.setOverlaysWebView({ overlay: false });
       StatusBar.show();
       

@@ -47,8 +47,8 @@ export const useLoadingPopup = () => {
     try {
       showLoading(loadingMessage);
       const result = await asyncFunction();
-      // Add a small delay to ensure smooth transitions before hiding loading
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Add a delay to ensure the loading popup is visible long enough for users to see it
+      await new Promise(resolve => setTimeout(resolve, 1000));
       return result;
     } finally {
       hideLoading();

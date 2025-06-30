@@ -1,34 +1,27 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useUser, StudentCategory } from '@/contexts/UserContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useStudyReminders } from '@/hooks/useStudyReminders';
-import { usePerformanceOptimization } from '@/hooks/usePerformanceOptimization';
-import { useNavigationBehavior } from '@/hooks/useNavigationBehavior';
-import ProfileImageSection from '@/components/profile/ProfileImageSection';
-import SubscriptionStatusCard from '@/components/profile/SubscriptionStatusCard';
-import NotificationCard from '@/components/profile/NotificationCard';
-import ProfileForm from '@/components/profile/ProfileForm';
-import ProfileActions from '@/components/profile/ProfileActions';
-import UserSupportCard from '@/components/profile/UserSupportCard';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useLoading } from '@/contexts/LoadingContext';
+import ProfileImageSection from '@/components/profile/ProfileImageSection';
+import BasicProfileForm from '@/components/profile/BasicProfileForm';
+import ProfileActions from '@/components/profile/ProfileActions';
+
+import { Button } from '@/components/ui/button';
+import { Settings, HelpCircle } from 'lucide-react';
 
 /**
- * ProfilePage component with performance optimizations and user support features
+ * Simplified ProfilePage component focused on essential user information
  */
 const ProfilePage = () => {
-  const { user, setUser, loadUserData, checkSubscriptionStatus } = useUser();
+  const { user, setUser, loadUserData } = useUser();
   const { signOut, user: authUser } = useAuth();
   const { toast } = useToast();
-  const { withLoading } = useLoading(); 
-  const { requestNotificationPermission } = useStudyReminders();
-  
-  // Performance and navigation hooks
-  const { performanceMetrics, createLazyLoader, prefetchContent } = usePerformanceOptimization();
-  const { isIOS, isAndroid } = useNavigationBehavior();
+  const { withLoading } = useLoading();
+  const navigate = useNavigate();
   
   const [displayName, setDisplayName] = useState('');
   const [studentCategory, setStudentCategory] = useState<StudentCategory>('college');
@@ -36,52 +29,15 @@ const ProfilePage = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preferredStudyWeekdays, setPreferredStudyWeekdays] = useState<string[]>([]);
   const [preferredStudyStartTime, setPreferredStudyStartTime] = useState('');
-  // Removed local isLoading state - now using global loading context
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
 
-  useEffect(() => {
-    if ('Notification' in window) {
-      setNotificationPermission(Notification.permission);
-    }
-  }, []);
 
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('payment');
-    
-    if (paymentStatus === 'success') {
-      toast({
-        title: "Payment Successful!",
-        description: "Your subscription has been upgraded to Premium. Checking status...",
-      });
-      setTimeout(() => {
-        checkSubscriptionStatus();
-      }, 2000);
-      
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (paymentStatus === 'cancelled') {
-      toast({
-        title: "Payment Cancelled",
-        description: "Your payment was cancelled. You can try again anytime.",
-        variant: "destructive"
-      });
-      
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, [checkSubscriptionStatus, toast]);
 
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || '');
       setStudentCategory(user.studentCategory || 'college');
       setProfilePictureURL(user.profilePictureURL || '');
-      
-      if (user.preferredStudyWeekdays && Array.isArray(user.preferredStudyWeekdays)) {
-        setPreferredStudyWeekdays(user.preferredStudyWeekdays);
-      } else {
-        setPreferredStudyWeekdays([]);
-      }
-      
+      setPreferredStudyWeekdays(user.preferredStudyWeekdays || []);
       setPreferredStudyStartTime(user.preferredStudyStartTime || '');
     } else if (authUser) {
       setDisplayName(authUser.user_metadata?.display_name || 'User');
@@ -112,31 +68,9 @@ const ProfilePage = () => {
 
     updateLastLogin();
   }, [authUser]);
-  
-  useEffect(() => {
-    // Prefetch commonly accessed content
-    prefetchContent([
-      '/home',
-      '/pending-reviews',
-      '/completed-sessions'
-    ]);
-  }, [prefetchContent]);
 
   const handleFileSelect = (file: File | null) => {
     setSelectedFile(file);
-  };
-
-  const handleEnableNotifications = async () => {
-    const granted = await requestNotificationPermission();
-    if (granted) {
-      setNotificationPermission('granted');
-    } else {
-      toast({
-        title: "Notifications Blocked",
-        description: "Please enable notifications in your browser settings to receive study reminders.",
-        variant: "destructive"
-      });
-    }
   };
   
   const handleSaveProfile = async () => {
@@ -179,14 +113,12 @@ const ProfilePage = () => {
         }
       }
 
-      const weekdaysForDb = preferredStudyWeekdays.length > 0 ? preferredStudyWeekdays.join(',') : null;
-
       const userDataToSave = {
         displayname: displayName,
         studentcategory: studentCategory,
         profilepictureurl: newProfilePictureUrl || null,
-        preferredstudyweekdays: weekdaysForDb,
-        preferredstudystarttime: preferredStudyStartTime || null,
+        preferredstudyweekdays: preferredStudyWeekdays,
+         preferredstudystarttime: preferredStudyStartTime,
         lastloginat: new Date().toISOString()
       };
 
@@ -237,8 +169,8 @@ const ProfilePage = () => {
           displayName,
           studentCategory,
           profilePictureURL: newProfilePictureUrl,
-          preferredStudyWeekdays: preferredStudyWeekdays,
-          preferredStudyStartTime: preferredStudyStartTime || null,
+          preferredStudyWeekdays,
+          preferredStudyStartTime,
           id: authUser.id,
           email: authUser.email || '',
           isSubscribed: prevUser?.isSubscribed || false,
@@ -285,9 +217,7 @@ const ProfilePage = () => {
           onFileSelect={handleFileSelect}
         />
         
-        <SubscriptionStatusCard user={user} />
-        
-        <ProfileForm
+        <BasicProfileForm
           displayName={displayName}
           setDisplayName={setDisplayName}
           studentCategory={studentCategory}
@@ -297,36 +227,26 @@ const ProfilePage = () => {
           preferredStudyStartTime={preferredStudyStartTime}
           setPreferredStudyStartTime={setPreferredStudyStartTime}
         />
-
-        <NotificationCard
-          notificationPermission={notificationPermission}
-          onEnableNotifications={handleEnableNotifications}
-        />
         
-        {/* User Support Card */}
-        <UserSupportCard />
-        
-        {/* Theme Settings */}
-        <div className="bg-white rounded-lg shadow-sm border p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-medium">Appearance</h3>
-              <p className="text-sm text-gray-500">Choose your preferred theme</p>
-            </div>
-            <ThemeToggle />
-          </div>
+        {/* Navigation Buttons */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <Button
+            variant="outline"
+            className="flex items-center justify-center gap-2 p-4"
+            onClick={() => navigate('/settings')}
+          >
+            <Settings className="h-5 w-5" />
+            Settings
+          </Button>
+          <Button
+            variant="outline"
+            className="flex items-center justify-center gap-2 p-4"
+            onClick={() => navigate('/help')}
+          >
+            <HelpCircle className="h-5 w-5" />
+            Help
+          </Button>
         </div>
-        
-        {/* Performance Info (Development only) */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="bg-gray-50 rounded-lg p-3 mb-4 text-xs">
-            <div className="font-medium mb-1">Performance Metrics:</div>
-            <div>Load Time: {performanceMetrics.loadTime}ms</div>
-            <div>FPS: {performanceMetrics.fps}</div>
-            <div>Platform: {isIOS ? 'iOS' : isAndroid ? 'Android' : 'Web'}</div>
-            <div>Slow Connection: {performanceMetrics.isSlowConnection ? 'Yes' : 'No'}</div>
-          </div>
-        )}
         
         <ProfileActions
           onSaveProfile={handleSaveProfile}

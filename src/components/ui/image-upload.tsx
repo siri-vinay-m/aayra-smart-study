@@ -77,12 +77,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   return (
     <div className={`relative ${className}`} data-testid="profile-image-upload"> {/* Added data-testid */}
       <div 
-        className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center relative overflow-hidden border-2 border-gray-300 transition-colors cursor-pointer hover:border-orange-500"
+        className="w-24 h-24 rounded-full bg-muted flex items-center justify-center relative overflow-hidden border-2 border-border transition-colors cursor-pointer hover:border-orange-500"
         onClick={handleClick}
         title="Change profile picture"
       >
         {showPlaceholderIcon ? (
-          <Camera size={32} className="text-gray-400" />
+          <Camera size={32} className="text-muted-foreground" />
         ) : (
           <img 
             src={displayUrl} 

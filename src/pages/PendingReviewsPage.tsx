@@ -1,99 +1,122 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
 import { useLoading } from '@/contexts/LoadingContext';
 import { format } from 'date-fns';
 
-const PendingReviewsPage = () => {
+const PendingReviewsPage = React.memo(() => {
   const { pendingReviews, loadPendingReviews } = useSession();
   const { withLoading } = useLoading();
   const navigate = useNavigate();
   
-  // Reload pending reviews when the page loads and when returning from reviews
-  useEffect(() => {
-    console.log('PendingReviewsPage mounted, loading pending reviews...');
-    loadPendingReviews();
+  // Optimized data loading with debouncing
+  const debouncedLoadReviews = useCallback(() => {
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => loadPendingReviews(), { timeout: 100 });
+    } else {
+      setTimeout(loadPendingReviews, 0);
+    }
   }, [loadPendingReviews]);
 
-  // Also reload when the component becomes visible again (user returns from review)
+  // Load pending reviews when the page loads
   useEffect(() => {
-    const handleFocus = () => {
-      console.log('Window focused, reloading pending reviews...');
-      loadPendingReviews();
-    };
+    debouncedLoadReviews();
+  }, [debouncedLoadReviews]);
 
+  // Optimized visibility change handling
+  useEffect(() => {
+    let timeoutId: number;
+    
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('Page became visible, reloading pending reviews...');
-        loadPendingReviews();
+        // Debounce visibility changes to prevent excessive API calls
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(debouncedLoadReviews, 500);
       }
     };
 
-    window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearTimeout(timeoutId);
     };
-  }, [loadPendingReviews]);
+  }, [debouncedLoadReviews]);
   
-  const handleReviewClick = async (sessionId: string) => {
+  const handleReviewClick = useCallback(async (sessionId: string) => {
     await withLoading(async () => {
-      console.log('Starting review for session:', sessionId);
-      // Add a small delay to simulate loading time for better UX
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Remove unnecessary delay for better performance
       navigate(`/review/${sessionId}`);
     }, 'Loading review session...');
-  };
+  }, [navigate, withLoading]);
+
+  // Memoize formatted reviews to prevent unnecessary re-renders
+  const formattedReviews = useMemo(() => {
+    return pendingReviews.map((review) => ({
+      ...review,
+      formattedDueDate: format(new Date(review.dueDate), 'MMM d'),
+      key: `${review.sessionId}-${review.reviewStage}`
+    }));
+  }, [pendingReviews]);
   
   return (
     <MainLayout>
       <div className="px-4">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Pending Reviews</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Pending Reviews</h1>
         </div>
         
-        {pendingReviews.length === 0 ? (
+        {formattedReviews.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-600">No pending reviews</p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-muted-foreground">No pending reviews</p>
+        <p className="text-sm text-muted-foreground mt-2">
               Complete some study sessions to see reviews here!
             </p>
           </div>
         ) : (
           <div className="space-y-4">
-            {pendingReviews.map((review) => (
-              <div 
-                key={`${review.sessionId}-${review.reviewStage}`}
-                className="bg-white shadow-sm rounded-lg p-4 border border-gray-200 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all"
-                onClick={() => handleReviewClick(review.sessionId)}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-medium text-gray-900">{review.sessionName}</h3>
-                    <p className="text-sm text-gray-500">
-                      Stage {review.reviewStage}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Subject: {review.subjectName} • Topic: {review.topicName}
-                    </p>
-                  </div>
-                  <div className="text-primary">
-                    <span className="text-sm font-medium">
-                      Due {format(new Date(review.dueDate), 'MMM d')}
-                    </span>
-                  </div>
-                </div>
-              </div>
+            {formattedReviews.map((review) => (
+              <ReviewCard
+                key={review.key}
+                review={review}
+                onReviewClick={handleReviewClick}
+              />
             ))}
           </div>
         )}
       </div>
     </MainLayout>
   );
-};
+});
+
+// Memoized review card component for better performance
+const ReviewCard = React.memo(({ review, onReviewClick }: {
+  review: any;
+  onReviewClick: (sessionId: string) => void;
+}) => (
+  <div 
+    className="bg-card shadow-sm rounded-lg p-4 border border-border cursor-pointer hover:shadow-md hover:border-primary/20 transition-all"
+    onClick={() => onReviewClick(review.sessionId)}
+  >
+    <div className="flex justify-between items-start">
+      <div>
+        <h3 className="font-medium text-foreground">{review.sessionName}</h3>
+        <p className="text-sm text-muted-foreground">
+          Stage {review.reviewStage}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Subject: {review.subjectName} • Topic: {review.topicName}
+        </p>
+      </div>
+      <div className="text-primary">
+        <span className="text-sm font-medium">
+          Due {review.formattedDueDate}
+        </span>
+      </div>
+    </div>
+  </div>
+));
 
 export default PendingReviewsPage;

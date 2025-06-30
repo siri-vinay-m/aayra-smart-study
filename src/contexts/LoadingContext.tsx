@@ -43,10 +43,10 @@ export const LoadingProvider: React.FC<LoadingProviderProps> = ({ children }) =>
    * Automatically shows loading before execution and hides after completion/error
    * Includes a small delay before hiding to ensure smooth UI transitions
    */
-  const withLoading = useCallback(async <T>(
-    asyncFunction: () => Promise<T>,
+  const withLoading = useCallback(async (
+    asyncFunction: () => Promise<any>,
     loadingMessage: string = 'Aayra is working'
-  ): Promise<T> => {
+  ): Promise<any> => {
     try {
       showLoading(loadingMessage);
       const result = await asyncFunction();

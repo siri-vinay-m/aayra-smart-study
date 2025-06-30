@@ -102,12 +102,14 @@ export class NotificationService {
 
     // Check if already granted
     if (Notification.permission === 'granted') {
+      console.log('Notification permission already granted');
       return true;
     }
 
     // Don't request if explicitly denied
     if (Notification.permission === 'denied') {
       console.log('Notifications are blocked by the user');
+      alert('Notifications are blocked. Please enable them in your browser settings to receive study reminders.');
       return false;
     }
 
@@ -115,7 +117,16 @@ export class NotificationService {
       // Request permission and wait for user response
       const permission = await Notification.requestPermission();
       console.log('Notification permission result:', permission);
-      return permission === 'granted';
+      
+      if (permission === 'granted') {
+        console.log('Notification permission granted successfully');
+        // Test notification to confirm it works
+        this.showTestNotification();
+        return true;
+      } else {
+        console.log('Notification permission denied by user');
+        return false;
+      }
     } catch (error) {
       console.error('Error requesting notification permission:', error);
       return false;
@@ -123,23 +134,77 @@ export class NotificationService {
   }
 
   showNotification(title: string, body: string, icon?: string, playSound: boolean = true): void {
-    if (Notification.permission === 'granted') {
-      try {
-        new Notification(title, {
-          body,
-          icon: icon || '/favicon.ico',
-          badge: '/favicon.ico',
-          tag: 'study-reminder',
-          requireInteraction: true
-        });
-        
-        if (playSound) {
-          this.playNotificationSound();
-        }
-      } catch (error) {
-        console.error('Error showing notification:', error);
-      }
+    if (Notification.permission !== 'granted') {
+      console.log('Cannot show notification: permission not granted');
+      return;
     }
+
+    try {
+      // Try to use service worker notification first
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready.then((registration) => {
+          registration.showNotification(title, {
+            body,
+            icon: icon || '/favicon.ico',
+            badge: '/favicon.ico',
+            tag: 'study-reminder',
+            requireInteraction: true,
+            actions: [
+              {
+                action: 'open',
+                title: 'Start Studying'
+              },
+              {
+                action: 'dismiss',
+                title: 'Dismiss'
+              }
+            ]
+          });
+        }).catch((error) => {
+          console.error('Error showing service worker notification:', error);
+          // Fallback to regular notification
+          this.showRegularNotification(title, body, icon);
+        });
+      } else {
+        // Fallback to regular notification
+        this.showRegularNotification(title, body, icon);
+      }
+      
+      if (playSound) {
+        this.playNotificationSound();
+      }
+    } catch (error) {
+      console.error('Error showing notification:', error);
+    }
+  }
+
+  /**
+   * Show regular browser notification (fallback)
+   */
+  private showRegularNotification(title: string, body: string, icon?: string): void {
+    try {
+      new Notification(title, {
+        body,
+        icon: icon || '/favicon.ico',
+        badge: '/favicon.ico',
+        tag: 'study-reminder',
+        requireInteraction: true
+      });
+    } catch (error) {
+      console.error('Error showing regular notification:', error);
+    }
+  }
+
+  /**
+   * Show a test notification to verify the system works
+   */
+  showTestNotification(): void {
+    this.showNotification(
+      '🎉 Notifications Enabled!',
+      'Great! You\'ll now receive study reminders. This is a test notification.',
+      '/favicon.ico',
+      true
+    );
   }
 
   scheduleStudyReminders(weekdays: string[], startTime: string, userStats?: any): void {

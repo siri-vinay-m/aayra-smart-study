@@ -45,7 +45,7 @@ const SessionPDFList: React.FC = () => {
   if (isLoading) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-600">Loading session PDFs...</p>
+        <p className="text-muted-foreground">Loading session PDFs...</p>
       </div>
     );
   }
@@ -53,9 +53,9 @@ const SessionPDFList: React.FC = () => {
   if (sessionPDFs.length === 0) {
     return (
       <div className="text-center py-8">
-        <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <p className="text-gray-600">No session PDFs found.</p>
-        <p className="text-sm text-gray-500 mt-2">
+        <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">No session PDFs found.</p>
+        <p className="text-sm text-muted-foreground mt-2">
           Complete study sessions to generate PDFs automatically.
         </p>
       </div>
@@ -64,7 +64,7 @@ const SessionPDFList: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold mb-4">Session PDFs</h2>
+      <h2 className="text-xl font-semibold text-foreground mb-4">Session PDFs</h2>
       {sessionPDFs.map((pdf) => (
         <Card key={pdf.id}>
           <CardHeader className="pb-3">
@@ -79,11 +79,11 @@ const SessionPDFList: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
                 Generated: {new Date(pdf.generated_at).toLocaleDateString()}
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Hash className="h-4 w-4" />
                 Size: {formatFileSize(pdf.pdf_file_size)}
               </div>
@@ -100,7 +100,7 @@ const SessionPDFList: React.FC = () => {
             
             {pdf.content_summary && (
               <div className="mb-4">
-                <p className="text-sm text-gray-700 line-clamp-2">
+                <p className="text-sm text-muted-foreground line-clamp-2">
                   {pdf.content_summary}
                 </p>
               </div>

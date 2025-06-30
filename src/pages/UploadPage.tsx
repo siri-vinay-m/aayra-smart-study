@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
@@ -24,7 +24,7 @@ interface UploadItem {
   duration?: number;
 }
 
-const UploadPage = () => {
+const UploadPage = React.memo(() => {
   const { currentSession, setCurrentSession, updateCurrentSessionStatus } = useSession();
   const navigate = useNavigate();
   const { processStudyMaterials, isProcessing } = useAI();
@@ -51,19 +51,32 @@ const UploadPage = () => {
     return (
       <MainLayout>
         <div className="px-4 text-center">
-          <p className="text-lg text-gray-600">No active session found.</p>
+          <p className="text-lg text-muted-foreground">No active session found.</p>
         </div>
       </MainLayout>
     );
   }
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Memoize file validation constants
+  const fileValidation = useMemo(() => ({
+    maxSize: 10 * 1024 * 1024, // 10MB in bytes
+    allowedTypes: [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ]
+  }), []);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       
-      // File size validation (10MB limit)
-      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-      if (selectedFile.size > maxSize) {
+      // File size validation
+      if (selectedFile.size > fileValidation.maxSize) {
         toast({
           title: "File Too Large",
           description: "Please select a file smaller than 10MB.",
@@ -74,17 +87,7 @@ const UploadPage = () => {
       }
       
       // File type validation
-      const allowedTypes = [
-        'application/pdf',
-        'image/jpeg',
-        'image/jpg', 
-        'image/png',
-        'text/plain',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ];
-      
-      if (!allowedTypes.includes(selectedFile.type)) {
+      if (!fileValidation.allowedTypes.includes(selectedFile.type)) {
         toast({
           title: "Invalid File Type",
           description: "Please select a PDF, image, text, or Word document.",
@@ -96,7 +99,7 @@ const UploadPage = () => {
       
       setFile(selectedFile);
     }
-  };
+  }, [fileValidation, toast]);
   
   const handleRecordVoice = async () => {
     if (!isRecording) {
@@ -355,7 +358,7 @@ const UploadPage = () => {
     <MainLayout>
       <div className="px-4">
         <h1 className="text-2xl font-semibold mb-2">Upload Study Materials</h1>
-        <p className="text-gray-600 mb-6">Share what you've been studying</p>
+        <p className="text-muted-foreground mb-6">Share what you've been studying</p>
         
         {moderationAlert && (
           <ContentModerationAlert
@@ -399,7 +402,7 @@ const UploadPage = () => {
           </TabsContent>
           
           <TabsContent value="file" className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
               <input
                 type="file"
                 id="file-upload"
@@ -411,11 +414,11 @@ const UploadPage = () => {
                 htmlFor="file-upload"
                 className="cursor-pointer flex flex-col items-center"
               >
-                <Upload size={48} className="text-gray-400 mb-4" />
-                <p className="text-gray-600 mb-2">
+                <Upload size={48} className="text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-2">
                   {file ? file.name : 'Click to upload or drag and drop'}
                 </p>
-                <p className="text-gray-400 text-sm">
+                <p className="text-muted-foreground text-sm">
                   PDF, Images, or Documents
                 </p>
               </label>
@@ -478,7 +481,7 @@ const UploadPage = () => {
           </TabsContent>
           
           <TabsContent value="voice" className="space-y-4">
-            <div className="border-2 border-gray-300 rounded-lg p-8 text-center">
+            <div className="border-2 border-border rounded-lg p-8 text-center">
               <button
                 onClick={handleRecordVoice}
                 className={`w-20 h-20 rounded-full flex items-center justify-center ${
@@ -493,13 +496,13 @@ const UploadPage = () => {
               </button>
               
               {isRecording ? (
-                <p className="mt-4 text-gray-600">Recording... {formatTime(recordingTime)}</p>
+                <p className="mt-4 text-muted-foreground">Recording... {formatTime(recordingTime)}</p>
               ) : recordedAudio ? (
                 <div className="mt-4">
-                  <p className="text-gray-600 mb-2">Recording complete ({formatTime(recordingTime)})</p>
+                  <p className="text-muted-foreground mb-2">Recording complete ({formatTime(recordingTime)})</p>
                   <button 
                     onClick={playRecording}
-                    className="inline-flex items-center px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    className="inline-flex items-center px-4 py-2 rounded-md bg-muted hover:bg-accent text-foreground"
                   >
                     <Play size={16} className="mr-2" />
                     Play
@@ -507,7 +510,7 @@ const UploadPage = () => {
                   <audio ref={audioRef} className="hidden" />
                 </div>
               ) : (
-                <p className="mt-4 text-gray-600">Tap to start recording</p>
+                <p className="mt-4 text-muted-foreground">Tap to start recording</p>
               )}
             </div>
             
@@ -583,6 +586,6 @@ const UploadPage = () => {
       </div>
     </MainLayout>
   );
-};
+});
 
 export default UploadPage;

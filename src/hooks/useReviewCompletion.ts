@@ -2,10 +2,11 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAIContentStorage } from '@/hooks/useAIContentStorage';
-import { useQuizResponses } from '@/hooks/useQuizResponses';
-import { usePDFGeneration } from '@/hooks/usePDFGeneration';
 import { useSession } from '@/contexts/SessionContext';
+import { useAIContentStorage } from './useAIContentStorage';
+import { useQuizResponseStorage } from './useQuizResponseStorage';
+import { usePDFGeneration } from './usePDFGeneration';
+import { useLoadingPopup } from './useLoadingPopup';
 import { AIGeneratedContent } from '@/types/session';
 
 interface QuizResponse {
@@ -18,9 +19,10 @@ interface QuizResponse {
 export const useReviewCompletion = () => {
   const navigate = useNavigate();
   const { storeAIContent } = useAIContentStorage();
-  const { storeAllQuizResponses } = useQuizResponses();
+  const { storeAllQuizResponses } = useQuizResponseStorage();
   const { generateSessionPDF } = usePDFGeneration();
   const { loadPendingReviews } = useSession();
+  const { withLoading } = useLoadingPopup();
 
   const completeReviewSession = useCallback(async (
     sessionId: string,
@@ -28,142 +30,147 @@ export const useReviewCompletion = () => {
     quizResponses: QuizResponse[],
     reviewStage: number
   ) => {
-    try {
-      console.log('Starting review session completion:', { sessionId, reviewStage });
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
+    await withLoading(
+      async () => {
+        try {
+          console.log('Starting review session completion:', { sessionId, reviewStage });
+          
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            throw new Error('User not authenticated');
+          }
 
-      // Store AI content with quiz results included
-      const aiContentWithResults = {
-        ...aiContent,
-        quizResults: {
-          responses: quizResponses,
-          correctCount: quizResponses.filter(r => r.isCorrect).length,
-          totalCount: quizResponses.length,
-          scorePercentage: quizResponses.length > 0 ? Math.round((quizResponses.filter(r => r.isCorrect).length / quizResponses.length) * 100) : 0
+          // Store AI content with quiz results included
+          const aiContentWithResults = {
+            ...aiContent,
+            quizResults: {
+              responses: quizResponses,
+              correctCount: quizResponses.filter(r => r.isCorrect).length,
+              totalCount: quizResponses.length,
+              scorePercentage: quizResponses.length > 0 ? Math.round((quizResponses.filter(r => r.isCorrect).length / quizResponses.length) * 100) : 0
+            }
+          };
+          
+          console.log('Storing AI content with review stage:', reviewStage);
+          await storeAIContent(sessionId, aiContentWithResults, reviewStage);
+          
+          // Store quiz responses
+          if (quizResponses.length > 0) {
+            const formattedResponses = quizResponses.map(response => ({
+              questionIndex: response.questionIndex,
+              questionText: aiContent.quizQuestions[response.questionIndex]?.question || '',
+              selectedAnswer: response.selectedAnswer,
+              correctAnswer: response.correctAnswer,
+              isCorrect: response.isCorrect
+            }));
+            console.log('Storing quiz responses with review stage:', reviewStage);
+            await storeAllQuizResponses(sessionId, formattedResponses, reviewStage);
+          }
+
+          // Get session name for PDF generation
+          const { data: sessionData } = await supabase
+            .from('studysessions')
+            .select('sessionname')
+            .eq('sessionid', sessionId)
+            .single();
+
+          // Generate PDF for the review session (non-blocking)
+          console.log('Starting PDF generation for review session with stage:', reviewStage);
+          generateSessionPDF(sessionId, sessionData?.sessionname || 'Review Session', aiContentWithResults, reviewStage)
+            .then(() => console.log('PDF generation completed successfully'))
+            .catch(pdfError => console.error('PDF generation failed:', pdfError));
+
+          // Get the current review entry to preserve the original initialappearancedate
+          console.log('Fetching current review cycle entry...');
+          const { data: currentReview, error: fetchError } = await supabase
+            .from('reviewcycleentries')
+            .select('*')
+            .eq('sessionid', sessionId)
+            .eq('userid', user.id)
+            .eq('reviewstage', reviewStage)
+            .eq('status', 'pending')
+            .single();
+
+          if (fetchError || !currentReview) {
+            console.error('Error fetching current review entry:', fetchError);
+            throw fetchError || new Error('Current review entry not found');
+          }
+
+          // Update the review cycle entry status to completed
+          console.log('Updating review cycle entry status to completed...');
+          const { error: reviewUpdateError } = await supabase
+            .from('reviewcycleentries')
+            .update({ 
+              status: 'completed',
+              updatedat: new Date().toISOString()
+            })
+            .eq('sessionid', sessionId)
+            .eq('userid', user.id)
+            .eq('reviewstage', reviewStage)
+            .eq('status', 'pending');
+
+          if (reviewUpdateError) {
+            console.error('Error updating review cycle entry:', reviewUpdateError);
+            throw reviewUpdateError;
+          }
+
+          console.log('Review cycle entry updated successfully');
+
+          // Update session last reviewed date
+          const { error: sessionError } = await supabase
+            .from('studysessions')
+            .update({ 
+              lastreviewedat: new Date().toISOString(),
+              updatedat: new Date().toISOString()
+            })
+            .eq('sessionid', sessionId);
+
+          if (sessionError) {
+            console.error('Error updating session last reviewed date:', sessionError);
+          }
+
+          // Create next review cycle entry if needed
+          console.log('Creating next review cycle entry...');
+          if (reviewStage < 6) { // Maximum stage is 6
+            const nextReviewDate = calculateNextReviewDate(reviewStage);
+            const { error: nextEntryError } = await supabase
+              .from('reviewcycleentries')
+              .insert({
+                sessionid: sessionId,
+                userid: user.id,
+                initialappearancedate: currentReview.initialappearancedate, // Preserve original date
+                currentreviewduedate: nextReviewDate,
+                reviewstage: reviewStage + 1,
+                status: 'pending'
+              });
+
+            if (nextEntryError) {
+              console.error('Error creating next review cycle entry:', nextEntryError);
+            } else {
+              console.log('Next review cycle entry created for stage:', reviewStage + 1);
+            }
+          }
+
+          console.log('Review session completed successfully');
+
+          // Add a small delay to ensure database transaction is committed
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Refresh pending reviews list
+          console.log('Refreshing pending reviews list...');
+          await loadPendingReviews();
+          
+          // Navigate to home for pending reviews (not pending reviews page)
+          navigate('/home');
+        } catch (error) {
+          console.error('Error completing review session:', error);
+          // Navigate to home on error too
+          navigate('/home');
         }
-      };
-      
-      console.log('Storing AI content with review stage:', reviewStage);
-      await storeAIContent(sessionId, aiContentWithResults, reviewStage);
-      
-      // Store quiz responses
-      if (quizResponses.length > 0) {
-        const formattedResponses = quizResponses.map(response => ({
-          questionIndex: response.questionIndex,
-          questionText: aiContent.quizQuestions[response.questionIndex]?.question || '',
-          selectedAnswer: response.selectedAnswer,
-          correctAnswer: response.correctAnswer,
-          isCorrect: response.isCorrect
-        }));
-        console.log('Storing quiz responses with review stage:', reviewStage);
-        await storeAllQuizResponses(sessionId, formattedResponses, reviewStage);
-      }
-
-      // Get session name for PDF generation
-      const { data: sessionData } = await supabase
-        .from('studysessions')
-        .select('sessionname')
-        .eq('sessionid', sessionId)
-        .single();
-
-      // Generate PDF for the review session (non-blocking)
-      console.log('Starting PDF generation for review session with stage:', reviewStage);
-      generateSessionPDF(sessionId, sessionData?.sessionname || 'Review Session', aiContentWithResults, reviewStage)
-        .then(() => console.log('PDF generation completed successfully'))
-        .catch(pdfError => console.error('PDF generation failed:', pdfError));
-
-      // Get the current review entry to preserve the original initialappearancedate
-      console.log('Fetching current review cycle entry...');
-      const { data: currentReview, error: fetchError } = await supabase
-        .from('reviewcycleentries')
-        .select('*')
-        .eq('sessionid', sessionId)
-        .eq('userid', user.id)
-        .eq('reviewstage', reviewStage)
-        .eq('status', 'pending')
-        .single();
-
-      if (fetchError || !currentReview) {
-        console.error('Error fetching current review entry:', fetchError);
-        throw fetchError || new Error('Current review entry not found');
-      }
-
-      // Update the review cycle entry status to completed
-      console.log('Updating review cycle entry status to completed...');
-      const { error: reviewUpdateError } = await supabase
-        .from('reviewcycleentries')
-        .update({ 
-          status: 'completed',
-          updatedat: new Date().toISOString()
-        })
-        .eq('sessionid', sessionId)
-        .eq('userid', user.id)
-        .eq('reviewstage', reviewStage)
-        .eq('status', 'pending');
-
-      if (reviewUpdateError) {
-        console.error('Error updating review cycle entry:', reviewUpdateError);
-        throw reviewUpdateError;
-      }
-
-      console.log('Review cycle entry updated successfully');
-
-      // Update session last reviewed date
-      const { error: sessionError } = await supabase
-        .from('studysessions')
-        .update({ 
-          lastreviewedat: new Date().toISOString(),
-          updatedat: new Date().toISOString()
-        })
-        .eq('sessionid', sessionId);
-
-      if (sessionError) {
-        console.error('Error updating session last reviewed date:', sessionError);
-      }
-
-      // Create next review cycle entry if needed
-      console.log('Creating next review cycle entry...');
-      if (reviewStage < 6) { // Maximum stage is 6
-        const nextReviewDate = calculateNextReviewDate(reviewStage);
-        const { error: nextEntryError } = await supabase
-          .from('reviewcycleentries')
-          .insert({
-            sessionid: sessionId,
-            userid: user.id,
-            initialappearancedate: currentReview.initialappearancedate, // Preserve original date
-            currentreviewduedate: nextReviewDate,
-            reviewstage: reviewStage + 1,
-            status: 'pending'
-          });
-
-        if (nextEntryError) {
-          console.error('Error creating next review cycle entry:', nextEntryError);
-        } else {
-          console.log('Next review cycle entry created for stage:', reviewStage + 1);
-        }
-      }
-
-      console.log('Review session completed successfully');
-
-      // Add a small delay to ensure database transaction is committed
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Refresh pending reviews list
-      console.log('Refreshing pending reviews list...');
-      await loadPendingReviews();
-      
-      // Navigate to home for pending reviews (not pending reviews page)
-      navigate('/home');
-    } catch (error) {
-      console.error('Error completing review session:', error);
-      // Navigate to home on error too
-      navigate('/home');
-    }
-  }, [navigate, storeAIContent, storeAllQuizResponses, generateSessionPDF, loadPendingReviews]);
+      },
+      'Completing review session...'
+    );
+  }, [navigate, storeAIContent, storeAllQuizResponses, generateSessionPDF, loadPendingReviews, withLoading]);
 
   // Helper function to calculate next review date based on spaced repetition
   const calculateNextReviewDate = (currentStage: number): string => {

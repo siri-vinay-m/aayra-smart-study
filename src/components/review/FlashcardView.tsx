@@ -25,7 +25,7 @@ const FlashcardView: React.FC<FlashcardViewProps> = ({
   return (
     <>
       <div className="text-center mb-4">
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-muted-foreground">
           Flashcard {currentCardIndex + 1} of {flashcards.length}
         </span>
       </div>
@@ -33,7 +33,7 @@ const FlashcardView: React.FC<FlashcardViewProps> = ({
         <CardContent className="p-6">
           <div className="text-center">
             <h3 className="text-lg font-medium mb-4">{currentCard.question}</h3>
-            <p className="text-gray-700">{currentCard.answer}</p>
+            <p className="text-foreground">{currentCard.answer}</p>
           </div>
         </CardContent>
       </Card>

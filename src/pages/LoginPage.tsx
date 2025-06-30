@@ -44,17 +44,17 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-3 sm:px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-3 sm:px-4">
       <div className="max-w-md w-full space-y-6 sm:space-y-8">
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
             <AayraLogo size={40} className="sm:w-12 sm:h-12" />
             <h2 className="text-2xl sm:text-3xl font-bold text-orange-500">AAYRA</h2>
           </div>
-          <p className="text-gray-600 text-sm sm:text-base">Sign in to your account</p>
+          <p className="text-muted-foreground text-sm sm:text-base">Sign in to your account</p>
         </div>
         
-        <div className="bg-white p-6 sm:p-8 rounded-lg shadow-md">
+        <div className="bg-card p-6 sm:p-8 rounded-lg shadow-md">
           <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Log In</h2>
           
           {error && (
@@ -102,7 +102,7 @@ const LoginPage = () => {
           </form>
           
           <div className="text-center mt-3 sm:mt-4">
-            <p className="text-xs sm:text-sm text-gray-600">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Don't have an account?{' '}
               <Link to="/register" className="text-orange-500 hover:underline">
                 Sign up

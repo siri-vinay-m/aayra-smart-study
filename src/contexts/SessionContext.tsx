@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, ReactNode, useMemo } from 'react';
 import { useSessionOperations } from '@/hooks/useSessionOperations';
 import { useReviewOperations } from '@/hooks/useReviewOperations';
 import { StudySession, PendingReview, SessionStatus, AIGeneratedContent } from '@/types/session';
@@ -29,15 +29,29 @@ interface SessionContextType {
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
-export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const SessionProvider: React.FC<{ children: ReactNode }> = React.memo(({ children }) => {
   const sessionOps = useSessionOperations();
   const reviewOps = useReviewOperations();
 
-  // Load data on component mount
+  // Load data on component mount with performance optimization
   useEffect(() => {
-    sessionOps.loadCompletedSessions();
-    sessionOps.loadIncompleteSessions();
-    reviewOps.loadPendingReviews();
+    // Use requestIdleCallback for non-critical data loading
+    const loadData = () => {
+      // Load incomplete sessions first (most critical)
+      sessionOps.loadIncompleteSessions();
+      
+      // Defer other loads to next frame
+      requestAnimationFrame(() => {
+        sessionOps.loadCompletedSessions();
+        reviewOps.loadPendingReviews();
+      });
+    };
+    
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(loadData, { timeout: 100 });
+    } else {
+      setTimeout(loadData, 0);
+    }
   }, []);
 
   const completeSession = (sessionId: string) => {
@@ -56,32 +70,51 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    currentSession: sessionOps.currentSession,
+    completedSessions: sessionOps.completedSessions,
+    incompleteSessions: sessionOps.incompleteSessions,
+    pendingReviews: reviewOps.pendingReviews,
+    createNewSession: sessionOps.createNewSession,
+    setCurrentSession: sessionOps.setCurrentSession,
+    completeSession,
+    setPendingReviews: reviewOps.setPendingReviews,
+    setCompletedSessions: sessionOps.setCompletedSessions,
+    setIncompleteSessions: sessionOps.setIncompleteSessions,
+    updateCurrentSessionStatus: sessionOps.updateCurrentSessionStatus,
+    markSessionAsIncomplete: sessionOps.markSessionAsIncomplete,
+    loadCompletedSessions: sessionOps.loadCompletedSessions,
+    loadIncompleteSessions: sessionOps.loadIncompleteSessions,
+    loadPendingReviews: reviewOps.loadPendingReviews,
+    toggleFavorite: sessionOps.toggleFavorite,
+    markReviewAsCompleted: reviewOps.markReviewAsCompleted,
+  }), [
+    sessionOps.currentSession,
+    sessionOps.completedSessions,
+    sessionOps.incompleteSessions,
+    reviewOps.pendingReviews,
+    sessionOps.createNewSession,
+    sessionOps.setCurrentSession,
+    completeSession,
+    reviewOps.setPendingReviews,
+    sessionOps.setCompletedSessions,
+    sessionOps.setIncompleteSessions,
+    sessionOps.updateCurrentSessionStatus,
+    sessionOps.markSessionAsIncomplete,
+    sessionOps.loadCompletedSessions,
+    sessionOps.loadIncompleteSessions,
+    reviewOps.loadPendingReviews,
+    sessionOps.toggleFavorite,
+    reviewOps.markReviewAsCompleted,
+  ]);
+
   return (
-    <SessionContext.Provider
-      value={{
-        currentSession: sessionOps.currentSession,
-        completedSessions: sessionOps.completedSessions,
-        incompleteSessions: sessionOps.incompleteSessions,
-        pendingReviews: reviewOps.pendingReviews,
-        createNewSession: sessionOps.createNewSession,
-        setCurrentSession: sessionOps.setCurrentSession,
-        completeSession,
-        setPendingReviews: reviewOps.setPendingReviews,
-        setCompletedSessions: sessionOps.setCompletedSessions,
-        setIncompleteSessions: sessionOps.setIncompleteSessions,
-        updateCurrentSessionStatus: sessionOps.updateCurrentSessionStatus,
-        markSessionAsIncomplete: sessionOps.markSessionAsIncomplete,
-        loadCompletedSessions: sessionOps.loadCompletedSessions,
-        loadIncompleteSessions: sessionOps.loadIncompleteSessions,
-        loadPendingReviews: reviewOps.loadPendingReviews,
-        toggleFavorite: sessionOps.toggleFavorite,
-        markReviewAsCompleted: reviewOps.markReviewAsCompleted,
-      }}
-    >
+    <SessionContext.Provider value={contextValue}>
       {children}
     </SessionContext.Provider>
   );
-};
+});
 
 export const useSession = () => {
   const context = useContext(SessionContext);

@@ -98,7 +98,7 @@
   }
 
   .bottom-task-bar {
-    @apply flex items-center justify-around py-3 px-4 border-t bg-white fixed bottom-0 left-0 right-0;
+    @apply flex items-center justify-around py-3 px-4 border-t bg-background fixed bottom-0 left-0 right-0;
   }
 
   .bottom-task-bar-spacer {
@@ -106,7 +106,7 @@
   }
 
   .feature-block {
-    @apply bg-white shadow-md rounded-xl p-6 mb-6 transition-all hover:shadow-lg cursor-pointer border border-transparent hover:border-primary/20;
+    @apply bg-card shadow-md rounded-xl p-6 mb-6 transition-all hover:shadow-lg cursor-pointer border border-transparent hover:border-primary/20;
   }
 
   .circular-timer {

@@ -62,23 +62,23 @@ const ForgotPasswordPage = () => {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-orange-500 mb-2">AAYRA</h1>
-            <p className="text-gray-600">The Smarter way to Master more.</p>
+            <p className="text-muted-foreground">The Smarter way to Master more.</p>
           </div>
           
-          <div className="bg-white p-8 rounded-lg shadow-md text-center">
+          <div className="bg-card p-8 rounded-lg shadow-md text-center">
             <div className="mb-6">
               <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
                 <Mail className="w-8 h-8 text-green-600" />
               </div>
               <h2 className="text-2xl font-semibold mb-2">Check Your Email</h2>
-              <p className="text-gray-600 mb-4">
+              <p className="text-muted-foreground mb-4">
                 We've sent password reset instructions to <strong>{email}</strong>
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Didn't receive the email? Check your spam folder or try again.
               </p>
             </div>
@@ -105,21 +105,21 @@ const ForgotPasswordPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-orange-500 mb-2">AAYRA</h1>
-          <p className="text-gray-600">The Smarter way to Master more.</p>
+          <p className="text-muted-foreground">The Smarter way to Master more.</p>
         </div>
         
-        <div className="bg-white p-8 rounded-lg shadow-md">
+        <div className="bg-card p-8 rounded-lg shadow-md">
           <div className="mb-6">
             <Link to="/login" className="inline-flex items-center text-orange-500 hover:text-orange-600 mb-4">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Login
             </Link>
             <h2 className="text-2xl font-semibold mb-2">Reset Password</h2>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Enter your email address and we'll send you instructions to reset your password.
             </p>
           </div>
@@ -147,7 +147,7 @@ const ForgotPasswordPage = () => {
           </form>
           
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Remember your password?{' '}
               <Link to="/login" className="text-orange-500 hover:underline">
                 Sign in here

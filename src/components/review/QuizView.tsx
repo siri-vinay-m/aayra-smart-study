@@ -46,7 +46,7 @@ const QuizView: React.FC<QuizViewProps> = ({
   return (
     <>
       <div className="text-center mb-4">
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-muted-foreground">
           Question {currentQuestionIndex + 1} of {quizQuestions.length}
         </span>
       </div>
@@ -69,12 +69,12 @@ const QuizView: React.FC<QuizViewProps> = ({
                   disabled={isAnswerSubmitted}
                   className={`w-full p-3 text-left border rounded-lg transition-colors ${
                     showCorrect
-                      ? 'bg-green-100 border-green-500 text-green-800'
+                      ? 'bg-green-100 dark:bg-green-900/30 border-green-500 text-green-800 dark:text-green-200'
                       : showIncorrect
-                      ? 'bg-red-100 border-red-500 text-red-800'
+                      ? 'bg-red-100 dark:bg-red-900/30 border-red-500 text-red-800 dark:text-red-200'
                       : isSelected
-                      ? 'bg-blue-100 border-blue-500 text-blue-800'
-                      : 'bg-white border-gray-200 hover:bg-gray-50'
+                      ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-500 text-blue-800 dark:text-blue-200'
+                      : 'bg-card border-border hover:bg-accent hover:text-accent-foreground'
                   }`}
                 >
                   {option}
@@ -84,8 +84,8 @@ const QuizView: React.FC<QuizViewProps> = ({
           </div>
           
           {isAnswerSubmitted && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
                 <strong>Explanation:</strong> {currentQuestion.explanation}
               </p>
             </div>

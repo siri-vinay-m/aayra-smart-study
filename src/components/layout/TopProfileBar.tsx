@@ -42,7 +42,7 @@ const TopProfileBar = () => {
       {/* Logo on the left */}
       <div className="flex items-center">
         <div 
-          className="cursor-pointer hover:opacity-80 transition-opacity p-1 rounded-md hover:bg-gray-100"
+          className="cursor-pointer hover:opacity-80 transition-opacity p-1 rounded-md hover:bg-accent"
           onClick={handleLogoClick}
           title="View Study Stats"
         >
@@ -67,7 +67,7 @@ const TopProfileBar = () => {
               alt="Profile"
             />
           )}
-          <AvatarFallback className="bg-gray-200 text-gray-600">
+          <AvatarFallback className="bg-muted text-muted-foreground">
             {user?.profilePictureURL ? (
               <User size={20} />
             ) : (

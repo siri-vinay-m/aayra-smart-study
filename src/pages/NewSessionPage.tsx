@@ -58,8 +58,8 @@ const NewSessionPage = () => {
   const renderSessionLimitInfo = () => {
     if (sessionLimits.isLoading) {
       return (
-        <div className="bg-gray-50 border rounded-lg p-4 mb-4">
-          <div className="flex items-center gap-2 text-gray-600">
+        <div className="bg-muted border rounded-lg p-4 mb-4">
+          <div className="flex items-center gap-2 text-muted-foreground">
             <Clock size={16} />
             <span>Loading session limits...</span>
           </div>

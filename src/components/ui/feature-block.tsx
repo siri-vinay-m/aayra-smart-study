@@ -24,7 +24,7 @@ const FeatureBlock: React.FC<FeatureBlockProps> = ({
   return (
     <div
       className={cn(
-        "bg-white shadow-sm rounded-lg p-4 border border-gray-200 mb-4 transition-all",
+        "bg-card shadow-sm rounded-lg p-4 border mb-4 transition-all",
         onClick && !disabled ? "cursor-pointer hover:shadow-md hover:border-orange-300" : "",
         disabled ? "cursor-not-allowed" : "",
         className
@@ -36,21 +36,21 @@ const FeatureBlock: React.FC<FeatureBlockProps> = ({
           {icon && (
             <div className={cn(
               "text-orange-500",
-              disabled ? "text-gray-400" : ""
+              disabled ? "text-muted-foreground" : ""
             )}>
               {icon}
             </div>
           )}
           <div>
             <h3 className={cn(
-              "font-medium text-gray-900",
-              disabled ? "text-gray-500" : ""
+              "font-medium text-foreground",
+        disabled ? "text-muted-foreground" : ""
             )}>
               {title}
             </h3>
             <p className={cn(
-              "text-sm text-gray-500 mt-1",
-              disabled ? "text-gray-400" : ""
+              "text-sm text-muted-foreground mt-1",
+        disabled ? "text-muted-foreground/70" : ""
             )}>
               {description}
             </p>
@@ -59,7 +59,7 @@ const FeatureBlock: React.FC<FeatureBlockProps> = ({
         {count !== undefined && (
           <span className={cn(
             "bg-orange-100 text-orange-600 px-2 py-1 rounded-full text-sm font-medium",
-            disabled ? "bg-gray-100 text-gray-400" : ""
+            disabled ? "bg-muted text-muted-foreground" : ""
           )}>
             {count}
           </span>

@@ -16,7 +16,7 @@ const ReviewSessionError: React.FC<ReviewSessionErrorProps> = ({
 
   return (
     <div className="px-4 text-center py-8">
-      <p className="text-lg text-gray-600 mb-4">{message}</p>
+      <p className="text-lg text-muted-foreground mb-4">{message}</p>
       <div className="space-x-4">
         {onRetry && (
           <Button 

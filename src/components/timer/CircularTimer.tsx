@@ -1,8 +1,16 @@
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTimer } from '@/contexts/TimerContext';
 import { useSession } from '@/contexts/SessionContext';
 import { useNavigate } from 'react-router-dom';
+import { Settings, Volume2, VolumeX, Eye, EyeOff, Moon, MoonIcon } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { useLoadingPopup } from '@/hooks/useLoadingPopup';
 
 interface CircularTimerProps {
   showControls?: boolean;
@@ -38,13 +46,20 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - progress);
 
+  const { showLoading, hideLoading, withLoading } = useLoadingPopup();
+
   const handleSkip = async () => {
     if (timerType === 'break' && currentSession) {
-      // Complete the session when break is skipped
-      await completeSession(currentSession.id);
-      navigate('/home');
+      await withLoading(
+        async () => {
+          completeSession(currentSession.id);
+          // Add a small delay to ensure the session is properly completed
+          await new Promise(resolve => setTimeout(resolve, 500));
+          navigate('/home');
+        },
+        'Completing session...'
+      );
     } else {
-      // For focus timer, use the existing skip logic
       skipTimer();
     }
   };
@@ -68,7 +83,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
             cy="110"
             r={radius}
             fill="none"
-            stroke="#E0E0E0"
+            stroke="hsl(var(--border))"
             strokeWidth="12"
           />
           {/* Progress circle */}
@@ -77,7 +92,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
             cy="110"
             r={radius}
             fill="none"
-            stroke="#FF6600"
+            stroke="hsl(var(--primary))"
             strokeWidth="12"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
@@ -87,7 +102,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <div className="text-4xl font-semibold">{formattedTime}</div>
-          <div className="text-sm text-gray-500 mt-2 capitalize">
+          <div className="text-sm text-muted-foreground mt-2 capitalize">
             {timerType} {status === 'running' ? 'in progress' : status}
           </div>
         </div>
@@ -108,7 +123,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
             <>
               <button
                 onClick={resetTimer}
-                className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors"
+                className="px-6 py-3 rounded-lg bg-muted hover:bg-accent text-foreground font-medium transition-colors"
               >
                 Reset
               </button>
@@ -134,7 +149,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
 
               <button
                 onClick={handleSkip}
-                className="px-6 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium transition-colors"
+                className="px-6 py-3 rounded-lg bg-muted hover:bg-accent text-foreground font-medium transition-colors"
               >
                 Skip to Upload
               </button>

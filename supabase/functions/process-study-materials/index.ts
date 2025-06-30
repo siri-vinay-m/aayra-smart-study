@@ -1,6 +1,10 @@
 
+/// <reference path="./deno.d.ts" />
+
+// @deno-types="https://deno.land/x/xhr@0.1.0/mod.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @deno-types="https://deno.land/std@0.193.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.193.0/http/server.ts";
 
 const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
 
@@ -393,7 +397,7 @@ function preprocessContent(content: string): string {
   
   // Break down dense paragraphs (longer than 500 characters) into smaller segments
   const sentences = processedContent.split(/[.!?]+/);
-  const organizedSentences = [];
+  const organizedSentences: string[] = [];
   let currentParagraph = '';
   
   for (const sentence of sentences) {
@@ -425,7 +429,7 @@ function preprocessContent(content: string): string {
   // Add section markers for better organization
   const sections = processedContent.split('\n\n');
   if (sections.length > 3) {
-    const organizedSections = [];
+    const organizedSections: string[] = [];
     for (let i = 0; i < sections.length; i++) {
       if (i % 3 === 0 && i > 0) {
         organizedSections.push(`\n--- SECTION ${Math.floor(i/3) + 1} ---\n`);
@@ -585,8 +589,8 @@ REMEMBER: Every single word in your response must be in ${detectedLanguage}. Do 
       
       // Apply moderation to each component of the parsed content
       const moderatedResponse: AIResponse = {
-        flashcards: [],
-        quizQuestions: [],
+        flashcards: [] as Array<{ question: string; answer: string; }>,
+        quizQuestions: [] as Array<{ question: string; options: string[]; correctAnswer: string; explanation: string; }>,
         summary: ''
       };
       
@@ -612,7 +616,7 @@ REMEMBER: Every single word in your response must be in ${detectedLanguage}. Do 
           const explanationModeration = moderateAIOutput(quizItem.explanation || '');
           
           if (questionModeration.isAppropriate && explanationModeration.isAppropriate) {
-            const moderatedOptions = [];
+            const moderatedOptions: string[] = [];
             let allOptionsAppropriate = true;
             
             if (quizItem.options && Array.isArray(quizItem.options)) {
