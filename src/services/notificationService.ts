@@ -145,8 +145,8 @@ export class NotificationService {
         navigator.serviceWorker.ready.then((registration) => {
           registration.showNotification(title, {
             body,
-            icon: icon || '/favicon.ico',
-            badge: '/favicon.ico',
+            icon: icon || '/favicon.png',
+        badge: '/favicon.png',
             tag: 'study-reminder',
             requireInteraction: true,
             actions: [
@@ -185,8 +185,8 @@ export class NotificationService {
     try {
       new Notification(title, {
         body,
-        icon: icon || '/favicon.ico',
-        badge: '/favicon.ico',
+        icon: icon || '/favicon.png',
+        badge: '/favicon.png',
         tag: 'study-reminder',
         requireInteraction: true
       });
@@ -202,7 +202,7 @@ export class NotificationService {
     this.showNotification(
       '🎉 Notifications Enabled!',
       'Great! You\'ll now receive study reminders. This is a test notification.',
-      '/favicon.ico',
+      '/favicon.png',
       true
     );
   }
@@ -266,7 +266,7 @@ export class NotificationService {
           this.showNotification(
             'Study Time Reminder',
             message,
-            '/favicon.ico',
+            '/favicon.png',
             true
           );
         }, timeUntil15min);
@@ -283,7 +283,7 @@ export class NotificationService {
           this.showNotification(
             'Study Time Reminder',
             message,
-            '/favicon.ico',
+            '/favicon.png',
             true
           );
           

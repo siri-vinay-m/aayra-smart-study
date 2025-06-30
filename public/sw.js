@@ -22,20 +22,20 @@ self.addEventListener('push', function(event) {
   let notificationData = {
     title: 'Aayra Study Reminder',
     body: 'Time for your study session!',
-    icon: '/favicon.ico',
-    badge: '/favicon.ico',
+    icon: '/favicon.png',
+    badge: '/favicon.png',
     tag: 'study-reminder',
     requireInteraction: true,
     actions: [
       {
         action: 'open',
         title: 'Start Studying',
-        icon: '/favicon.ico'
+        icon: '/favicon.png'
       },
       {
         action: 'dismiss',
         title: 'Dismiss',
-        icon: '/favicon.ico'
+        icon: '/favicon.png'
       }
     ]
   };

@@ -394,7 +394,7 @@ export class SmartNotificationService {
           notificationService.showNotification(
             content.title,
             content.body,
-            '/favicon.ico',
+            '/favicon.png',
             true
           );
           

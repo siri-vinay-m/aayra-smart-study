@@ -33,7 +33,7 @@ const NotificationTest: React.FC = () => {
       notificationService.showNotification(
         '📚 Study Time!',
         'Time for your scheduled study session. Let\'s boost your productivity!',
-        '/favicon.ico',
+        '/favicon.png',
         true
       );
     } else {

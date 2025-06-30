@@ -3,13 +3,13 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StudySession } from '@/types/session';
 import { useSession } from '@/contexts/SessionContext';
-import { useAIContentGeneration } from './useAIContentGeneration';
+import { useSessionAI } from './useSessionAI';
 import { useLoadingPopup } from './useLoadingPopup';
 
 export const useIncompleteSession = (session: StudySession | null) => {
   const navigate = useNavigate();
   const { setCurrentSession, updateCurrentSessionStatus } = useSession();
-  const { generateAIContentForSession } = useAIContentGeneration();
+  const { generateAIContentForSession } = useSessionAI();
   const { withLoading } = useLoadingPopup();
 
   useEffect(() => {
