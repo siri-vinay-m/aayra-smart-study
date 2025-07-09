@@ -32,8 +32,8 @@ const BottomTaskBar = () => {
         location.pathname === '/pending-reviews') {
       handleNavigationAttempt('/home');
     } else if (location.pathname === '/home') {
-      // Navigate to login page when on home page
-      handleNavigationAttempt('/login');
+      // On home page, do nothing - let hardware back button handler manage this
+      return;
     } else {
       handleNavigationAttempt(-1 as any); // This will be handled by the browser's back functionality if no session to discard
     }

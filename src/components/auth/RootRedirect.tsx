@@ -5,9 +5,9 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const RootRedirect = () => {
   const { isAuthenticated } = useUser();
-  const { loading } = useAuth();
+  const { loading, session } = useAuth();
 
-  console.log('RootRedirect: loading =', loading, 'isAuthenticated =', isAuthenticated);
+  console.log('RootRedirect: loading =', loading, 'isAuthenticated =', isAuthenticated, 'session =', !!session);
 
   // Show loading while authentication state is being determined
   if (loading) {
@@ -19,7 +19,8 @@ const RootRedirect = () => {
     );
   }
 
-  if (isAuthenticated) {
+  // If we have a session, user is authenticated - redirect to home
+  if (session || isAuthenticated) {
     console.log('RootRedirect: User authenticated, redirecting to /home');
     return <Navigate to="/home" replace />;
   } else {

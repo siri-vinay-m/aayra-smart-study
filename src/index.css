@@ -172,6 +172,64 @@
   }
 }
 
+/* Mobile keyboard handling */
+@media (max-width: 768px) {
+  /* Ensure body can scroll when keyboard is open */
+  body {
+    position: relative;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Ensure main content area is scrollable */
+  #root {
+    min-height: 100vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Input field focus improvements */
+  input:focus,
+  textarea:focus {
+    outline: none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  }
+  
+  /* Ensure forms are scrollable when keyboard appears */
+  form {
+    overflow-y: visible;
+  }
+  
+  /* Prevent zoom on input focus */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+    transform: translateZ(0);
+  }
+  
+  /* Improve touch targets */
+  button,
+  input,
+  textarea,
+  select {
+    min-height: 44px;
+  }
+  
+  /* Ensure content doesn't get hidden behind keyboard */
+  .keyboard-padding {
+    padding-bottom: env(keyboard-inset-height, 0px);
+  }
+}
+
 /* Override any remaining blue colors */
 .text-blue-600,
 .text-blue-500,

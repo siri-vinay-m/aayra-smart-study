@@ -83,19 +83,16 @@ export const useNavigationBehavior = () => {
   }, [navigate, isIOS]);
 
   useEffect(() => {
-    // Set up Android back button handling
-    if (isAndroid() && APP_CONFIG.navigation.androidBackButton) {
-      window.addEventListener('popstate', handleAndroidBackButton);
-    }
+    // Note: Android back button handling is now managed by Capacitor App plugin
+    // in useBackButtonHandler hook for better native integration
     
-    // Set up iOS swipe back
+    // Set up iOS swipe back only
     const cleanupSwipe = enableIOSSwipeBack();
     
     return () => {
-      window.removeEventListener('popstate', handleAndroidBackButton);
       if (cleanupSwipe) cleanupSwipe();
     };
-  }, [handleAndroidBackButton, enableIOSSwipeBack, isAndroid]);
+  }, [enableIOSSwipeBack]);
 
   return {
     isIOS: isIOS(),

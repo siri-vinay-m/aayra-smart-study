@@ -252,7 +252,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           // sessionsUsedToday and sessionsUsedThisWeek removed from UserContext
           premiumPrice: userPlan === 'premium' ? planDetails?.price || 9.99 : 9.99,
         });
-        setIsAuthenticated(true);
       } else {
         // Create new user record if none exists
         const calculatedDaysRemaining = calculateSubscriptionDaysRemaining(authUser.created_at, 'free');
@@ -313,7 +312,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           // sessionsUsedToday and sessionsUsedThisWeek removed from UserContext
           premiumPrice: 9.99,
         });
-        setIsAuthenticated(true);
       }
     } catch (error) {
       console.error('Error in loadUserData:', error);
@@ -368,7 +366,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   useEffect(() => {
-    if (session) {
+    if (session && authUser) {
+      // Set authenticated immediately when we have a valid session
+      setIsAuthenticated(true);
       loadUserData();
     } else {
       setUser(null);
