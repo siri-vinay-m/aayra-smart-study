@@ -479,27 +479,34 @@ CRITICAL INSTRUCTION: You MUST generate ALL content (flashcards, quiz questions,
 
 CONTENT GENERATION REQUIREMENTS:
 
-1. FLASHCARDS (Generate 6-8 flashcards):
-   - Focus on key concepts highlighted in the preprocessed content
-   - Questions should test understanding of important terms and concepts
-   - Answers should be detailed and comprehensive (2-3 sentences minimum)
-   - Include examples or applications where relevant
+1. FLASHCARDS (Generate 10-12 comprehensive flashcards):
+   - Cover ALL major concepts, theories, and principles from the material
+   - Include sub-concepts and detailed explanations
+   - Questions should test deep understanding, not just recall
+   - Answers must be comprehensive (4-5 sentences minimum)
+   - Include real-world examples, applications, and connections to other concepts
+   - Cover both theoretical knowledge and practical applications
 
-2. QUIZ QUESTIONS (Generate 8-10 questions, MEDIUM TO HARD difficulty):
-   - CONCEPTUAL UNDERSTANDING (30%): Test theoretical knowledge and principles
-   - APPLICATION-BASED (40%): Require students to apply concepts to new situations
-   - HIGHER-ORDER THINKING (30%): Analysis, synthesis, evaluation questions
-   - Each question must have exactly 4 options
-   - Explanations should be detailed (3-4 sentences) explaining why the answer is correct
-   - Avoid simple recall questions - focus on understanding and application
+2. QUIZ QUESTIONS (Generate 12-15 questions, HARD TO VERY HARD difficulty):
+   - ADVANCED CONCEPTUAL UNDERSTANDING (25%): Complex theoretical knowledge requiring deep comprehension
+   - COMPLEX APPLICATION-BASED (35%): Multi-step problems requiring application of multiple concepts
+   - CRITICAL ANALYSIS & SYNTHESIS (25%): Questions requiring analysis, evaluation, and synthesis of information
+   - PROBLEM-SOLVING & SCENARIOS (15%): Real-world scenarios requiring creative problem-solving
+   - Each question must have exactly 4 options with sophisticated distractors
+   - Explanations must be very detailed (5-6 sentences) explaining why the answer is correct AND why other options are incorrect
+   - Include questions that require students to compare, contrast, analyze cause-effect relationships
+   - Avoid any simple recall or definition questions
 
-3. SUMMARY (Detailed and comprehensive):
-   - Organize into 4-6 small, focused paragraphs
-   - Each paragraph should cover a distinct aspect or concept
-   - Include specific details, examples, and connections between concepts
-   - Minimum 300 words total
-   - Use clear topic sentences for each paragraph
-   - Conclude with implications or applications
+3. SUMMARY (Extensive and comprehensive - minimum 500 words):
+   - Organize into 8-10 detailed paragraphs, each 60-80 words
+   - Cover every major topic, concept, and principle from the material
+   - Include detailed explanations with specific examples and case studies
+   - Explain relationships and connections between different concepts
+   - Discuss practical applications and real-world implications
+   - Include historical context or background where relevant
+   - Explain the significance and importance of each concept
+   - Use simple, clear language while maintaining comprehensive coverage
+   - Conclude with broader implications, future applications, and connections to other fields
 
 Focus on the emphasized concepts and key terms from the preprocessed content. Pay special attention to content marked with **KEY CONCEPT**, **IMPORTANT**, and section divisions.
 
@@ -540,10 +547,10 @@ REMEMBER: Every single word in your response must be in ${detectedLanguage}. Do 
           }]
         }],
         generationConfig: {
-          temperature: 0.4,  // Slightly higher for more detailed and creative responses
-          topK: 40,          // Increased for more diverse vocabulary
-          topP: 0.9,         // Higher for better coherence in longer responses
-          maxOutputTokens: 12288,  // Increased for comprehensive summaries and detailed explanations
+          temperature: 0.6,  // Higher for more creative and comprehensive responses
+          topP: 0.9,
+          topK: 40,
+          maxOutputTokens: 20480,  // Significantly increased for very comprehensive content (10-12 flashcards, 12-15 quiz questions, 500+ word summaries)
         },
       }),
     });
@@ -655,9 +662,9 @@ REMEMBER: Every single word in your response must be in ${detectedLanguage}. Do 
       }
       
       // Ensure we have minimum quality content after moderation
-      const minFlashcards = 5;  // Minimum 5 flashcards (target 6-8)
-      const minQuizQuestions = 6;  // Minimum 6 quiz questions (target 8-10)
-      const minSummaryLength = 200;  // Minimum 200 words for comprehensive summary (target 300+)
+      const minFlashcards = 8;  // Minimum 8 flashcards (target 10-12)
+      const minQuizQuestions = 10;  // Minimum 10 quiz questions (target 12-15)
+      const minSummaryLength = 400;  // Minimum 400 words for very comprehensive summary (target 500+)
       
       const summaryWordCount = moderatedResponse.summary ? moderatedResponse.summary.split(/\s+/).length : 0;
       

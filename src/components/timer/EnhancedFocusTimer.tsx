@@ -260,10 +260,10 @@ const EnhancedFocusTimer: React.FC<EnhancedFocusTimerProps> = ({ showControls = 
   }, [showSettings]);
   
   return (
-    <div className="flex flex-col items-center justify-center relative">
+    <div className="flex flex-col items-center justify-center relative w-full max-w-sm mx-auto px-4">
       {/* Settings Panel */}
       {showSettings && (
-        <Card ref={settingsRef} className="absolute top-0 left-0 right-0 z-10 mb-4">
+        <Card ref={settingsRef} className="absolute top-0 left-0 right-0 z-10 mb-4 mx-2">
           <CardContent className="p-4 space-y-4">
             <h3 className="font-semibold text-lg">Timer Settings</h3>
             
@@ -382,7 +382,7 @@ const EnhancedFocusTimer: React.FC<EnhancedFocusTimerProps> = ({ showControls = 
             <img 
               src={currentAffirmationGif} 
               alt="Motivational affirmation" 
-              className="w-64 h-48 object-cover rounded-lg shadow-lg"
+              className="w-full max-w-64 h-48 object-cover rounded-lg shadow-lg"
             />
             <p className="mt-4 text-sm text-muted-foreground">Stay focused and motivated!</p>
           </div>
@@ -405,11 +405,11 @@ const EnhancedFocusTimer: React.FC<EnhancedFocusTimerProps> = ({ showControls = 
       
       {/* Timer Controls */}
       {showControls && (
-        <div className="flex items-center justify-center gap-6 mt-8">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 mt-8 w-full">
           {timerType === 'break' ? (
             <Button
               onClick={handleSkip}
-              className="px-6 py-3 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium"
+              className="w-full sm:w-auto px-6 py-3 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium"
             >
               Complete Session
             </Button>
@@ -418,7 +418,7 @@ const EnhancedFocusTimer: React.FC<EnhancedFocusTimerProps> = ({ showControls = 
               <Button
                 onClick={handleReset}
                 variant="outline"
-                className="px-6 py-3"
+                className="w-full sm:w-auto px-6 py-3"
               >
                 Reset
               </Button>
@@ -426,14 +426,14 @@ const EnhancedFocusTimer: React.FC<EnhancedFocusTimerProps> = ({ showControls = 
               {status === 'running' ? (
                 <Button
                   onClick={handlePause}
-                  className="px-6 py-3"
+                  className="w-full sm:w-auto px-6 py-3"
                 >
                   Pause
                 </Button>
               ) : (
                 <Button
                   onClick={handleStart}
-                  className="px-6 py-3"
+                  className="w-full sm:w-auto px-6 py-3"
                 >
                   {status === 'paused' ? 'Resume' : 'Start'}
                 </Button>
@@ -442,7 +442,7 @@ const EnhancedFocusTimer: React.FC<EnhancedFocusTimerProps> = ({ showControls = 
               <Button
                 onClick={handleSkip}
                 variant="outline"
-                className="px-6 py-3"
+                className="w-full sm:w-auto px-6 py-3"
               >
                 Skip to Upload
               </Button>

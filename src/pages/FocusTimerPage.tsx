@@ -17,9 +17,9 @@ const FocusTimerPage = () => {
   
   return (
     <MainLayout>
-      <div className="px-4 flex flex-col items-center">
+      <div className="w-full max-w-md mx-auto px-4 flex flex-col items-center overflow-x-hidden">
         {currentSession ? (
-          <h1 className="text-xl font-semibold mb-8 text-center">{currentSession.sessionName}</h1>
+          <h1 className="text-xl font-semibold mb-8 text-center break-words">{currentSession.sessionName}</h1>
         ) : (
           <h1 className="text-xl font-semibold mb-8 text-center">Focus Timer</h1>
         )}

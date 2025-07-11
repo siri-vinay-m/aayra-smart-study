@@ -111,8 +111,10 @@
 
   .circular-timer {
     @apply relative flex items-center justify-center rounded-full;
-    width: 270px;
-    height: 270px;
+    width: min(270px, 80vw);
+    height: min(270px, 80vw);
+    max-width: 270px;
+    max-height: 270px;
   }
 }
 
@@ -123,8 +125,20 @@
   }
 
   .circular-timer {
-    width: 230px;
-    height: 230px;
+    width: min(230px, 75vw);
+    height: min(230px, 75vw);
+    max-width: 230px;
+    max-height: 230px;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .circular-timer {
+    width: min(200px, 70vw);
+    height: min(200px, 70vw);
+    max-width: 200px;
+    max-height: 200px;
   }
 }
 

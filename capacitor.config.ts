@@ -17,14 +17,6 @@ const config: CapacitorConfig = {
       style: 'default',
       backgroundColor: '#ffffff',
       overlaysWebView: false
-    },
-    Keyboard: {
-      resize: 'ionic',
-      style: 'dark',
-      resizeOnFullScreen: true
-    },
-    App: {
-      hardwareBackButton: true
     }
   }
 };
