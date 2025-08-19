@@ -16,7 +16,10 @@ import { useMobileFeatures } from "./hooks/useMobileFeatures";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import RootRedirect from "./components/auth/RootRedirect";
 import { PerformanceMonitor } from "./utils/performanceOptimizations";
-import { smartNotificationService } from "./services/smartNotificationService";
+import { simpleMobileNotificationService } from "./services/mobileNotificationService";
+import { Capacitor } from "@capacitor/core";
+import { enhancedNotificationService } from "./services/enhancedNotificationService";
+import LandingPage from "./components/LandingPage";
 
 // Critical pages loaded immediately
 import Index from "./pages/Index";
@@ -45,6 +48,7 @@ const IncompleteSessionsPage = lazy(() => import("./pages/IncompleteSessionsPage
 const PendingReviewsPage = lazy(() => import("./pages/PendingReviewsPage"));
 const FavoritesPage = lazy(() => import("./pages/FavoritesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const NotificationTester = lazy(() => import("./components/notifications/NotificationTester"));
 
 // Optimized QueryClient configuration for performance
 const queryClient = new QueryClient({
@@ -81,18 +85,33 @@ const StudyReminderManager = React.memo(() => {
   useStudyReminders();
   useMobileFeatures();
   
-  // Initialize smart notification service
+  // Initialize notification services
   React.useEffect(() => {
-    const initializeSmartNotifications = async () => {
+    const initializeNotificationServices = async () => {
       try {
-        await smartNotificationService.initialize();
-        console.log('Smart notification service initialized successfully');
+        // Initialize enhanced notification service (registers SW, requests permission, initializes smart service)
+        await enhancedNotificationService.initialize();
+        console.log('Enhanced notification service initialized successfully');
+        
+        // Initialize mobile notification service on mobile platforms
+        if (Capacitor.isNativePlatform()) {
+          await simpleMobileNotificationService.initialize();
+          console.log('Mobile notification service initialized successfully');
+          
+          // Request notification permissions for mobile
+           const permissionGranted = await simpleMobileNotificationService.requestPermissions();
+           if (permissionGranted) {
+             console.log('Mobile notification permissions granted');
+          } else {
+            console.log('Mobile notification permissions denied');
+          }
+        }
       } catch (error) {
-        console.error('Failed to initialize smart notification service:', error);
+        console.error('Failed to initialize notification services:', error);
       }
     };
     
-    initializeSmartNotifications();
+    initializeNotificationServices();
   }, []);
   
   // Monitor app performance
@@ -137,6 +156,7 @@ function App() {
                       <Routes>
                         <Route path="/" element={<RootRedirect />} />
                         <Route path="/index" element={<Index />} />
+                        <Route path="/landing" element={<LandingPage />} />
                         <Route path="/test" element={<TestPage />} />
                         <Route path="/debug" element={<DebugPage />} />
                         <Route path="/login" element={<LoginPage />} />
@@ -148,6 +168,7 @@ function App() {
                         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                         <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettingsPage /></ProtectedRoute>} />
                         <Route path="/test-notifications" element={<ProtectedRoute><NotificationTest /></ProtectedRoute>} />
+                        <Route path="/test-notifications-enhanced" element={<ProtectedRoute><NotificationTester /></ProtectedRoute>} />
                         <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
                         <Route path="/new-session" element={<ProtectedRoute><NewSessionPage /></ProtectedRoute>} />
                         <Route path="/focus-timer" element={<ProtectedRoute><FocusTimerPage /></ProtectedRoute>} />

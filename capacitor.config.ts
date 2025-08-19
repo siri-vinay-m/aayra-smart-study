@@ -17,6 +17,11 @@ const config: CapacitorConfig = {
       style: 'default',
       backgroundColor: '#ffffff',
       overlaysWebView: false
+    },
+    LocalNotifications: {
+      smallIcon: 'ic_stat_icon_config_sample',
+      iconColor: '#488AFF',
+      sound: 'beep.wav'
     }
   }
 };

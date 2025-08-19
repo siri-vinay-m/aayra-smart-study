@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import MainLayout from '@/components/layout/MainLayout';
 import NotificationAnalytics from '@/components/notifications/NotificationAnalytics';
+import NotificationTestMobile from '@/components/NotificationTestMobile';
 import { notificationService } from '@/services/notificationService';
 import { mobileNotificationService } from '@/services/mobileNotificationService';
 import { Capacitor } from '@capacitor/core';
@@ -213,6 +214,11 @@ const NotificationSettingsPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Mobile Notification Test Component */}
+        {isMobile && (
+          <NotificationTestMobile className="mb-6" />
+        )}
 
         {/* Notification Analytics Component */}
         <NotificationAnalytics />

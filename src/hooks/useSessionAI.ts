@@ -30,11 +30,16 @@ export const useSessionAI = () => {
       return null;
     }
     
-    // Check if we already have AI content stored
-    const existingContent = await getAIContent(sessionId, reviewStage);
-    if (existingContent) {
-      console.log('Found existing AI content for session:', sessionId, 'stage:', reviewStage);
-      return existingContent;
+    // For review sessions (reviewStage > 0), always generate fresh content
+    // For initial sessions (reviewStage = 0), check for existing content
+    if (reviewStage === 0) {
+      const existingContent = await getAIContent(sessionId, reviewStage);
+      if (existingContent) {
+        console.log('Found existing AI content for initial session:', sessionId);
+        return existingContent;
+      }
+    } else {
+      console.log('Generating fresh AI content for review session:', sessionId, 'stage:', reviewStage);
     }
 
     generatingSessionsRef.current.add(sessionKey);

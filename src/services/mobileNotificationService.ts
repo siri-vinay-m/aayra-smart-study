@@ -1,84 +1,128 @@
 /**
- * Mobile Notification Service for Android and iOS push notifications
- * Uses Capacitor's PushNotifications plugin for native mobile notifications
+ * Simplified Mobile Notification Service
+ * Uses local notifications and Supabase realtime for push-like functionality
  */
 
-import { PushNotifications, Token, PushNotificationSchema, ActionPerformed } from '@capacitor/push-notifications';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface NotificationPermissionStatus {
-  receive: 'granted' | 'denied' | 'prompt';
+  display: 'granted' | 'denied' | 'prompt';
 }
 
-export class MobileNotificationService {
-  private static instance: MobileNotificationService;
+export class SimpleMobileNotificationService {
+  private static instance: SimpleMobileNotificationService;
   private isInitialized = false;
-  private registrationToken: string | null = null;
+  private userId: string | null = null;
+  private realtimeChannel: any = null;
 
-  static getInstance(): MobileNotificationService {
-    if (!MobileNotificationService.instance) {
-      MobileNotificationService.instance = new MobileNotificationService();
+  static getInstance(): SimpleMobileNotificationService {
+    if (!SimpleMobileNotificationService.instance) {
+      SimpleMobileNotificationService.instance = new SimpleMobileNotificationService();
     }
-    return MobileNotificationService.instance;
+    return SimpleMobileNotificationService.instance;
   }
 
   /**
-   * Initialize the mobile notification service
-   * Sets up listeners and handles platform-specific initialization
+   * Initialize the notification service with Supabase realtime
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) {
       return;
     }
 
-    // Only initialize on mobile platforms
-    if (!Capacitor.isNativePlatform()) {
-      console.log('Mobile notifications not available on web platform');
-      return;
-    }
-
     try {
-      // Add listeners for push notification events
-      await this.addListeners();
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        this.userId = user.id;
+        await this.setupRealtimeNotifications();
+      }
+
+      // Request local notification permissions
+      if (Capacitor.isNativePlatform()) {
+        await LocalNotifications.requestPermissions();
+      }
+
       this.isInitialized = true;
-      console.log('Mobile notification service initialized successfully');
+      console.log('Simplified notification service initialized');
     } catch (error) {
-      console.error('Error initializing mobile notification service:', error);
+      console.error('Error initializing notification service:', error);
       throw error;
     }
   }
 
   /**
-   * Request permission for push notifications
-   * Returns true if permission is granted, false otherwise
+   * Setup Supabase realtime notifications
    */
-  async requestPermission(): Promise<boolean> {
-    if (!Capacitor.isNativePlatform()) {
-      console.log('Cannot request mobile notification permission on web platform');
-      return false;
+  private async setupRealtimeNotifications(): Promise<void> {
+    if (!this.userId) return;
+
+    // Remove existing channel if any
+    if (this.realtimeChannel) {
+      await supabase.removeChannel(this.realtimeChannel);
     }
 
-    try {
-      // Initialize if not already done
-      if (!this.isInitialized) {
-        await this.initialize();
-      }
+    // Listen for notification events in realtime
+    this.realtimeChannel = supabase
+      .channel('notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notification_logs',
+          filter: `user_id=eq.${this.userId}`
+        },
+        (payload) => {
+          this.handleRealtimeNotification(payload.new);
+        }
+      )
+      .subscribe();
 
-      // Request permission
-      const result = await PushNotifications.requestPermissions();
+    console.log('Realtime notifications setup for user:', this.userId);
+  }
+
+  /**
+   * Handle realtime notification from Supabase
+   */
+  private async handleRealtimeNotification(notification: any): Promise<void> {
+    try {
+      const content = JSON.parse(notification.content);
       
-      if (result.receive === 'granted') {
-        console.log('Push notification permission granted');
-        
-        // Register for push notifications
-        await PushNotifications.register();
-        return true;
-      } else {
-        console.log('Push notification permission denied');
-        return false;
-      }
+      // Show local notification
+      await this.showLocalNotification(
+        content.title || 'Study Reminder',
+        content.body || 'Time for your study session!',
+        {
+          type: notification.notification_type,
+          id: notification.id
+        }
+      );
     } catch (error) {
-      console.error('Error requesting push notification permission:', error);
+      console.error('Error handling realtime notification:', error);
+    }
+  }
+
+  /**
+   * Request notification permissions
+   */
+  async requestPermissions(): Promise<boolean> {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const result = await LocalNotifications.requestPermissions();
+        return result.display === 'granted';
+      } else {
+        // Web notification permission
+        if ('Notification' in window) {
+          const permission = await Notification.requestPermission();
+          return permission === 'granted';
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Error requesting permissions:', error);
       return false;
     }
   }
@@ -87,169 +131,205 @@ export class MobileNotificationService {
    * Check current permission status
    */
   async checkPermissions(): Promise<NotificationPermissionStatus> {
-    if (!Capacitor.isNativePlatform()) {
-      return { receive: 'denied' };
-    }
-
     try {
-      const result = await PushNotifications.checkPermissions();
-      return result;
+      if (Capacitor.isNativePlatform()) {
+        const result = await LocalNotifications.checkPermissions();
+        return { display: result.display };
+      } else {
+        // Web notification permission
+        if ('Notification' in window) {
+          return { display: Notification.permission as 'granted' | 'denied' | 'prompt' };
+        }
+      }
+      return { display: 'denied' };
     } catch (error) {
-      console.error('Error checking push notification permissions:', error);
-      return { receive: 'denied' };
+      console.error('Error checking notification permissions:', error);
+      return { display: 'denied' };
     }
   }
 
   /**
-   * Get the current registration token
+   * Show local notification
    */
-  getRegistrationToken(): string | null {
-    return this.registrationToken;
-  }
-
-  /**
-   * Schedule a local notification
-   * For immediate notifications that don't require server push
-   */
-  async scheduleLocalNotification(title: string, body: string, delay: number = 0): Promise<void> {
-    if (!Capacitor.isNativePlatform()) {
-      console.log('Local notifications not available on web platform');
-      return;
-    }
-
+  async showLocalNotification(
+    title: string,
+    body: string,
+    data?: Record<string, any>
+  ): Promise<void> {
     try {
-      // Import LocalNotifications dynamically
-      const { LocalNotifications } = await import('@capacitor/local-notifications');
-      
-      // Request permission for local notifications
-      const permission = await LocalNotifications.requestPermissions();
-      
-      if (permission.display === 'granted') {
-        const notificationTime = new Date(Date.now() + delay);
-        
+      if (Capacitor.isNativePlatform()) {
         await LocalNotifications.schedule({
           notifications: [
             {
               title,
               body,
               id: Date.now(),
-              schedule: { at: notificationTime },
+              schedule: { at: new Date(Date.now() + 1000) }, // 1 second delay
               sound: 'default',
-              attachments: undefined,
-              actionTypeId: '',
-              extra: {
-                type: 'study_reminder'
-              }
+              extra: data || {}
             }
           ]
         });
-        
-        console.log('Local notification scheduled successfully');
       } else {
-        console.log('Local notification permission denied');
+        // Web notification
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification(title, { body, icon: '/AayraFavicon.png' });
+        }
       }
     } catch (error) {
-      console.error('Error scheduling local notification:', error);
+      console.error('Error showing local notification:', error);
     }
   }
 
   /**
-   * Add event listeners for push notifications
+   * Schedule study reminder
    */
-  private async addListeners(): Promise<void> {
-    // Listen for registration token
-    await PushNotifications.addListener('registration', (token: Token) => {
-      console.log('Push registration success, token: ' + token.value);
-      this.registrationToken = token.value;
-      
-      // Here you would typically send the token to your backend server
-      // to associate it with the user for sending push notifications
-      this.sendTokenToServer(token.value);
-    });
-
-    // Listen for registration errors
-    await PushNotifications.addListener('registrationError', (error: any) => {
-      console.error('Error on registration: ' + JSON.stringify(error));
-    });
-
-    // Listen for push notifications received
-    await PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
-      console.log('Push notification received: ', notification);
-      
-      // Handle the received notification
-      this.handleNotificationReceived(notification);
-    });
-
-    // Listen for notification actions (when user taps notification)
-    await PushNotifications.addListener('pushNotificationActionPerformed', (notification: ActionPerformed) => {
-      console.log('Push notification action performed: ', notification);
-      
-      // Handle notification tap/action
-      this.handleNotificationAction(notification);
-    });
-  }
-
-  /**
-   * Send registration token to your backend server
-   * This is where you would integrate with your backend API
-   */
-  private async sendTokenToServer(token: string): Promise<void> {
+  async scheduleStudyReminder(
+    title: string,
+    body: string,
+    scheduledTime: Date
+  ): Promise<void> {
     try {
-      // TODO: Implement API call to your backend
-      // Example:
-      // await fetch('/api/register-push-token', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ token, userId: currentUserId })
-      // });
-      
-      console.log('Token should be sent to server:', token);
+      if (Capacitor.isNativePlatform()) {
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              title,
+              body,
+              id: Date.now(),
+              schedule: { at: scheduledTime },
+              sound: 'default',
+              extra: { type: 'study_reminder' }
+            }
+          ]
+        });
+      }
+
+      // Also log to Supabase for tracking
+      if (this.userId) {
+        await supabase.from('notification_logs').insert({
+          user_id: this.userId,
+          notification_type: 'study_reminder',
+          content: JSON.stringify({ title, body }),
+          scheduled_time: scheduledTime.toISOString(),
+          status: 'scheduled'
+        });
+      }
+
+      console.log('Study reminder scheduled successfully');
     } catch (error) {
-      console.error('Error sending token to server:', error);
+      console.error('Error scheduling study reminder:', error);
     }
   }
 
   /**
-   * Handle received push notification
+   * Send notification to user (creates database entry that triggers realtime)
    */
-  private handleNotificationReceived(notification: PushNotificationSchema): void {
-    // You can customize how notifications are handled when received
-    console.log('Handling received notification:', notification.title);
-    
-    // Example: Show a toast or update app state
-    // You might want to emit an event or update a global state here
-  }
+  async sendNotificationToUser(
+    userId: string,
+    title: string,
+    body: string,
+    type: string = 'general'
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('notification_logs').insert({
+        user_id: userId,
+        notification_type: type,
+        content: JSON.stringify({ title, body }),
+        scheduled_time: new Date().toISOString(),
+        sent_time: new Date().toISOString(),
+        status: 'sent'
+      });
 
-  /**
-   * Handle notification action (when user taps notification)
-   */
-  private handleNotificationAction(action: ActionPerformed): void {
-    console.log('Handling notification action:', action.notification.title);
-    
-    // Navigate to specific screen based on notification data
-    const notificationData = action.notification.data;
-    
-    if (notificationData?.type === 'study_reminder') {
-      // Navigate to study session or timer page
-      console.log('Navigating to study session...');
-    } else if (notificationData?.type === 'review_reminder') {
-      // Navigate to pending reviews page
-      console.log('Navigating to pending reviews...');
+      if (error) {
+        console.error('Error sending notification:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      return false;
     }
-    
-    // You would typically use your app's navigation system here
-    // Example: router.push('/study-session');
   }
 
   /**
-   * Remove all listeners (cleanup)
+   * Schedule a local notification with delay
+   * For immediate notifications that don't require server push
    */
-  async removeAllListeners(): Promise<void> {
-    await PushNotifications.removeAllListeners();
-    this.isInitialized = false;
-    console.log('All push notification listeners removed');
+  async scheduleLocalNotification(title: string, body: string, delay: number = 0): Promise<void> {
+    const scheduledTime = new Date(Date.now() + delay);
+    await this.showLocalNotification(title, body, { type: 'local_test' });
+  }
+
+  /**
+   * Get user ID for notifications
+   */
+  getUserId(): string | null {
+    return this.userId;
+  }
+
+  /**
+   * Update user ID (useful when user logs in/out)
+   */
+  async setUserId(userId: string | null): Promise<void> {
+    this.userId = userId;
+    
+    if (userId && this.isInitialized) {
+      await this.setupRealtimeNotifications();
+    } else if (!userId && this.realtimeChannel) {
+      await supabase.removeChannel(this.realtimeChannel);
+      this.realtimeChannel = null;
+    }
+  }
+
+  /**
+   * Cleanup and remove all listeners
+   */
+  async cleanup(): Promise<void> {
+    try {
+      if (this.realtimeChannel) {
+        await supabase.removeChannel(this.realtimeChannel);
+        this.realtimeChannel = null;
+      }
+      
+      this.isInitialized = false;
+      this.userId = null;
+      console.log('Notification service cleaned up');
+    } catch (error) {
+      console.error('Error during cleanup:', error);
+    }
+  }
+
+  /**
+   * Get notification statistics for user
+   */
+  async getNotificationStats(): Promise<any> {
+    if (!this.userId) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('notification_logs')
+        .select('notification_type, status, created_at')
+        .eq('user_id', this.userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('Error fetching notification stats:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error getting notification stats:', error);
+      return null;
+    }
   }
 }
 
 // Export singleton instance
-export const mobileNotificationService = MobileNotificationService.getInstance();
+export const simpleMobileNotificationService = SimpleMobileNotificationService.getInstance();
+
+// Keep backward compatibility
+export const mobileNotificationService = simpleMobileNotificationService;

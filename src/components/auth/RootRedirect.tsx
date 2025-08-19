@@ -2,7 +2,13 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useUser } from "@/contexts/UserContext";
 import { useAuth } from "@/contexts/AuthContext";
+import LandingPage from "@/components/LandingPage";
 
+/**
+ * RootRedirect now serves the public LandingPage for unauthenticated visitors.
+ * - If authenticated: redirect to /home
+ * - If unauthenticated: render LandingPage (high-converting sales page)
+ */
 const RootRedirect = () => {
   const { isAuthenticated } = useUser();
   const { loading, session } = useAuth();
@@ -23,10 +29,11 @@ const RootRedirect = () => {
   if (session || isAuthenticated) {
     console.log('RootRedirect: User authenticated, redirecting to /home');
     return <Navigate to="/home" replace />;
-  } else {
-    console.log('RootRedirect: User not authenticated, redirecting to /login');
-    return <Navigate to="/login" replace />;
   }
+  
+  // Otherwise, show the public landing page
+  console.log('RootRedirect: User not authenticated, rendering LandingPage');
+  return <LandingPage />;
 };
 
 export default RootRedirect;

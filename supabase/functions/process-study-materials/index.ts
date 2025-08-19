@@ -453,6 +453,9 @@ async function generateAIContent(content: string, sessionName: string): Promise<
   const detectedLanguage = detectLanguage(content);
   console.log('Detected language:', detectedLanguage);
   
+  // Generate a unique seed for content variation
+  const generationSeed = Date.now() + Math.random().toString(36).substring(2);
+  
   const prompt = `
 IMPORTANT GUIDELINES:
 - Generate only factual, educational content
@@ -465,37 +468,93 @@ You are an educational AI assistant that MUST generate content in the SAME langu
 
 Study Materials Language: ${detectedLanguage}
 Session Name: "${sessionName}"
+Generation Seed: ${generationSeed} (Use this to ensure unique content variation)
 
-STUDENT LEVEL: INTERMEDIATE
-- Assume students have foundational knowledge in the subject
-- Create content that builds upon basic concepts
-- Include moderate complexity in explanations
-- Use terminology appropriate for intermediate learners
+STUDENT LEVEL: ADVANCED
+- Assume students have solid foundational knowledge and are ready for challenging content
+- Create content that requires deep analytical thinking and synthesis
+- Include high complexity in explanations with multi-layered concepts
+- Use advanced terminology and expect sophisticated understanding
+- Focus on critical thinking, problem-solving, and real-world applications
 
 PREPROCESSED Study Materials Content:
 ${preprocessedContent}
 
-CRITICAL INSTRUCTION: You MUST generate ALL content (flashcards, quiz questions, and summary) EXCLUSIVELY in ${detectedLanguage}. Do NOT use English or any other language. Every single word in your response must be in ${detectedLanguage}.
+CRITICAL INSTRUCTIONS:
+1. You MUST generate ALL content (flashcards, quiz questions, and summary) EXCLUSIVELY in ${detectedLanguage}. Do NOT use English or any other language. Every single word in your response must be in ${detectedLanguage}.
+
+2. FRESH CONTENT GENERATION: You MUST generate completely NEW and UNIQUE questions every time. Do NOT repeat or reuse similar questions, phrasings, or approaches. Each generation should explore different angles, applications, and aspects of the material. Use creative and varied question formulations to ensure maximum diversity.
+
+3. RANDOMIZATION REQUIREMENT: Vary your approach to question creation, answer explanations, and content organization. Use different examples, scenarios, and applications each time to ensure no two generations are similar.
 
 CONTENT GENERATION REQUIREMENTS:
 
-1. FLASHCARDS (Generate 10-12 comprehensive flashcards):
-   - Cover ALL major concepts, theories, and principles from the material
-   - Include sub-concepts and detailed explanations
-   - Questions should test deep understanding, not just recall
-   - Answers must be comprehensive (4-5 sentences minimum)
-   - Include real-world examples, applications, and connections to other concepts
-   - Cover both theoretical knowledge and practical applications
+1. FLASHCARDS (Generate 12-15 comprehensive flashcards):
+   
+   CONTENT COVERAGE REQUIREMENTS:
+   - Cover ALL major concepts, theories, and principles from the material (60%)
+   - Include advanced applications and real-world implementations (25%)
+   - Cover interdisciplinary connections and broader implications (15%)
+   - Ensure each flashcard tests a unique aspect or application of the material
+   
+   QUESTION COMPLEXITY:
+   - Questions should require deep analytical thinking, not simple recall
+   - Include "how", "why", "analyze", "evaluate", "compare", "apply" type questions
+   - Test understanding of underlying mechanisms, relationships, and principles
+   - Include scenario-based questions requiring application of concepts
+   - Questions should connect multiple concepts or require synthesis
+   
+   ANSWER REQUIREMENTS:
+   - Answers must be comprehensive and detailed (5-7 sentences minimum)
+   - Include specific examples, case studies, or real-world applications
+   - Explain the reasoning behind concepts, not just what they are
+   - Connect to other related concepts and show relationships
+   - Include practical implications and significance
+   - Use advanced terminology appropriately with explanations
+   
+   DIVERSITY REQUIREMENTS:
+   - Vary question types: analytical, application-based, comparative, evaluative
+   - Include both theoretical depth and practical applications
+   - Cover different aspects: mechanisms, implications, applications, connections
+   - Ensure no two flashcards test the same concept in the same way
 
-2. QUIZ QUESTIONS (Generate 12-15 questions, HARD TO VERY HARD difficulty):
-   - ADVANCED CONCEPTUAL UNDERSTANDING (25%): Complex theoretical knowledge requiring deep comprehension
-   - COMPLEX APPLICATION-BASED (35%): Multi-step problems requiring application of multiple concepts
-   - CRITICAL ANALYSIS & SYNTHESIS (25%): Questions requiring analysis, evaluation, and synthesis of information
-   - PROBLEM-SOLVING & SCENARIOS (15%): Real-world scenarios requiring creative problem-solving
-   - Each question must have exactly 4 options with sophisticated distractors
-   - Explanations must be very detailed (5-6 sentences) explaining why the answer is correct AND why other options are incorrect
-   - Include questions that require students to compare, contrast, analyze cause-effect relationships
-   - Avoid any simple recall or definition questions
+2. QUIZ QUESTIONS (Generate 15-18 questions, VERY HARD to EXPERT difficulty):
+   
+   QUESTION TYPE DISTRIBUTION (MANDATORY):
+   - DEEP CONCEPTUAL MASTERY (20%): Multi-layered theoretical understanding requiring synthesis of complex ideas
+   - ADVANCED APPLICATION & TRANSFER (30%): Complex real-world scenarios requiring application of multiple interconnected concepts
+   - CRITICAL ANALYSIS & EVALUATION (25%): Questions requiring students to analyze, critique, evaluate evidence, and make informed judgments
+   - CREATIVE PROBLEM-SOLVING (15%): Novel scenarios requiring innovative thinking and creative application of principles
+   - COMPARATIVE & INTEGRATIVE THINKING (10%): Questions requiring comparison, contrast, and integration across different domains or contexts
+   
+   QUESTION COMPLEXITY REQUIREMENTS:
+   - Each question must test understanding at Bloom's Taxonomy levels 4-6 (Analyze, Evaluate, Create)
+   - Include multi-step reasoning requiring 3-4 logical connections
+   - Incorporate interdisciplinary connections and cross-domain applications
+   - Use sophisticated distractors that represent common misconceptions or partial understanding
+   - Questions should require 2-3 minutes of deep thinking to solve correctly
+   
+   CONTENT COVERAGE STRATEGY:
+   - 50% of questions must directly test concepts from the provided material
+   - 50% of questions must test advanced applications, extensions, or implications of the material
+   - Include questions that connect the material to broader academic fields or professional contexts
+   - Test understanding of underlying principles, not just surface-level facts
+   - Include scenario-based questions with complex, realistic contexts
+   
+   ANSWER OPTIONS & EXPLANATIONS:
+   - Each question must have exactly 4 options with highly sophisticated distractors
+   - Distractors should represent plausible but incorrect reasoning paths
+   - Explanations must be comprehensive (6-8 sentences) explaining:
+     * Why the correct answer is right with detailed reasoning
+     * Why each incorrect option is wrong and what misconception it represents
+     * Additional context or connections to reinforce learning
+   - Include references to specific concepts from the material when relevant
+   
+   ABSOLUTELY AVOID:
+   - Simple recall, definition, or memorization questions
+   - Questions that can be answered without understanding the material
+   - Obvious or poorly constructed distractors
+   - Questions with only one plausible answer choice
 
 3. SUMMARY (Extensive and comprehensive - minimum 500 words):
    - Organize into 8-10 detailed paragraphs, each 60-80 words
@@ -547,10 +606,10 @@ REMEMBER: Every single word in your response must be in ${detectedLanguage}. Do 
           }]
         }],
         generationConfig: {
-          temperature: 0.6,  // Higher for more creative and comprehensive responses
-          topP: 0.9,
-          topK: 40,
-          maxOutputTokens: 20480,  // Significantly increased for very comprehensive content (10-12 flashcards, 12-15 quiz questions, 500+ word summaries)
+          temperature: 0.8,  // Increased for maximum creativity and diversity in question generation
+          topP: 0.95,  // Higher for more diverse vocabulary and phrasing
+          topK: 60,  // Increased for more varied token selection
+          maxOutputTokens: 25600,  // Increased for more comprehensive content (12-15 flashcards, 15-18 quiz questions, detailed explanations)
         },
       }),
     });
