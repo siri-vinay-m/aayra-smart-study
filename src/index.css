@@ -98,7 +98,7 @@
   }
 
   .bottom-task-bar {
-    @apply flex items-center justify-around py-3 px-4 border-t bg-white fixed bottom-0 left-0 right-0;
+    @apply flex items-center justify-around py-3 px-4 border-t bg-background fixed bottom-0 left-0 right-0;
   }
 
   .bottom-task-bar-spacer {
@@ -106,13 +106,15 @@
   }
 
   .feature-block {
-    @apply bg-white shadow-md rounded-xl p-6 mb-6 transition-all hover:shadow-lg cursor-pointer border border-transparent hover:border-primary/20;
+    @apply bg-card shadow-md rounded-xl p-6 mb-6 transition-all hover:shadow-lg cursor-pointer border border-transparent hover:border-primary/20;
   }
 
   .circular-timer {
     @apply relative flex items-center justify-center rounded-full;
-    width: 270px;
-    height: 270px;
+    width: min(270px, 80vw);
+    height: min(270px, 80vw);
+    max-width: 270px;
+    max-height: 270px;
   }
 }
 
@@ -123,8 +125,20 @@
   }
 
   .circular-timer {
-    width: 230px;
-    height: 230px;
+    width: min(230px, 75vw);
+    height: min(230px, 75vw);
+    max-width: 230px;
+    max-height: 230px;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .circular-timer {
+    width: min(200px, 70vw);
+    height: min(200px, 70vw);
+    max-width: 200px;
+    max-height: 200px;
   }
 }
 
@@ -169,6 +183,64 @@
   
   .text-xl {
     font-size: 1.25rem;
+  }
+}
+
+/* Mobile keyboard handling */
+@media (max-width: 768px) {
+  /* Ensure body can scroll when keyboard is open */
+  body {
+    position: relative;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Ensure main content area is scrollable */
+  #root {
+    min-height: 100vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Input field focus improvements */
+  input:focus,
+  textarea:focus {
+    outline: none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  }
+  
+  /* Ensure forms are scrollable when keyboard appears */
+  form {
+    overflow-y: visible;
+  }
+  
+  /* Prevent zoom on input focus */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+    transform: translateZ(0);
+  }
+  
+  /* Improve touch targets */
+  button,
+  input,
+  textarea,
+  select {
+    min-height: 44px;
+  }
+  
+  /* Ensure content doesn't get hidden behind keyboard */
+  .keyboard-padding {
+    padding-bottom: env(keyboard-inset-height, 0px);
   }
 }
 

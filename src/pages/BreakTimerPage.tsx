@@ -34,7 +34,7 @@ const BreakTimerPage = () => {
     return (
       <MainLayout>
         <div className="px-4 text-center">
-          <p className="text-lg text-gray-600">No active session found.</p>
+          <p className="text-lg text-muted-foreground">No active session found.</p>
         </div>
       </MainLayout>
     );
@@ -47,7 +47,7 @@ const BreakTimerPage = () => {
         
         <CircularTimer />
         
-        <div className="mt-8 text-center text-gray-600">
+        <div className="mt-8 text-center text-muted-foreground">
           <p>Take a well-deserved break!</p>
           <p className="mt-2">You'll be ready for your next session when the timer ends.</p>
         </div>

@@ -67,7 +67,7 @@ const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps> = ({
    */
   const ValidationItem = ({ isValid, text }: { isValid: boolean; text: string }) => (
     <div className={`flex items-center space-x-2 text-sm ${
-      isValid ? 'text-green-600' : 'text-gray-400'
+      isValid ? 'text-green-600' : 'text-muted-foreground'
     }`}>
       {isValid ? (
         <CheckCircle className="w-4 h-4" />
@@ -81,7 +81,7 @@ const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps> = ({
   return (
     <div className="space-y-3 mt-2">
       {/* Strength bar */}
-      <div className="w-full bg-gray-200 rounded-full h-1.5">
+      <div className="w-full bg-muted rounded-full h-1.5">
         <div 
           className={`h-1.5 rounded-full ${getStrengthColor()}`} 
           style={{ width: `${strength}%` }}

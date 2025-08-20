@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Aayra</string>
+    <string name="title_activity_main">Aayra</string>
+    <string name="package_name">com.aayra.smartstudy</string>
+    <string name="custom_url_scheme">com.aayra.smartstudy</string>
+</resources>

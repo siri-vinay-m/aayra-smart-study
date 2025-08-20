@@ -6,12 +6,12 @@ interface AayraLogoProps {
 }
 
 /**
- * AAYRA Logo component - Uses the provided AayraLogo.png file
+ * AAYRA Logo component - Uses the provided aayraLarge.png file
  */
 const AayraLogo: React.FC<AayraLogoProps> = ({ className = '', size = 24 }) => {
   return (
     <img
-      src="/AayraLogo.png"
+      src="/aayraLarge.png"
       alt="AAYRA Logo"
       width={size}
       height={size}

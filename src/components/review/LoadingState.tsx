@@ -27,7 +27,7 @@ const LoadingState: React.FC<LoadingStateProps> = ({
     return (
       <MainLayout>
         <div className="px-4 text-center py-8">
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-muted-foreground">
             Generating AI content...
           </p>
         </div>
@@ -39,7 +39,7 @@ const LoadingState: React.FC<LoadingStateProps> = ({
     return (
       <MainLayout>
         <div className="px-4 text-center py-8">
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-muted-foreground">
             No study materials found for this session.
           </p>
           <Button 
@@ -57,7 +57,7 @@ const LoadingState: React.FC<LoadingStateProps> = ({
     return (
       <MainLayout>
         <div className="px-4 text-center py-8">
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-muted-foreground">
             No flashcards available for this session.
           </p>
           <Button onClick={onSkipToQuiz} className="mt-4">
@@ -72,7 +72,7 @@ const LoadingState: React.FC<LoadingStateProps> = ({
     return (
       <MainLayout>
         <div className="px-4 text-center py-8">
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-muted-foreground">
             No quiz questions available for this session.
           </p>
           <Button onClick={onViewSummary} className="mt-4">

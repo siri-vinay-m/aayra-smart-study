@@ -68,26 +68,26 @@ const CompletedSessionsPage = () => {
               {sessionsBySubject[selectedSubject].map((session) => (
                 <div 
                   key={session.id}
-                  className="bg-white shadow-sm rounded-lg p-4 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+                  className="bg-card shadow-sm rounded-lg p-4 border border-border cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => handleSessionClick(session.id)}
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-medium text-gray-900">{session.sessionName}</h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Topic: {session.topicName}
-                      </p>
-                      <p className="text-sm text-gray-500">
+                      <h3 className="font-medium text-foreground">{session.sessionName}</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Topic: {session.topicName}
+            </p>
+            <p className="text-sm text-muted-foreground">
                         {format(new Date(session.createdAt), 'MMM d, yyyy')}
                       </p>
                     </div>
                     <button
                       onClick={(e) => handleToggleFavorite(session.id, e)}
-                      className="p-2 hover:bg-gray-100 rounded-full"
+                      className="p-2 hover:bg-accent rounded-full"
                     >
                       <Heart 
                         size={20} 
-                        className={session.isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-400'} 
+                        className={session.isFavorite ? 'text-red-500 fill-red-500' : 'text-muted-foreground'} 
                       />
                     </button>
                   </div>
@@ -102,21 +102,21 @@ const CompletedSessionsPage = () => {
             
             {subjects.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-600">No completed sessions yet</p>
+                <p className="text-muted-foreground">No completed sessions yet</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {subjects.map((subject) => (
                   <div 
                     key={subject}
-                    className="bg-white shadow-sm rounded-lg p-4 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+                    className="bg-card shadow-sm rounded-lg p-4 border border-border cursor-pointer hover:shadow-md transition-shadow"
                     onClick={() => handleSubjectClick(subject)}
                   >
                     <div className="flex items-center">
                       <Folder size={24} className="text-blue-500 mr-3" />
                       <div>
-                        <h3 className="font-medium text-gray-900">{subject}</h3>
-                        <p className="text-sm text-gray-500">
+                        <h3 className="font-medium text-foreground">{subject}</h3>
+            <p className="text-sm text-muted-foreground">
                           {sessionsBySubject[subject].length} session{sessionsBySubject[subject].length !== 1 ? 's' : ''}
                         </p>
                       </div>

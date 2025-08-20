@@ -152,15 +152,60 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const subscriptionInfo = subscriptionData && subscriptionData.length > 0 ? subscriptionData[0] : null;
 
-      // Get premium plan price separately
-      const { data: premiumPlan, error: planError } = await supabase
+      // Get subscription plan details from subscriptionplans table
+      const userPlan = subscriptionInfo?.plan_name || userData?.subscription_plan || 'free';
+      let { data: planDetails, error: planError } = await supabase
         .from('subscriptionplans')
-        .select('price')
-        .eq('planname', 'premium')
+        .select('price, maxsessionsperday, maxsessionsperweek')
+        .eq('planname', userPlan)
         .single();
 
       if (planError) {
-        console.error('Error getting premium plan price:', planError);
+        console.error('Error getting subscription plan details:', planError);
+      }
+      
+      console.log('Plan details for', userPlan, ':', planDetails);
+      
+      // If no plan details found, try to create default plans
+      if (!planDetails && userPlan === 'free') {
+        console.log('No free plan found, creating default plans...');
+        try {
+          await supabase.from('subscriptionplans').upsert([
+            {
+              planname: 'free',
+              price: 0,
+              maxsessionsperday: 2,
+              maxsessionsperweek: 14,
+              billingcycle: 'monthly',
+              adsenabled: true,
+              isactive: true
+            },
+            {
+              planname: 'premium',
+              price: 9.99,
+              maxsessionsperday: null,
+              maxsessionsperweek: null,
+              billingcycle: 'monthly',
+              adsenabled: false,
+              isactive: true
+            }
+          ], { onConflict: 'planname' });
+          
+          // Retry fetching plan details
+          const { data: retryPlanDetails } = await supabase
+            .from('subscriptionplans')
+            .select('price, maxsessionsperday, maxsessionsperweek')
+            .eq('planname', userPlan)
+            .single();
+          
+          if (retryPlanDetails) {
+            console.log('Successfully created and fetched plan details:', retryPlanDetails);
+            // Update planDetails with the retry result
+            planDetails = retryPlanDetails;
+          }
+        } catch (error) {
+          console.error('Error creating default subscription plans:', error);
+        }
       }
 
       if (userData) {
@@ -195,8 +240,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           subscriptionEndDate: subscriptionInfo?.end_date,
           daysRemaining: subscriptionInfo?.days_remaining,
 					subscriptionDaysRemaining: calculatedDaysRemaining,
-          sessionsPerDay: subscriptionInfo?.sessions_per_day,
-          sessionsPerWeek: subscriptionInfo?.sessions_per_week,
+          sessionsPerDay: planDetails?.maxsessionsperday ?? subscriptionInfo?.sessions_per_day ?? (userPlan === 'free' ? 2 : null),
+          sessionsPerWeek: planDetails?.maxsessionsperweek ?? subscriptionInfo?.sessions_per_week ?? (userPlan === 'free' ? 14 : null),
           adsEnabled: subscriptionInfo?.ads_enabled,
           isTrial: subscriptionInfo?.is_trial,
           lastLoginAt: userData.lastloginat || null,
@@ -205,12 +250,29 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           stripeSubscriptionId: userData.stripe_subscription_id,
           // Session counts are now calculated dynamically in useSessionLimits
           // sessionsUsedToday and sessionsUsedThisWeek removed from UserContext
-          premiumPrice: premiumPlan?.price || 9.99,
+          premiumPrice: userPlan === 'premium' ? planDetails?.price || 9.99 : 9.99,
         });
-        setIsAuthenticated(true);
       } else {
         // Create new user record if none exists
         const calculatedDaysRemaining = calculateSubscriptionDaysRemaining(authUser.created_at, 'free');
+        
+        // Get free plan details from subscriptionplans table
+        const { data: freePlanDetails, error: freePlanError } = await supabase
+          .from('subscriptionplans')
+          .select('maxsessionsperday, maxsessionsperweek')
+          .eq('planname', 'free')
+          .single();
+
+        if (freePlanError) {
+          console.error('Error getting free plan details:', freePlanError);
+        }
+        
+        console.log('Free plan details:', freePlanDetails);
+        
+        // If no free plan details found, use defaults
+        if (!freePlanDetails) {
+          console.log('No free plan details found, using defaults');
+        }
         
         const newUserData = {
           userid: authUser.id,
@@ -238,8 +300,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           subscriptionStatus: 'active',
           daysRemaining: calculatedDaysRemaining,
 					subscriptionDaysRemaining: calculatedDaysRemaining,
-          sessionsPerDay: 2,
-          sessionsPerWeek: null,
+          sessionsPerDay: freePlanDetails?.maxsessionsperday ?? 2,
+          sessionsPerWeek: freePlanDetails?.maxsessionsperweek ?? 14,
           adsEnabled: true,
           isTrial: true,
           lastLoginAt: null,
@@ -248,9 +310,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           stripeSubscriptionId: null,
           // Session counts are now calculated dynamically in useSessionLimits
           // sessionsUsedToday and sessionsUsedThisWeek removed from UserContext
-          premiumPrice: premiumPlan?.price || 9.99,
+          premiumPrice: 9.99,
         });
-        setIsAuthenticated(true);
       }
     } catch (error) {
       console.error('Error in loadUserData:', error);
@@ -305,7 +366,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   useEffect(() => {
-    if (session) {
+    if (session && authUser) {
+      // Set authenticated immediately when we have a valid session
+      setIsAuthenticated(true);
       loadUserData();
     } else {
       setUser(null);

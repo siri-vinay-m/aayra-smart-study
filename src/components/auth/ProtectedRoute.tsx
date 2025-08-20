@@ -8,9 +8,16 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, session } = useAuth();
+  const [hasCheckedAuth, setHasCheckedAuth] = React.useState(false);
 
-  if (loading) {
+  React.useEffect(() => {
+    if (!loading) {
+      setHasCheckedAuth(true);
+    }
+  }, [loading]);
+
+  if (loading || !hasCheckedAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
@@ -18,7 +25,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  if (!user) {
+  // Check for session first, then user - this prevents redirect issues on mobile
+  if (!session && !user) {
     return <Navigate to="/login" replace />;
   }
 

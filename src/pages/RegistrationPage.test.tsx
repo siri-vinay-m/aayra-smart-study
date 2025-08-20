@@ -160,7 +160,7 @@ describe('RegistrationPage', () => {
   });
 
   test('shows error message on registration failure', async () => {
-    const errorMessage = 'Firebase error: Test registration failed';
+    const errorMessage = 'Registration error: Test registration failed';
     mockSignUp.mockRejectedValueOnce({ message: errorMessage });
 
     render(

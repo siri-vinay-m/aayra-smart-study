@@ -67,7 +67,7 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
       case 'free-for-life':
         return <Shield size={20} className="text-green-500" />;
       default:
-        return <Crown size={20} className="text-gray-400" />;
+        return <Crown size={20} className="text-muted-foreground" />;
     }
   };
 
@@ -75,8 +75,8 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
     const basePlan = user?.subscriptionPlan === 'premium' ? 'Premium' : 
                     user?.subscriptionPlan === 'free-for-life' ? 'Free for Life' : 'Free';
     
-    // Add trial days remaining to free plan display
-    if (user?.subscriptionPlan === 'free' && user?.isTrial && user?.subscriptionDaysRemaining !== null && user?.subscriptionDaysRemaining !== undefined) {
+    // Add remaining days to plan display
+    if (user?.subscriptionDaysRemaining !== null && user?.subscriptionDaysRemaining !== undefined && user?.subscriptionDaysRemaining > 0) {
       return `${basePlan} (${user.subscriptionDaysRemaining} days)`;
     }
     
@@ -84,25 +84,33 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
   };
 
   const renderPlanDetails = () => {
+    // Debug logging
+    console.log('SubscriptionStatusCard - User data:', {
+      sessionsPerDay: user?.sessionsPerDay,
+      sessionsPerWeek: user?.sessionsPerWeek,
+      subscriptionPlan: user?.subscriptionPlan,
+      subscriptionDaysRemaining: user?.subscriptionDaysRemaining
+    });
+    
     return (
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <div className="text-sm text-gray-600">Sessions per day:</div>
+            <div className="text-sm text-muted-foreground">Sessions per day:</div>
             <div className="font-medium">
-              {user?.sessionsPerDay || 'Unlimited'}
+              {user?.sessionsPerDay !== null && user?.sessionsPerDay !== undefined ? user.sessionsPerDay : 'Unlimited'}
             </div>
           </div>
           <div className="space-y-2">
-            <div className="text-sm text-gray-600">Sessions per week:</div>
+            <div className="text-sm text-muted-foreground">Sessions per week:</div>
             <div className="font-medium">
-              {user?.sessionsPerWeek || 'Unlimited'}
+              {user?.sessionsPerWeek !== null && user?.sessionsPerWeek !== undefined ? user.sessionsPerWeek : 'Unlimited'}
             </div>
           </div>
         </div>
 
         {user?.subscriptionPlan !== 'premium' && user?.subscriptionPlan !== 'free-for-life' && (
-          <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+          <div className="text-sm text-muted-foreground bg-muted p-2 rounded">
             After this plan you will have 2 sessions per week
           </div>
         )}
@@ -120,10 +128,10 @@ const SubscriptionStatusCard: React.FC<SubscriptionStatusCardProps> = ({ user })
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-between items-center">
-          <span className="text-gray-600">Current Plan:</span>
+          <span className="text-muted-foreground">Current Plan:</span>
           <span className={`font-medium ${
             user?.subscriptionPlan === 'premium' ? 'text-yellow-600' : 
-            user?.subscriptionPlan === 'free-for-life' ? 'text-green-600' : 'text-gray-900'
+            user?.subscriptionPlan === 'free-for-life' ? 'text-green-600' : 'text-foreground'
           }`}>
             {getPlanDisplayName()}
           </span>

@@ -46,7 +46,7 @@ const ContentModerationAlert: React.FC<ContentModerationAlertProps> = ({
         <div>
           <div className="font-semibold mb-1">{getTitle()}</div>
           <AlertDescription>{reason}</AlertDescription>
-          <div className="mt-2 text-sm text-gray-600">
+          <div className="mt-2 text-sm text-muted-foreground">
             <strong>Accepted content includes:</strong>
             <ul className="list-disc list-inside mt-1">
               <li>Lecture notes and course materials</li>

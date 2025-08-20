@@ -14,6 +14,8 @@ export const useReviewOperations = () => {
       // Get current date in YYYY-MM-DD format for comparison
       const currentDate = new Date().toISOString().split('T')[0];
 
+      // Loading pending reviews
+      
       // Load pending review cycle entries that are due today or overdue
       const { data: reviewEntries, error } = await supabase
         .from('reviewcycleentries')
@@ -32,6 +34,19 @@ export const useReviewOperations = () => {
         .eq('status', 'pending')
         .lte('currentreviewduedate', currentDate) // Only reviews due today or earlier
         .order('currentreviewduedate', { ascending: true });
+        
+      console.log('Raw review entries from database:', reviewEntries?.length || 0, 'entries');
+      if (reviewEntries) {
+        reviewEntries.forEach(entry => {
+          console.log('Review entry:', {
+            id: entry.entryid,
+            sessionId: entry.sessionid,
+            status: entry.status,
+            reviewStage: entry.reviewstage,
+            dueDate: entry.currentreviewduedate
+          });
+        });
+      }
 
       if (error) {
         console.error('Error loading pending reviews:', error);
@@ -151,6 +166,12 @@ export const useReviewOperations = () => {
         return false;
       }
 
+      console.log('Updating review entry status to completed:', {
+        entryId: reviewId,
+        currentStatus: currentReview.status,
+        reviewStage: currentReview.reviewstage
+      });
+      
       // Update current review cycle entry status to completed
       const { error: updateError } = await supabase
         .from('reviewcycleentries')
@@ -160,6 +181,8 @@ export const useReviewOperations = () => {
         })
         .eq('entryid', reviewId)
         .eq('userid', authUser.user.id);
+        
+      console.log('Review status update result:', updateError ? 'FAILED' : 'SUCCESS', updateError);
 
       if (updateError) {
         console.error('Error marking review as completed:', updateError);
@@ -167,6 +190,15 @@ export const useReviewOperations = () => {
       }
 
       console.log('Review marked as completed successfully');
+      
+      // Verify the status update by checking the database
+      const { data: verifyUpdate } = await supabase
+        .from('reviewcycleentries')
+        .select('status, updatedat')
+        .eq('entryid', reviewId)
+        .single();
+        
+      console.log('Status verification after update:', verifyUpdate);
 
       // Create next review cycle entry if we haven't reached the maximum stage (6)
       const currentStage = currentReview.reviewstage;
@@ -204,6 +236,9 @@ export const useReviewOperations = () => {
       if (sessionError) {
         console.error('Error updating session last reviewed date:', sessionError);
       }
+      
+      // Add a small delay to ensure database transaction is committed
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Reload pending reviews to reflect changes
       await loadPendingReviews();

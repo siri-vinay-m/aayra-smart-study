@@ -100,7 +100,7 @@ const ResetPasswordPage = () => {
    */
   const ValidationItem = ({ isValid, text }: { isValid: boolean; text: string }) => (
     <div className={`flex items-center space-x-2 text-sm ${
-      isValid ? 'text-green-600' : 'text-gray-400'
+      isValid ? 'text-green-600' : 'text-muted-foreground'
     }`}>
       {isValid ? (
         <CheckCircle className="w-4 h-4" />
@@ -112,14 +112,14 @@ const ResetPasswordPage = () => {
   );
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-orange-500 mb-2">AAYRA</h1>
-          <p className="text-gray-600">The Smarter way to Master more.</p>
+          <p className="text-muted-foreground">The Smarter way to Master more.</p>
         </div>
         
-        <div className="bg-white p-8 rounded-lg shadow-md">
+        <div className="bg-card p-8 rounded-lg shadow-md">
           <h2 className="text-2xl font-semibold mb-6">Set New Password</h2>
           
           <form onSubmit={handleResetPassword} className="space-y-4">
@@ -141,9 +141,9 @@ const ResetPasswordPage = () => {
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
+                    <Eye className="h-4 w-4 text-muted-foreground" />
                   )}
                 </button>
               </div>
@@ -167,17 +167,17 @@ const ResetPasswordPage = () => {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
+                    <Eye className="h-4 w-4 text-muted-foreground" />
                   )}
                 </button>
               </div>
             </div>
 
             {/* Password Requirements */}
-            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</h4>
+            <div className="bg-muted p-4 rounded-lg space-y-2">
+            <h4 className="text-sm font-medium text-foreground mb-2">Password Requirements:</h4>
               <ValidationItem isValid={passwordValidation.length} text="At least 8 characters" />
               <ValidationItem isValid={passwordValidation.uppercase} text="One uppercase letter" />
               <ValidationItem isValid={passwordValidation.lowercase} text="One lowercase letter" />

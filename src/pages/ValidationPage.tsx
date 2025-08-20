@@ -43,7 +43,7 @@ const ValidationPage = () => {
     return (
       <MainLayout>
         <div className="px-4 text-center">
-          <p className="text-lg text-gray-600">No active session found.</p>
+          <p className="text-lg text-muted-foreground">No active session found.</p>
         </div>
       </MainLayout>
     );
@@ -226,7 +226,7 @@ const ValidationPage = () => {
           <Button
             variant="ghost"
             onClick={handleBackButton}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft size={20} />
             Back

@@ -32,8 +32,8 @@ const BottomTaskBar = () => {
         location.pathname === '/pending-reviews') {
       handleNavigationAttempt('/home');
     } else if (location.pathname === '/home') {
-      // Navigate to login page when on home page
-      handleNavigationAttempt('/login');
+      // On home page, do nothing - let hardware back button handler manage this
+      return;
     } else {
       handleNavigationAttempt(-1 as any); // This will be handled by the browser's back functionality if no session to discard
     }
@@ -44,23 +44,23 @@ const BottomTaskBar = () => {
       <div className="bottom-task-bar">
         <button 
           onClick={handleFavorites}
-          className="p-2 rounded-full hover:bg-gray-100"
+          className="p-2 rounded-full hover:bg-accent"
         >
-          <Heart size={24} className={location.pathname === '/favorites' ? 'text-primary' : 'text-gray-600'} />
+          <Heart size={24} className={location.pathname === '/favorites' ? 'text-primary' : 'text-muted-foreground'} />
         </button>
         
         <button 
           onClick={handleHome}
-          className="p-2 rounded-full hover:bg-gray-100"
+          className="p-2 rounded-full hover:bg-accent"
         >
-          <Home size={24} className={location.pathname === '/home' ? 'text-primary' : 'text-gray-600'} />
+          <Home size={24} className={location.pathname === '/home' ? 'text-primary' : 'text-muted-foreground'} />
         </button>
         
         <button 
           onClick={handleBack}
-          className="p-2 rounded-full hover:bg-gray-100"
+          className="p-2 rounded-full hover:bg-accent"
         >
-          <ArrowLeft size={24} className="text-gray-600" />
+          <ArrowLeft size={24} className="text-muted-foreground" />
         </button>
       </div>
       <div className="bottom-task-bar-spacer" />

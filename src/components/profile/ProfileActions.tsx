@@ -5,22 +5,19 @@ import { Button } from '@/components/ui/button';
 interface ProfileActionsProps {
   onSaveProfile: () => Promise<void>;
   onSignOut: () => Promise<void>;
-  isLoading: boolean;
 }
 
 const ProfileActions: React.FC<ProfileActionsProps> = ({
   onSaveProfile,
-  onSignOut,
-  isLoading
+  onSignOut
 }) => {
   return (
     <div className="space-y-3">
       <Button 
         onClick={onSaveProfile} 
         className="w-full"
-        disabled={isLoading}
       >
-        {isLoading ? 'Saving...' : 'Save Profile'}
+        Save Profile
       </Button>
       
       <Button 

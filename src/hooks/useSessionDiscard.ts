@@ -68,6 +68,8 @@ export const useSessionDiscard = () => {
               console.error('Error marking session as incomplete:', error);
             } else {
               console.log('Session marked as incomplete successfully');
+              // Add a small delay to ensure database transaction is committed
+              await new Promise(resolve => setTimeout(resolve, 500));
               // Reload incomplete sessions to reflect the change
               await loadIncompleteSessions();
             }

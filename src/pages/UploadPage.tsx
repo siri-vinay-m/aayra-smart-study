@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useContentModeration } from '@/hooks/useContentModeration';
 import ContentModerationAlert from '@/components/moderation/ContentModerationAlert';
+import { useLoading } from '@/contexts/LoadingContext';
 
 interface UploadItem {
   id: string;
@@ -23,7 +24,7 @@ interface UploadItem {
   duration?: number;
 }
 
-const UploadPage = () => {
+const UploadPage = React.memo(() => {
   const { currentSession, setCurrentSession, updateCurrentSessionStatus } = useSession();
   const navigate = useNavigate();
   const { processStudyMaterials, isProcessing } = useAI();
@@ -37,7 +38,7 @@ const UploadPage = () => {
   const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const { withLoading } = useLoading();
   const [uploadedItems, setUploadedItems] = useState<UploadItem[]>([]);
   const [moderationAlert, setModerationAlert] = useState<{ reason: string; category: string } | null>(null);
   
@@ -50,17 +51,55 @@ const UploadPage = () => {
     return (
       <MainLayout>
         <div className="px-4 text-center">
-          <p className="text-lg text-gray-600">No active session found.</p>
+          <p className="text-lg text-muted-foreground">No active session found.</p>
         </div>
       </MainLayout>
     );
   }
   
-  const handleUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Memoize file validation constants
+  const fileValidation = useMemo(() => ({
+    maxSize: 10 * 1024 * 1024, // 10MB in bytes
+    allowedTypes: [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ]
+  }), []);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      
+      // File size validation
+      if (selectedFile.size > fileValidation.maxSize) {
+        toast({
+          title: "File Too Large",
+          description: "Please select a file smaller than 10MB.",
+          variant: "destructive"
+        });
+        e.target.value = ''; // Clear the input
+        return;
+      }
+      
+      // File type validation
+      if (!fileValidation.allowedTypes.includes(selectedFile.type)) {
+        toast({
+          title: "Invalid File Type",
+          description: "Please select a PDF, image, text, or Word document.",
+          variant: "destructive"
+        });
+        e.target.value = ''; // Clear the input
+        return;
+      }
+      
+      setFile(selectedFile);
     }
-  };
+  }, [fileValidation, toast]);
   
   const handleRecordVoice = async () => {
     if (!isRecording) {
@@ -252,9 +291,7 @@ const UploadPage = () => {
       return;
     }
     
-    setIsLoading(true);
-    
-    try {
+    await withLoading(async () => {
       // Update session status to 'validating' when user clicks "Submit to AI"
       if (currentSession && updateCurrentSessionStatus) {
         await updateCurrentSessionStatus('validating');
@@ -314,23 +351,14 @@ const UploadPage = () => {
       } else {
         throw new Error('Failed to process study materials - no response received');
       }
-    } catch (error) {
-      console.error('Error processing materials:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to process study materials. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    }, 'Processing study materials with AI...');
   };
   
   return (
     <MainLayout>
       <div className="px-4">
         <h1 className="text-2xl font-semibold mb-2">Upload Study Materials</h1>
-        <p className="text-gray-600 mb-6">Share what you've been studying</p>
+        <p className="text-muted-foreground mb-6">Share what you've been studying</p>
         
         {moderationAlert && (
           <ContentModerationAlert
@@ -374,23 +402,23 @@ const UploadPage = () => {
           </TabsContent>
           
           <TabsContent value="file" className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
               <input
                 type="file"
                 id="file-upload"
                 className="hidden"
-                onChange={handleUploadFile}
+                onChange={handleFileChange}
                 accept=".pdf,.jpg,.jpeg,.png,.txt,.doc,.docx"
               />
               <label 
                 htmlFor="file-upload"
                 className="cursor-pointer flex flex-col items-center"
               >
-                <Upload size={48} className="text-gray-400 mb-4" />
-                <p className="text-gray-600 mb-2">
+                <Upload size={48} className="text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-2">
                   {file ? file.name : 'Click to upload or drag and drop'}
                 </p>
-                <p className="text-gray-400 text-sm">
+                <p className="text-muted-foreground text-sm">
                   PDF, Images, or Documents
                 </p>
               </label>
@@ -410,7 +438,36 @@ const UploadPage = () => {
             <Input 
               placeholder="Paste a URL to study material..."
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => {
+                const inputUrl = e.target.value;
+                
+                // Basic URL validation
+                if (inputUrl && inputUrl.trim()) {
+                  try {
+                    const urlObj = new URL(inputUrl);
+                    // Only allow http and https protocols
+                    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+                      toast({
+                        title: "Invalid URL",
+                        description: "Please enter a valid HTTP or HTTPS URL.",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                  } catch (error) {
+                    // Invalid URL format
+                    if (inputUrl.length > 10) { // Only show error for longer inputs
+                      toast({
+                        title: "Invalid URL",
+                        description: "Please enter a valid URL starting with http:// or https://",
+                        variant: "destructive"
+                      });
+                    }
+                  }
+                }
+                
+                setUrl(inputUrl);
+              }}
             />
             
             <Button 
@@ -424,7 +481,7 @@ const UploadPage = () => {
           </TabsContent>
           
           <TabsContent value="voice" className="space-y-4">
-            <div className="border-2 border-gray-300 rounded-lg p-8 text-center">
+            <div className="border-2 border-border rounded-lg p-8 text-center">
               <button
                 onClick={handleRecordVoice}
                 className={`w-20 h-20 rounded-full flex items-center justify-center ${
@@ -439,13 +496,13 @@ const UploadPage = () => {
               </button>
               
               {isRecording ? (
-                <p className="mt-4 text-gray-600">Recording... {formatTime(recordingTime)}</p>
+                <p className="mt-4 text-muted-foreground">Recording... {formatTime(recordingTime)}</p>
               ) : recordedAudio ? (
                 <div className="mt-4">
-                  <p className="text-gray-600 mb-2">Recording complete ({formatTime(recordingTime)})</p>
+                  <p className="text-muted-foreground mb-2">Recording complete ({formatTime(recordingTime)})</p>
                   <button 
                     onClick={playRecording}
-                    className="inline-flex items-center px-4 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    className="inline-flex items-center px-4 py-2 rounded-md bg-muted hover:bg-accent text-foreground"
                   >
                     <Play size={16} className="mr-2" />
                     Play
@@ -453,7 +510,7 @@ const UploadPage = () => {
                   <audio ref={audioRef} className="hidden" />
                 </div>
               ) : (
-                <p className="mt-4 text-gray-600">Tap to start recording</p>
+                <p className="mt-4 text-muted-foreground">Tap to start recording</p>
               )}
             </div>
             
@@ -521,14 +578,14 @@ const UploadPage = () => {
           <Button 
             onClick={handleSubmit} 
             className="w-full bg-primary hover:bg-primary-dark"
-            disabled={isLoading || isProcessing || uploadedItems.length === 0}
+            disabled={isProcessing || uploadedItems.length === 0}
           >
-            {isLoading || isProcessing ? 'Processing with AI...' : 'Submit to AI'}
+            {isProcessing ? 'Processing with AI...' : 'Submit to AI'}
           </Button>
         </div>
       </div>
     </MainLayout>
   );
-};
+});
 
 export default UploadPage;

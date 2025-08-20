@@ -74,13 +74,13 @@ const IncompleteSessionsPage = () => {
               {sessionsBySubject[selectedSubject].map((session) => (
                 <div 
                   key={session.id}
-                  className="bg-white shadow-sm rounded-lg p-4 border border-gray-200 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all"
+                  className="bg-card shadow-sm rounded-lg p-4 border border-border cursor-pointer hover:shadow-md hover:border-primary/20 transition-all"
                   onClick={() => handleSessionClick(session)}
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-medium text-gray-900">{session.sessionName}</h3>
-                      <p className="text-sm text-gray-500 mt-1">
+                      <h3 className="font-medium text-foreground">{session.sessionName}</h3>
+            <p className="text-sm text-muted-foreground mt-1">
                         Topic: {session.topicName}
                       </p>
                     </div>
@@ -101,8 +101,8 @@ const IncompleteSessionsPage = () => {
             
             {subjects.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-600">No incomplete sessions</p>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-muted-foreground">No incomplete sessions</p>
+        <p className="text-sm text-muted-foreground mt-2">
                   All your sessions have been completed successfully!
                 </p>
               </div>
@@ -111,14 +111,14 @@ const IncompleteSessionsPage = () => {
                 {subjects.map((subject) => (
                   <div 
                     key={subject}
-                    className="bg-white shadow-sm rounded-lg p-4 border border-gray-200 cursor-pointer hover:shadow-md hover:border-primary/20 transition-all"
+                    className="bg-card shadow-sm rounded-lg p-4 border border-border cursor-pointer hover:shadow-md hover:border-primary/20 transition-all"
                     onClick={() => handleSubjectClick(subject)}
                   >
                     <div className="flex items-center">
                       <Folder size={24} className="text-primary mr-3" />
                       <div>
-                        <h3 className="font-medium text-gray-900">{subject}</h3>
-                        <p className="text-sm text-gray-500">
+                        <h3 className="font-medium text-foreground">{subject}</h3>
+            <p className="text-sm text-muted-foreground">
                           {sessionsBySubject[subject].length} incomplete session{sessionsBySubject[subject].length !== 1 ? 's' : ''}
                         </p>
                       </div>

@@ -26,7 +26,7 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-gray-600 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           Enable notifications to receive study reminders 15 minutes before your preferred study time.
         </p>
         <Button 
