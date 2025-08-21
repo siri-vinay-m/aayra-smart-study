@@ -164,13 +164,19 @@ const LandingPage = () => {
               <a href="#features" className="text-muted-foreground hover:text-primary transition-colors">Features</a>
               <a href="#results" className="text-muted-foreground hover:text-primary transition-colors">Results</a>
               <a href="#testimonials" className="text-muted-foreground hover:text-primary transition-colors">Reviews</a>
-              <Link to="/login" className="text-muted-foreground hover:text-primary transition-colors">Sign In</Link>
             </div>
-            <Link to="/register">
-              <Button className="bg-primary hover:bg-primary/90">
-                Start 45-Day Trial
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link to="/login">
+                <Button variant="outline" className="border-primary text-primary hover:bg-primary/10">
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button className="bg-primary hover:bg-primary/90">
+                  Start 45-Day Trial
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
