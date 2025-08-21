@@ -32,6 +32,120 @@ import {
 } from 'lucide-react';
 
 /**
+ * FlipStatCard
+ * A reusable, accessible flip-card component for showing a headline stat
+ * on the front and an explanatory paragraph on the back.
+ * - Flips on hover (desktop) and on tap/click (mobile)
+ * - Uses inline styles for 3D transforms to avoid requiring custom CSS utilities
+ */
+const FlipStatCard: React.FC<{
+  percentage: string;
+  title: string;
+  color: 'orange' | 'blue' | 'green' | 'purple';
+  icon: React.ComponentType<{ className?: string }>;
+  explanation: string;
+}> = ({ percentage, title, color, icon: Icon, explanation }) => {
+  const [isFlipped, setIsFlipped] = React.useState(false);
+
+  // Compute color classes following existing patterns
+  const borderColor = {
+    orange: 'border-orange-200',
+    blue: 'border-blue-200',
+    green: 'border-green-200',
+    purple: 'border-purple-200',
+  }[color];
+
+  const bgGradient = {
+    orange: 'from-orange-50',
+    blue: 'from-blue-50',
+    green: 'from-green-50',
+    purple: 'from-purple-50',
+  }[color];
+
+  const iconGradientFrom = {
+    orange: 'from-orange-500',
+    blue: 'from-blue-500',
+    green: 'from-green-500',
+    purple: 'from-purple-500',
+  }[color];
+
+  const iconGradientTo = {
+    orange: 'to-orange-600',
+    blue: 'to-blue-600',
+    green: 'to-green-600',
+    purple: 'to-purple-600',
+  }[color];
+
+  const textColor = {
+    orange: 'text-orange-600',
+    blue: 'text-blue-600',
+    green: 'text-green-600',
+    purple: 'text-purple-600',
+  }[color];
+
+  return (
+    <div
+      className="relative h-48 cursor-pointer"
+      role="button"
+      tabIndex={0}
+      onMouseEnter={() => setIsFlipped(true)}
+      onMouseLeave={() => setIsFlipped(false)}
+      onClick={() => setIsFlipped((f) => !f)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setIsFlipped((f) => !f);
+        }
+      }}
+      style={{ perspective: 1000 }}
+    >
+      <div
+        className="w-full h-full"
+        style={{
+          transformStyle: 'preserve-3d',
+          transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+          transition: 'transform 600ms',
+        }}
+      >
+        {/* Front Face */}
+        <Card
+          className={`absolute inset-0 text-center p-6 border-2 ${borderColor} bg-gradient-to-br ${bgGradient} to-white`}
+          style={{ backfaceVisibility: 'hidden' as React.CSSProperties['backfaceVisibility'] }}
+        >
+          <div className={`w-16 h-16 mx-auto mb-4 bg-gradient-to-br ${iconGradientFrom} ${iconGradientTo} rounded-full flex items-center justify-center`}>
+            <Icon className="w-8 h-8 text-white" />
+          </div>
+          <div className={`text-3xl font-bold ${textColor} mb-2`}>{percentage}</div>
+          <div className="text-sm text-muted-foreground">{title}</div>
+        </Card>
+
+        {/* Back Face */}
+        <Card
+          className={`absolute inset-0 p-6 border-2 ${borderColor} bg-background/90 backdrop-blur-sm`}
+          style={{
+            backfaceVisibility: 'hidden' as React.CSSProperties['backfaceVisibility'],
+            transform: 'rotateY(180deg)',
+          }}
+        >
+          <div className="flex h-full flex-col">
+            <div className="flex items-center gap-3 mb-2">
+              <div className={`w-10 h-10 bg-gradient-to-br ${iconGradientFrom} ${iconGradientTo} rounded-full flex items-center justify-center`}>
+                <Icon className="w-5 h-5 text-white" />
+              </div>
+              <h4 className="text-base font-semibold text-foreground">{title}</h4>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {explanation}
+            </p>
+            <div className="mt-auto pt-3 text-xs text-muted-foreground/80">Tap or hover to flip back</div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+/**
  * High-converting landing page for Aayra Smart Study app
  * Features infographics, quantitative results, and learner-focused messaging
  */
@@ -73,8 +187,8 @@ const LandingPage = () => {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600"> AI Intelligence</span>
             </h1>
             <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-              Master any subject faster with personalized AI tutoring, smart notifications, and data-driven insights. 
-              Join 25,000+ learners achieving 54% better retention rates.
+              Master any subject faster with Focused timer, AI tutoring, smart notifications, and optimized review reminders. 
+              Join 12,000+ learners achieving 42% improvement in study consistency.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link to="/register">
@@ -96,34 +210,34 @@ const LandingPage = () => {
 
           {/* Results Infographic */}
           <div className="grid md:grid-cols-4 gap-6 mb-16">
-            <Card className="text-center p-6 border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-8 h-8 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-orange-600 mb-2">54%</div>
-              <div className="text-sm text-muted-foreground">Improvement in Retention</div>
-            </Card>
-            <Card className="text-center p-6 border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                <Target className="w-8 h-8 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-blue-600 mb-2">42%</div>
-              <div className="text-sm text-muted-foreground">Improvement in Consistency</div>
-            </Card>
-            <Card className="text-center p-6 border-2 border-green-200 bg-gradient-to-br from-green-50 to-white">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
-                <Clock className="w-8 h-8 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-green-600 mb-2">38%</div>
-              <div className="text-sm text-muted-foreground">Reduction in Study Time</div>
-            </Card>
-            <Card className="text-center p-6 border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
-                <Award className="w-8 h-8 text-white" />
-              </div>
-              <div className="text-3xl font-bold text-purple-600 mb-2">89%</div>
-              <div className="text-sm text-muted-foreground">Learner Success Rate</div>
-            </Card>
+            <FlipStatCard
+              percentage="54%"
+              title="Improvement in Retention"
+              color="orange"
+              icon={TrendingUp}
+              explanation="Aayra boosts long-term memory with active recall quizzes, AI summaries, and spaced repetition. Consistent review schedules bring back the right concepts just before you forget."
+            />
+            <FlipStatCard
+              percentage="42%"
+              title="Improvement in Consistency"
+              color="blue"
+              icon={Target}
+              explanation="Smart notifications fit your routine, while streaks and gentle nudges build lasting habits. A consistent schedule strengthens your discipline and helps you show up every day."
+            />
+            <FlipStatCard
+              percentage="38%"
+              title="Reduction in Study Time"
+              color="green"
+              icon={Clock}
+              explanation="AI condenses materials into focused summaries, flashcards, and targeted practice. The focus timer and prioritized reviews cut busywork and keep you working on what matters most."
+            />
+            <FlipStatCard
+              percentage="89%"
+              title="Learner Success Rate"
+              color="purple"
+              icon={Award}
+              explanation="Distraction-free study sessions, AI-condensed materials, smart notifications tailored to your routine, and optimized review schedules keeps you aligned with your learning goals."
+            />
           </div>
 
           {/* Trust Indicators with Graphics */}
@@ -135,7 +249,7 @@ const LandingPage = () => {
             </div>
             <div className="flex items-center space-x-2">
               <Users className="w-5 h-5 text-blue-500" />
-              <span className="text-sm font-medium">25,000+ Learners</span>
+              <span className="text-sm font-medium">12,000+ Learners</span>
             </div>
             <div className="flex items-center space-x-2">
               <Shield className="w-5 h-5 text-green-500" />
@@ -153,7 +267,7 @@ const LandingPage = () => {
               How Aayra Transforms Your Learning Journey
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              A simple 4-step process that adapts to your unique learning style
+              Focus → AI processing → Break → Spaced review. Repeat for steady progress.
             </p>
           </div>
 
@@ -161,30 +275,30 @@ const LandingPage = () => {
             {[
               {
                 step: "1",
-                icon: BookOpen,
-                title: "Upload Content",
-                description: "Upload any study material - PDFs, notes, or textbooks",
+                icon: Target,
+                title: "Focused Study",
+                description: "Start a focused study session with goals and a timer to stay on track.",
                 color: "orange"
               },
               {
                 step: "2",
                 icon: Brain,
                 title: "AI Processing",
-                description: "Our AI analyzes and creates personalized learning materials",
+                description: "Aayra analyzes your materials and generates summaries, questions, and flashcards.",
                 color: "blue"
               },
               {
                 step: "3",
-                icon: Bell,
-                title: "Smart Reminders",
-                description: "Get intelligent notifications for optimal study timing",
+                icon: Activity,
+                title: "Well Deserved Break",
+                description: "Take a refreshing, guided break to recharge without losing momentum.",
                 color: "green"
               },
               {
                 step: "4",
-                icon: TrendingUp,
-                title: "Track Progress",
-                description: "Monitor your improvement with detailed analytics",
+                icon: Bell,
+                title: "Spaced Repetition",
+                description: "Get smart review reminders at the right time to lock knowledge into memory.",
                 color: "purple"
               }
             ].map((item, index) => (
@@ -223,7 +337,7 @@ const LandingPage = () => {
               {
                 icon: Brain,
                 title: "AI-Powered Learning",
-                description: "Get personalized study plans, instant explanations, and adaptive quizzes tailored to your learning style.",
+                description: "Get instant explanation summaries, flashcards, and practice questions generated by AI based on your material.",
                 metric: "73% faster comprehension"
               },
               {
@@ -246,9 +360,9 @@ const LandingPage = () => {
               },
               {
                 icon: BookOpen,
-                title: "Content Processing",
-                description: "Upload any study material and get instant summaries, flashcards, and practice questions generated by AI.",
-                metric: "60+ file formats"
+                title: "Optimized Review Reminders",
+                description: "Receive review notifications optimized based on scientifically proven retention rates.",
+                metric: "54% Retention Improvement"
               },
               {
                 icon: Smartphone,
@@ -280,15 +394,14 @@ const LandingPage = () => {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-                Why 25,000+ Learners Choose Aayra
+                Why 12,000+ Learners Choose Aayra
               </h2>
               <div className="space-y-6">
                 {[
-                  { text: "Reduce study time by 38% with AI-optimized learning paths", stat: "38%" },
+                  { text: "Reduce study time by 38% by maintaining consistent schedules and focused study sprints", stat: "38%" },
                   { text: "Improve retention rates with spaced repetition and adaptive testing", stat: "54%" },
-                  { text: "Stay motivated with gamified progress tracking and achievements", stat: "89%" },
-                  { text: "Access your study materials anywhere with cross-platform sync", stat: "24/7" },
-                  { text: "Get instant help with AI tutoring available around the clock", stat: "1 sec" }
+                  { text: "Stay motivated with smart notifications, progress tracking and achievements", stat: "89%" },
+                  { text: "Access your study materials anywhere with cross-platform sync", stat: "24/7" }
                 ].map((benefit, index) => (
                   <div key={index} className="flex items-start space-x-3">
                     <CheckCircle className="w-6 h-6 text-green-500 mt-0.5 flex-shrink-0" />
@@ -337,15 +450,6 @@ const LandingPage = () => {
                     </div>
                     <span className="text-muted-foreground">In 45 min</span>
                   </div>
-                  <div className="p-4 bg-background rounded-lg shadow-sm">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium">Retention Rate</span>
-                      <span className="text-sm text-green-600">+54%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full" style={{width: '85%'}}></div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -392,13 +496,13 @@ const LandingPage = () => {
             </Card>
             <Card className="p-6 text-center">
               <Lightbulb className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Offline Access</h3>
-              <p className="text-sm text-muted-foreground">Study even without internet connection</p>
+              <h3 className="font-semibold mb-2">Easy Access</h3>
+              <p className="text-sm text-muted-foreground">Study without being tied to one device.</p>
             </Card>
             <Card className="p-6 text-center">
               <MessageSquare className="w-12 h-12 text-green-500 mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">AI Chat Support</h3>
-              <p className="text-sm text-muted-foreground">Get help instantly with our AI assistant</p>
+              <h3 className="font-semibold mb-2">AI at your fingertips</h3>
+              <p className="text-sm text-muted-foreground">Aayra AI make studying easier and effective.</p>
             </Card>
           </div>
         </div>
@@ -420,24 +524,24 @@ const LandingPage = () => {
             {[
               {
                 name: "Sarah Chen",
-                role: "Medical Learner",
-                content: "Aayra helped me cut my study time by 38% while improving my test scores by 54%. The AI recommendations are incredibly accurate!",
+                role: "Law Student",
+                content: "Aayra helped me cut my study time while improving my test scores by 50%. The AI generated materials are incredibly helpful!",
                 rating: 5,
-                improvement: "+54% retention"
+                improvement: "-38% Study Time"
               },
               {
                 name: "Marcus Rodriguez",
-                role: "Computer Science Learner",
-                content: "The smart notifications improved my consistency by 42%. I finally have a study routine that actually works.",
+                role: "Software Engineer",
+                content: "The smart notifications improved my consistency. I finally have a study routine that actually works.",
                 rating: 5,
                 improvement: "+42% consistency"
               },
               {
                 name: "Emily Watson",
-                role: "Law Learner",
-                content: "The content processing feature is a game-changer. I can upload my readings and get instant summaries and practice questions.",
+                role: "Medical Practitioner",
+                content: "The spaced repetition feature is a game-changer. Now I can not only study efficiently but also retain information for longer.",
                 rating: 5,
-                improvement: "60+ formats supported"
+                improvement: "+54% retention"
               }
             ].map((testimonial, index) => (
               <Card key={index} className="border-0 bg-background/80 backdrop-blur-sm">
@@ -448,53 +552,39 @@ const LandingPage = () => {
                       {[...Array(testimonial.rating)].map((_, i) => (
                         <Star key={i} className="w-4 h-4 text-yellow-500 fill-current" />
                       ))}
-                    </div>
-                  </div>
+                </div>
+              </div>
                   <p className="text-muted-foreground mb-4 italic">"{testimonial.content}"</p>
                   <div className="flex justify-between items-center">
-                    <div>
+                <div>
                       <p className="font-semibold text-foreground">{testimonial.name}</p>
                       <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                    </div>
+                </div>
                     <Badge className="bg-green-100 text-green-700 text-xs">
                       {testimonial.improvement}
                     </Badge>
-                  </div>
+              </div>
                 </CardContent>
-              </Card>
+            </Card>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section with Logo */}
-      <section className="py-20 bg-gradient-to-r from-orange-500 to-orange-600">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-center mb-6">
-            <img src="/AayraFavicon.png" alt="Aayra Logo" className="w-16 h-16" />
-          </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Transform Your Learning Experience?
-          </h2>
-          <p className="text-xl text-orange-100 mb-8 max-w-2xl mx-auto">
-            Join 25,000+ successful learners who have already improved their retention by 54% with Aayra's AI-powered learning platform.
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-br from-orange-100 to-orange-200/40">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Ready to Learn Smarter?</h2>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Join thousands of learners who are saving time and remembering more with Aayra.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/register">
-              <Button size="lg" variant="secondary" className="bg-white text-orange-600 hover:bg-gray-100 px-8 py-4 text-lg font-semibold">
-                Get Started for Free
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </Link>
-            <Link to="/login">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 px-8 py-4 text-lg">
-                Sign In
-              </Button>
-            </Link>
-          </div>
-          <p className="text-orange-100 mt-6 text-sm">
-            Start your 45-day free trial today • No credit card required
-          </p>
+          <Link to="/register">
+            <Button size="lg" className="bg-primary hover:bg-primary/90">
+              Start Your Free 45-Day Trial
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </Link>
+          <p className="text-sm text-muted-foreground mt-4">No credit card required. Cancel anytime.</p>
         </div>
       </section>
 
@@ -532,10 +622,10 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="border-t mt-8 pt-8 flex flex-col md:flex-row justify-between items-center text-muted-foreground">
-            <p>&copy; 2024 Aayra. All rights reserved.</p>
+            <p>&copy; 2025 Aayra. All rights reserved.</p>
             <div className="flex items-center space-x-2 mt-4 md:mt-0">
               <img src="/AayraFavicon.png" alt="Aayra" className="w-4 h-4" />
-              <span className="text-xs">Trusted by 25,000+ learners</span>
+              <span className="text-xs">Trusted by 12,000+ learners</span>
             </div>
           </div>
         </div>
