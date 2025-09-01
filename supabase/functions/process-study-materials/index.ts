@@ -527,12 +527,15 @@ CONTENT GENERATION REQUIREMENTS:
    - CREATIVE PROBLEM-SOLVING (15%): Novel scenarios requiring innovative thinking and creative application of principles
    - COMPARATIVE & INTEGRATIVE THINKING (10%): Questions requiring comparison, contrast, and integration across different domains or contexts
    
-   QUESTION COMPLEXITY REQUIREMENTS:
-   - Each question must test understanding at Bloom's Taxonomy levels 4-6 (Analyze, Evaluate, Create)
-   - Include multi-step reasoning requiring 3-4 logical connections
-   - Incorporate interdisciplinary connections and cross-domain applications
-   - Use sophisticated distractors that represent common misconceptions or partial understanding
-   - Questions should require 2-3 minutes of deep thinking to solve correctly
+   MANDATORY QUESTION COMPLEXITY REQUIREMENTS:
+   - EVERY question MUST test understanding at Bloom's Taxonomy levels 5-6 (Evaluate, Create) - NO EXCEPTIONS
+   - MANDATORY multi-step reasoning requiring 4-5 logical connections minimum
+   - REQUIRED interdisciplinary connections and cross-domain applications in every question
+   - MANDATORY sophisticated distractors representing advanced misconceptions or partial understanding
+   - Questions MUST require 3-5 minutes of intensive deep thinking to solve correctly
+   - EVERY question must involve synthesis of multiple concepts simultaneously
+   - MANDATORY inclusion of real-world professional scenarios requiring expert-level analysis
+   - Questions MUST test ability to critique, design, or create solutions, not just analyze
    
    CONTENT COVERAGE STRATEGY:
    - 50% of questions must directly test concepts from the provided material
@@ -556,16 +559,18 @@ CONTENT GENERATION REQUIREMENTS:
    - Obvious or poorly constructed distractors
    - Questions with only one plausible answer choice
 
-3. SUMMARY (Extensive and comprehensive - minimum 500 words):
-   - Organize into 8-10 detailed paragraphs, each 60-80 words
-   - Cover every major topic, concept, and principle from the material
-   - Include detailed explanations with specific examples and case studies
-   - Explain relationships and connections between different concepts
-   - Discuss practical applications and real-world implications
-   - Include historical context or background where relevant
-   - Explain the significance and importance of each concept
-   - Use simple, clear language while maintaining comprehensive coverage
-   - Conclude with broader implications, future applications, and connections to other fields
+3. SUMMARY (Extensive and comprehensive - minimum 1000-1200 words):
+   - Organize into 10-12 detailed paragraphs, each 90-120 words
+   - Cover every major topic, concept, and principle from the material with exhaustive detail
+   - Include comprehensive explanations with multiple specific examples and detailed case studies
+   - Explain complex relationships and intricate connections between different concepts
+   - Discuss extensive practical applications and real-world implications across multiple domains
+   - Include detailed historical context, background, and evolution of concepts
+   - Explain the significance, importance, and broader impact of each concept
+   - Use sophisticated yet accessible language while maintaining comprehensive coverage
+   - Include comparative analysis with related concepts and theories
+   - Conclude with extensive broader implications, future applications, and connections to other fields
+   - Provide detailed synthesis of how all concepts work together as a cohesive framework
 
 Focus on the emphasized concepts and key terms from the preprocessed content. Pay special attention to content marked with **KEY CONCEPT**, **IMPORTANT**, and section divisions.
 
@@ -722,8 +727,8 @@ REMEMBER: Every single word in your response must be in ${detectedLanguage}. Do 
       
       // Ensure we have minimum quality content after moderation
       const minFlashcards = 8;  // Minimum 8 flashcards (target 10-12)
-      const minQuizQuestions = 10;  // Minimum 10 quiz questions (target 12-15)
-      const minSummaryLength = 400;  // Minimum 400 words for very comprehensive summary (target 500+)
+      const minQuizQuestions = 10;  // Minimum 10 quiz questions (target 15-18, maintain current count)
+      const minSummaryLength = 1000;  // Minimum 1000 words for extremely comprehensive summary (target 1000-1200+)
       
       const summaryWordCount = moderatedResponse.summary ? moderatedResponse.summary.split(/\s+/).length : 0;
       
@@ -731,7 +736,7 @@ REMEMBER: Every single word in your response must be in ${detectedLanguage}. Do 
           moderatedResponse.quizQuestions.length < minQuizQuestions || 
           !moderatedResponse.summary || 
           summaryWordCount < minSummaryLength) {
-        console.warn(`Insufficient quality content after moderation. Got: ${moderatedResponse.flashcards.length} flashcards (need ${minFlashcards}), ${moderatedResponse.quizQuestions.length} quiz questions (need ${minQuizQuestions}), ${summaryWordCount} words in summary (need ${minSummaryLength})`);
+        console.warn(`Insufficient quality content after moderation. Got: ${moderatedResponse.flashcards.length} flashcards (need ${minFlashcards}), ${moderatedResponse.quizQuestions.length} quiz questions (need ${minQuizQuestions}), ${summaryWordCount} words in summary (need ${minSummaryLength} words minimum)`);
         return createLanguageSpecificFallback(sessionName, detectedLanguage);
       }
       
