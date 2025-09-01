@@ -73,6 +73,12 @@ const ProfilePage = () => {
     setSelectedFile(file);
   };
   
+  /**
+   * Save current profile values to the backend.
+   * - Uploads profile picture if selected
+   * - Serializes preferredStudyWeekdays as a clean, comma-separated string (or null)
+   * - Ensures the database column is overridden with the sanitized value
+   */
   const handleSaveProfile = async () => {
     if (!authUser) {
       toast({
@@ -113,11 +119,16 @@ const ProfilePage = () => {
         }
       }
 
+      // Sanitize and serialize weekdays for DB storage
+      const sanitizedWeekdays = (preferredStudyWeekdays && preferredStudyWeekdays.length)
+        ? Array.from(new Set(preferredStudyWeekdays)).join(',')
+        : null;
+
       const userDataToSave = {
         displayname: displayName,
         studentcategory: studentCategory,
         profilepictureurl: newProfilePictureUrl || null,
-        preferredstudyweekdays: preferredStudyWeekdays,
+        preferredstudyweekdays: sanitizedWeekdays,
          preferredstudystarttime: preferredStudyStartTime,
         lastloginat: new Date().toISOString()
       };

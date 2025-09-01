@@ -58,7 +58,6 @@ const renderValidationPage = (currentSessionOverride?: StudySession | null) => {
     loadIncompleteSessions: vi.fn(),
     loadPendingReviews: vi.fn(),
     toggleFavorite: vi.fn(),
-    markReviewAsCompleted: vi.fn(),
   };
   
   // ValidationPage uses MainLayout which might have NavLinks or other router-dependent components

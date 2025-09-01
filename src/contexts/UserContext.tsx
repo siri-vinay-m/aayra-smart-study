@@ -327,7 +327,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (updates.displayName !== undefined) supabasePayload.displayname = updates.displayName;
     if (updates.studentCategory !== undefined) supabasePayload.studentcategory = updates.studentCategory;
     if (updates.profilePictureURL !== undefined) supabasePayload.profilepictureurl = updates.profilePictureURL;
-    if (updates.preferredStudyWeekdays !== undefined) supabasePayload.preferredstudyweekdays = updates.preferredStudyWeekdays;
+    if (updates.preferredStudyWeekdays !== undefined) {
+      const v = updates.preferredStudyWeekdays;
+      supabasePayload.preferredstudyweekdays = v && v.length ? Array.from(new Set(v)).join(',') : null;
+    }
     if (updates.preferredStudyStartTime !== undefined) supabasePayload.preferredstudystarttime = updates.preferredStudyStartTime;
     if (updates.currentSubscriptionId !== undefined) supabasePayload.currentsubscriptionid = updates.currentSubscriptionId;
 

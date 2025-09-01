@@ -24,16 +24,23 @@ export const useReviewCompletion = () => {
   const { loadPendingReviews } = useSession();
   const { withLoading } = useLoadingPopup();
 
+  /**
+   * Completes a review session by:
+   * - Persisting AI content and quiz results
+   * - Marking the corresponding review cycle entry as completed (by entry id when provided)
+   * - Creating the next review cycle entry when applicable
+   * - Refreshing pending reviews and navigating home
+   */
   const completeReviewSession = useCallback(async (
     sessionId: string,
     aiContent: AIGeneratedContent,
     quizResponses: QuizResponse[],
-    reviewStage: number
+    reviewStage: number,
+    reviewEntryId?: string
   ) => {
     await withLoading(
       async () => {
         try {
-          console.log('Starting review session completion:', { sessionId, reviewStage });
           
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) {
@@ -51,7 +58,6 @@ export const useReviewCompletion = () => {
             }
           };
           
-          console.log('Storing AI content with review stage:', reviewStage);
           await storeAIContent(sessionId, aiContentWithResults, reviewStage);
           
           // Store quiz responses
@@ -63,7 +69,6 @@ export const useReviewCompletion = () => {
               correctAnswer: response.correctAnswer,
               isCorrect: response.isCorrect
             }));
-            console.log('Storing quiz responses with review stage:', reviewStage);
             await storeAllQuizResponses(sessionId, formattedResponses, reviewStage);
           }
 
@@ -75,46 +80,82 @@ export const useReviewCompletion = () => {
             .single();
 
           // Generate PDF for the review session (non-blocking)
-          console.log('Starting PDF generation for review session with stage:', reviewStage);
           generateSessionPDF(sessionId, sessionData?.sessionname || 'Review Session', aiContentWithResults, reviewStage)
-            .then(() => console.log('PDF generation completed successfully'))
-            .catch(pdfError => console.error('PDF generation failed:', pdfError));
+            .catch(pdfError => {
+              console.error('PDF generation error:', pdfError);
+            });
 
           // Get the current review entry to preserve the original initialappearancedate
-          console.log('Fetching current review cycle entry...');
-          const { data: currentReview, error: fetchError } = await supabase
+          const query = supabase
             .from('reviewcycleentries')
-            .select('*')
-            .eq('sessionid', sessionId)
-            .eq('userid', user.id)
-            .eq('reviewstage', reviewStage)
-            .eq('status', 'pending')
-            .single();
+            .select('*');
+
+          let currentReview: any = null;
+          let fetchError: any = null;
+          let fetchMethod = '';
+
+          if (reviewEntryId) {
+            // Fetch by specific entry id if available (preferred method)
+            const fetchById = await query
+              .eq('entryid', reviewEntryId)
+              .eq('userid', user.id)
+              .single();
+            currentReview = fetchById.data;
+            fetchError = fetchById.error;
+            fetchMethod = 'direct_id';
+          } else {
+            // Fallback to session + stage + pending filter
+            const fetchByComposite = await query
+              .eq('sessionid', sessionId)
+              .eq('userid', user.id)
+              .eq('reviewstage', reviewStage)
+              .eq('status', 'pending')
+              .single();
+            currentReview = fetchByComposite.data;
+            fetchError = fetchByComposite.error;
+            fetchMethod = 'composite';
+          }
 
           if (fetchError || !currentReview) {
-            console.error('Error fetching current review entry:', fetchError);
-            throw fetchError || new Error('Current review entry not found');
+            throw fetchError || new Error('Current review entry not found for completion');
           }
 
           // Update the review cycle entry status to completed
-          console.log('Updating review cycle entry status to completed...');
-          const { error: reviewUpdateError } = await supabase
+          const targetEntryId = reviewEntryId || currentReview.entryid;
+          
+          if (!targetEntryId) {
+            throw new Error('Cannot update review entry: missing entry ID');
+          }
+
+
+          
+          const updateResult = await supabase
             .from('reviewcycleentries')
             .update({ 
               status: 'completed',
               updatedat: new Date().toISOString()
             })
-            .eq('sessionid', sessionId)
+            .eq('entryid', targetEntryId)
             .eq('userid', user.id)
-            .eq('reviewstage', reviewStage)
-            .eq('status', 'pending');
+            .select('entryid, status, updatedat');
 
-          if (reviewUpdateError) {
-            console.error('Error updating review cycle entry:', reviewUpdateError);
-            throw reviewUpdateError;
+          if (updateResult.error) {
+            console.error('Failed to update review entry status:', updateResult.error);
+            
+
+            
+            throw updateResult.error;
+          }
+          
+          // Verify the update was successful
+          if (!updateResult.data || updateResult.data.length === 0) {
+            throw new Error('Review entry update failed: no rows affected');
           }
 
-          console.log('Review cycle entry updated successfully');
+          const updatedEntry = updateResult.data[0];
+          if (updatedEntry.status !== 'completed') {
+            throw new Error('Review entry status update verification failed');
+          }
 
           // Update session last reviewed date
           const { error: sessionError } = await supabase
@@ -130,7 +171,6 @@ export const useReviewCompletion = () => {
           }
 
           // Create next review cycle entry if needed
-          console.log('Creating next review cycle entry...');
           if (reviewStage < 6) { // Maximum stage is 6
             const nextReviewDate = calculateNextReviewDate(reviewStage);
             const { error: nextEntryError } = await supabase
@@ -146,26 +186,20 @@ export const useReviewCompletion = () => {
 
             if (nextEntryError) {
               console.error('Error creating next review cycle entry:', nextEntryError);
-            } else {
-              console.log('Next review cycle entry created for stage:', reviewStage + 1);
             }
           }
 
-          console.log('Review session completed successfully');
-
-          // Add a small delay to ensure database transaction is committed
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Add a longer delay to ensure database transaction is committed
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
           // Refresh pending reviews list
-          console.log('Refreshing pending reviews list...');
           await loadPendingReviews();
           
-          // Navigate to home for pending reviews (not pending reviews page)
-          navigate('/home');
+          // Navigate directly to pending reviews page to see the updated list
+          navigate('/pending-reviews');
         } catch (error) {
-          console.error('Error completing review session:', error);
-          // Navigate to home on error too
-          navigate('/home');
+          console.error('Review completion failed:', error);
+          throw error;
         }
       },
       'Completing review session...'

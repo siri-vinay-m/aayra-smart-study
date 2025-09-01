@@ -51,10 +51,24 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     // Auto refresh tokens
     autoRefreshToken: true,
     // Detect session in URL for web
-    detectSessionInUrl: false,
-    // Flow type for mobile apps
-    flowType: 'pkce',
+    detectSessionInUrl: true,
+    // Use PKCE on native, implicit on web to ensure password recovery works reliably in browsers
+    flowType: Capacitor.isNativePlatform() ? 'pkce' : 'implicit',
     // Debug mode for troubleshooting
     debug: true
   }
 });
+
+// Debug: surface key runtime auth configuration and platform
+try {
+  const maskedUrl = SUPABASE_URL ? `${SUPABASE_URL.slice(0, 20)}...` : 'N/A';
+  console.info('[Supabase] Client initialized', {
+    platform: Capacitor.getPlatform ? Capacitor.getPlatform() : 'web',
+    isNative: Capacitor.isNativePlatform(),
+    detectSessionInUrl: true,
+    flowType: Capacitor.isNativePlatform() ? 'pkce' : 'implicit',
+    supabaseUrlMasked: maskedUrl
+  });
+} catch (e) {
+  // no-op
+}

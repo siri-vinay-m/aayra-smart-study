@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import { useSession } from '@/contexts/SessionContext';
 import { useReviewSessionContent } from '@/hooks/useReviewSessionContent';
@@ -16,8 +16,10 @@ import { PendingReview } from '@/types/session';
 
 const ReviewSessionPage = () => {
   const { sessionId } = useParams();
+  const [searchParams] = useSearchParams();
+  const reviewEntryId = searchParams.get('reviewEntryId') || undefined;
   const navigate = useNavigate();
-  const { pendingReviews, completedSessions, setCurrentSession, markReviewAsCompleted } = useSession();
+  const { pendingReviews, completedSessions, setCurrentSession } = useSession();
   const [currentStep, setCurrentStep] = useState<'flashcards' | 'quiz' | 'summary'>('flashcards');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -34,6 +36,14 @@ const ReviewSessionPage = () => {
 
   // Find the review session from either pending reviews or completed sessions
   const reviewSession = React.useMemo(() => {
+    // Prefer an exact match by entry id when available to avoid mismatches
+    if (reviewEntryId) {
+      const exactPending = pendingReviews.find(
+        review => review.sessionId === sessionId && review.id === reviewEntryId
+      );
+      if (exactPending) return exactPending;
+    }
+
     const pendingReview = pendingReviews.find(review => review.sessionId === sessionId);
     if (pendingReview) return pendingReview;
     
@@ -55,7 +65,14 @@ const ReviewSessionPage = () => {
     }
     
     return null;
-  }, [sessionId, pendingReviews, completedSessions]);
+  }, [sessionId, reviewEntryId, pendingReviews, completedSessions]);
+
+  // Resolve the exact reviewEntryId to use for completion: URL param takes precedence; otherwise derive from the matched pending review
+  const effectiveReviewEntryId = React.useMemo(() => {
+    if (reviewEntryId) return reviewEntryId;
+    const bySession = pendingReviews.find(r => r.sessionId === sessionId);
+    return bySession?.id;
+  }, [reviewEntryId, pendingReviews, sessionId]);
 
   const { aiContent, isLoadingContent, hasError } = useReviewSessionContent(reviewSession, sessionId);
 
@@ -63,7 +80,7 @@ const ReviewSessionPage = () => {
     if (reviewSession && aiContent) {
       // Set up the session as current session for validation flow
       const isFromCompletedSessions = completedSessions.some(session => session.id === sessionId);
-      const reviewStageNumber = typeof reviewSession.reviewStage === 'string' ? 0 : reviewSession.reviewStage;
+      const reviewStageNumber = typeof reviewSession.reviewStage === 'string' ? 1 : reviewSession.reviewStage;
       
       const sessionForValidation = {
         id: sessionId!,
@@ -80,11 +97,13 @@ const ReviewSessionPage = () => {
         createdAt: new Date(),
         startTime: new Date(),
         completedAt: undefined,
-        isFavorite: false
+        isFavorite: false,
+        // Carry the exact review entry id for precise completion even if user navigates elsewhere
+        reviewEntryId: effectiveReviewEntryId,
       };
       setCurrentSession(sessionForValidation);
     }
-  }, [reviewSession, aiContent, sessionId, setCurrentSession, completedSessions]);
+  }, [reviewSession, aiContent, sessionId, setCurrentSession, completedSessions, effectiveReviewEntryId]);
 
   if (isLoadingContent) {
     return (
@@ -147,23 +166,6 @@ const ReviewSessionPage = () => {
     });
   };
 
-  const handleSubmitAnswer = () => {
-    if (selectedAnswer) {
-      setIsAnswerSubmitted(true);
-    }
-  };
-
-  const handleNextQuestion = () => {
-    setSelectedAnswer(null);
-    setIsAnswerSubmitted(false);
-    
-    if (currentQuestionIndex < aiContent.quizQuestions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    } else {
-      setCurrentStep('summary');
-    }
-  };
-
   const handleAnswerSelect = (answer: string) => {
     if (!isAnswerSubmitted) {
       setSelectedAnswer(answer);
@@ -178,7 +180,12 @@ const ReviewSessionPage = () => {
       // For pending reviews, use completeReviewSession which handles everything
       // including marking as completed and creating next review entry
       const reviewStageNumber = typeof reviewSession.reviewStage === 'string' ? 1 : reviewSession.reviewStage;
-      await completeReviewSession(sessionId!, aiContent, quizResponses, reviewStageNumber);
+      
+      try {
+        await completeReviewSession(sessionId!, aiContent, quizResponses, reviewStageNumber, effectiveReviewEntryId);
+      } catch (completionError) {
+        console.error('Review completion failed:', completionError);
+      }
       setCurrentSession(null);
       navigate('/home');
     } else if (isFromCompletedSessions) {
@@ -188,7 +195,7 @@ const ReviewSessionPage = () => {
     } else {
       // For other sessions, complete normally
       const reviewStageNumber = typeof reviewSession.reviewStage === 'string' ? 1 : reviewSession.reviewStage;
-      await completeReviewSession(sessionId!, aiContent, quizResponses, reviewStageNumber);
+      await completeReviewSession(sessionId!, aiContent, quizResponses, reviewStageNumber, effectiveReviewEntryId);
       setCurrentSession(null);
     }
   };
@@ -224,8 +231,16 @@ const ReviewSessionPage = () => {
         selectedAnswer={selectedAnswer}
         isAnswerSubmitted={isAnswerSubmitted}
         onAnswerSelect={handleAnswerSelect}
-        onSubmitAnswer={handleSubmitAnswer}
-        onNext={handleNextQuestion}
+        onSubmitAnswer={() => setIsAnswerSubmitted(true)}
+        onNext={() => {
+          setSelectedAnswer(null);
+          setIsAnswerSubmitted(false);
+          if (currentQuestionIndex < aiContent.quizQuestions.length - 1) {
+            setCurrentQuestionIndex(currentQuestionIndex + 1);
+          } else {
+            setCurrentStep('summary');
+          }
+        }}
         onQuizResponse={handleQuizResponse}
       />
     );
@@ -235,12 +250,12 @@ const ReviewSessionPage = () => {
         summary={aiContent.summary}
         onFinish={handleFinishReview}
         sessionType={getSessionType()}
-        sessionId={sessionId}
+        sessionId={sessionId!}
         quizResponses={quizResponses}
       />
     );
   }
-
+  
   return (
     <MainLayout>
       <div className="px-4">
@@ -257,7 +272,7 @@ const ReviewSessionPage = () => {
             {currentStep === 'flashcards' ? 'Review Flashcards' : 
              currentStep === 'quiz' ? 'Knowledge Check' : 'Session Summary'}
           </h1>
-          <div className="w-16" />
+          <div className="w-16" /> {/* Spacer for centering */}
         </div>
         {pageContent}
       </div>

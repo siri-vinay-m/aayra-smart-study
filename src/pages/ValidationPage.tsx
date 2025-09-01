@@ -151,7 +151,9 @@ const ValidationPage = () => {
             currentSession.id, 
             currentSession.aiGeneratedContent, 
             quizResponses, 
-            currentSession.reviewStage
+            currentSession.reviewStage,
+            // Pass through the exact review entry id when available to ensure precise update
+            currentSession.reviewEntryId
           );
         }
         // Navigation handled in completeReviewSession - goes to home

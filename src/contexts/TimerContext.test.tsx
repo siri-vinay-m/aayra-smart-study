@@ -30,16 +30,10 @@ const mockSessionContextValue = {
   incompleteSessions: [],
   setIncompleteSessions: vi.fn(),
   pendingReviews: [],
-  setPendingReviews: vi.fn(),
-  createNewSession: vi.fn(),
-  completeSession: vi.fn(),
-  updateCurrentSessionStatus: vi.fn(),
-  markSessionAsIncomplete: vi.fn(),
-  loadCompletedSessions: vi.fn(),
-  loadIncompleteSessions: vi.fn(),
+  setCurrentSession: vi.fn(),
   loadPendingReviews: vi.fn(),
+  calculateNextReviewDate: vi.fn().mockReturnValue('2024-01-01'),
   toggleFavorite: vi.fn(),
-  markReviewAsCompleted: vi.fn(),
 };
 
 const TestComponent = () => {
