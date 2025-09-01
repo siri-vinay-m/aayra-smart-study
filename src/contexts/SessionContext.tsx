@@ -24,7 +24,6 @@ interface SessionContextType {
   loadIncompleteSessions: () => Promise<void>;
   loadPendingReviews: () => Promise<void>;
   toggleFavorite: (sessionId: string) => Promise<void>;
-  markReviewAsCompleted: (reviewId: string) => Promise<boolean>;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -57,17 +56,14 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = React.memo(({ 
   const completeSession = (sessionId: string) => {
     console.log('SessionContext: completeSession called for:', sessionId);
     
-    // Pass the loadIncompleteSessions function to handle moving sessions between lists
-    reviewOps.completeSession(
-      sessionId, 
-      sessionOps.loadCompletedSessions,
-      sessionOps.loadIncompleteSessions
-    );
-    
     // Clear current session if it's the one being completed
     if (sessionOps.currentSession && sessionOps.currentSession.id === sessionId) {
       sessionOps.setCurrentSession(null);
     }
+    
+    // Reload sessions to reflect completion
+    sessionOps.loadCompletedSessions();
+    sessionOps.loadIncompleteSessions();
   };
 
   // Memoize context value to prevent unnecessary re-renders
@@ -88,7 +84,6 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = React.memo(({ 
     loadIncompleteSessions: sessionOps.loadIncompleteSessions,
     loadPendingReviews: reviewOps.loadPendingReviews,
     toggleFavorite: sessionOps.toggleFavorite,
-    markReviewAsCompleted: reviewOps.markReviewAsCompleted,
   }), [
     sessionOps.currentSession,
     sessionOps.completedSessions,
@@ -106,7 +101,6 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = React.memo(({ 
     sessionOps.loadIncompleteSessions,
     reviewOps.loadPendingReviews,
     sessionOps.toggleFavorite,
-    reviewOps.markReviewAsCompleted,
   ]);
 
   return (

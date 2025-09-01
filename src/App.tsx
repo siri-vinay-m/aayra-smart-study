@@ -25,7 +25,7 @@ import LandingPage from "./components/LandingPage";
 import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
-import TestPage from "./pages/TestPage";
+
 import DebugPage from "./pages/DebugPage";
 
 // Non-critical pages loaded lazily
@@ -157,7 +157,7 @@ function App() {
                         <Route path="/" element={<RootRedirect />} />
                         <Route path="/index" element={<Index />} />
                         <Route path="/landing" element={<LandingPage />} />
-                        <Route path="/test" element={<TestPage />} />
+
                         <Route path="/debug" element={<DebugPage />} />
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/register" element={<RegistrationPage />} />

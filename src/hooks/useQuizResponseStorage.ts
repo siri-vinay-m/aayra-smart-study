@@ -48,15 +48,13 @@ export const useQuizResponseStorage = () => {
 
       // Insert quiz responses
       const { error: quizError } = await supabase
-        .from('quiz_responses')
+        .from('user_quiz_responses')
         .insert(quizResponsesData);
 
       if (quizError) {
         console.error('Error storing quiz responses:', quizError);
         throw quizError;
       }
-
-      console.log('Quiz responses stored successfully');
     } catch (error) {
       console.error('Error in storeAllQuizResponses:', error);
       throw error;

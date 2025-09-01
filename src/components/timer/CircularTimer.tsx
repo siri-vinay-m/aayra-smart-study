@@ -130,10 +130,7 @@ const CircularTimer: React.FC<CircularTimerProps> = ({ showControls = true }) =>
 
               {status === 'running' ? (
                 <button
-                  onClick={() => {
-                    console.log('CircularTimer: Pause button clicked');
-                    pauseTimer();
-                  }}
+                  onClick={pauseTimer}
                   className="px-6 py-3 rounded-lg bg-primary hover:bg-primary-dark text-white font-medium transition-colors"
                 >
                   Pause

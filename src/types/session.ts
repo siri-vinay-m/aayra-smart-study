@@ -31,6 +31,9 @@ export interface StudySession {
   isFavorite?: boolean;
   aiGeneratedContent?: AIGeneratedContent;
   reviewStage?: number;
+  // Optional: when this StudySession represents a pending review in validation flow,
+  // carry the exact reviewcycleentries.entryid to ensure precise completion updates.
+  reviewEntryId?: string;
 }
 
 export interface PendingReview {
