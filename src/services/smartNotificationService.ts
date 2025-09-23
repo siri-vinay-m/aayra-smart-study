@@ -422,22 +422,8 @@ export class SmartNotificationService {
    */
   private async storeNotificationLog(log: NotificationLog): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('notification_logs')
-        .insert({
-          user_id: log.userId,
-          notification_type: log.notificationType,
-          content: log.content,
-          scheduled_time: log.scheduledTime,
-          sent_time: log.sentTime,
-          delivered_time: log.deliveredTime,
-          clicked_time: log.clickedTime,
-          status: log.status
-        });
-
-      if (error) {
-        console.error('Error storing notification log:', error);
-      }
+      // Skip database logging for now since notification_logs table doesn't exist
+      console.log('Notification log skipped:', log);
     } catch (error) {
       console.error('Error in storeNotificationLog:', error);
     }

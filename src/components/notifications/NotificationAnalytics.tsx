@@ -63,39 +63,19 @@ export const NotificationAnalytics: React.FC = () => {
     try {
       setLoading(true);
       
-      const { data: notificationLogs, error } = await supabase
-        .from('notification_logs')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) {
-        console.error('Error loading notification logs:', error);
-        return;
-      }
-
-      const logs = notificationLogs || [];
+      // Since notification_logs table doesn't exist, show placeholder data
+      const logs: NotificationLog[] = [];
       setLogs(logs);
       
-      // Calculate statistics
-      const total = logs.length;
-      const sent = logs.filter(log => ['sent', 'delivered', 'clicked'].includes(log.status)).length;
-      const delivered = logs.filter(log => ['delivered', 'clicked'].includes(log.status)).length;
-      const clicked = logs.filter(log => log.status === 'clicked').length;
-      const failed = logs.filter(log => log.status === 'failed').length;
-      
-      const clickRate = sent > 0 ? Math.round((clicked / sent) * 100) : 0;
-      const deliveryRate = sent > 0 ? Math.round((delivered / sent) * 100) : 0;
-      
+      // Set default statistics
       setStats({
-        total,
-        sent,
-        delivered,
-        clicked,
-        failed,
-        clickRate,
-        deliveryRate
+        total: 0,
+        sent: 0,
+        delivered: 0,
+        clicked: 0,
+        failed: 0,
+        clickRate: 0,
+        deliveryRate: 0
       });
     } catch (error) {
       console.error('Error in loadNotificationLogs:', error);

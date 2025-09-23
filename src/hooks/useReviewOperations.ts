@@ -94,7 +94,8 @@ export const useReviewOperations = () => {
           reviewStage: entry.reviewstage,
           dueDate: entry.currentreviewduedate,
           lastReviewedAt: entry.studysessions.lastreviewedat,
-          createdAt: entry.studysessions.createdat
+          createdAt: entry.studysessions.createdat,
+          completedAt: new Date(entry.studysessions.lastreviewedat || new Date().toISOString()) // Add completedAt field as Date
         }));
 
       console.log('Transformed pending reviews:', transformedReviews.length, 'reviews');

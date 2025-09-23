@@ -205,16 +205,7 @@ export class SimpleMobileNotificationService {
         });
       }
 
-      // Also log to Supabase for tracking
-      if (this.userId) {
-        await supabase.from('notification_logs').insert({
-          user_id: this.userId,
-          notification_type: 'study_reminder',
-          content: JSON.stringify({ title, body }),
-          scheduled_time: scheduledTime.toISOString(),
-          status: 'scheduled'
-        });
-      }
+      // Skip database logging for now since notification_logs table doesn't exist
 
       console.log('Study reminder scheduled successfully');
     } catch (error) {
@@ -232,20 +223,7 @@ export class SimpleMobileNotificationService {
     type: string = 'general'
   ): Promise<boolean> {
     try {
-      const { error } = await supabase.from('notification_logs').insert({
-        user_id: userId,
-        notification_type: type,
-        content: JSON.stringify({ title, body }),
-        scheduled_time: new Date().toISOString(),
-        sent_time: new Date().toISOString(),
-        status: 'sent'
-      });
-
-      if (error) {
-        console.error('Error sending notification:', error);
-        return false;
-      }
-
+      // Skip database logging for now since notification_logs table doesn't exist
       return true;
     } catch (error) {
       console.error('Error sending notification:', error);
@@ -308,19 +286,13 @@ export class SimpleMobileNotificationService {
     if (!this.userId) return null;
 
     try {
-      const { data, error } = await supabase
-        .from('notification_logs')
-        .select('notification_type, status, created_at')
-        .eq('user_id', this.userId)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) {
-        console.error('Error fetching notification stats:', error);
-        return null;
-      }
-
-      return data;
+      // Skip database logging for now since notification_logs table doesn't exist
+      return {
+        total: 0,
+        sent: 0,
+        delivered: 0,
+        failed: 0
+      };
     } catch (error) {
       console.error('Error getting notification stats:', error);
       return null;

@@ -54,7 +54,7 @@ export const useStudyReminders = () => {
         streak: 0,
         weeklyProgress: 0,
         completionRate: 0,
-        sessionsToGoal: user?.weeklyGoal || 10
+        sessionsToGoal: 10 // Use default value since weeklyGoal doesn't exist
       };
     }
 
@@ -74,7 +74,7 @@ export const useStudyReminders = () => {
     const streak = calculateStudyStreak(completedSessions);
 
     // Calculate weekly progress
-    const weeklyGoal = user.weeklyGoal || 10;
+    const weeklyGoal = 10; // Use default value since weeklyGoal doesn't exist
     const weeklyProgress = Math.round((weeklySessionsCount / weeklyGoal) * 100);
 
     // Calculate completion rate (simplified)

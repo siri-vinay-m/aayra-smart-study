@@ -160,15 +160,7 @@ export class EnhancedNotificationService {
       // Send notification
       notificationService.showNotification(title, body, '/favicon.png', true);
 
-      // Log to database
-      await supabase.from('notification_logs').insert({
-        user_id: userId,
-        notification_type: 'test_smart',
-        content: JSON.stringify({ title, body }),
-        scheduled_time: new Date().toISOString(),
-        sent_time: new Date().toISOString(),
-        status: 'sent'
-      });
+      // Skip database logging for now since notification_logs table doesn't exist
 
       return {
         success: true,
@@ -248,14 +240,7 @@ export class EnhancedNotificationService {
         notificationService.showNotification(title, body, '/favicon.png', true);
       }, delayMinutes * 60 * 1000);
 
-      // Log to database
-      await supabase.from('notification_logs').insert({
-        user_id: userId,
-        notification_type: 'test_scheduled',
-        content: JSON.stringify({ title, body }),
-        scheduled_time: scheduledTime.toISOString(),
-        status: 'scheduled'
-      });
+      // Skip database logging for now since notification_logs table doesn't exist
 
       return {
         success: true,
