@@ -105,9 +105,9 @@ export class EnhancedNotificationService {
       // Get user data
       const { data: user, error: userError } = await supabase
         .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
+        .select('userid, displayname')
+        .eq('userid', userId)
+        .maybeSingle();
 
       if (userError || !user) {
         return {

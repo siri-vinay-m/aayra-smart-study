@@ -176,7 +176,7 @@ export const useContentModeration = () => {
             isAppropriate: false,
             reason: `This content contains ${category.replace('_', ' ')} and has been rejected. Please upload appropriate educational content.`,
             category,
-            severity: config.severity,
+        severity: config.severity as 'high' | 'low' | 'medium' | 'critical',
             confidence: 0.90
           };
         }
@@ -199,7 +199,7 @@ export const useContentModeration = () => {
             isAppropriate: false,
             reason: `This content contains ${biasType} bias or stereotypes and has been rejected. Please ensure content is inclusive and non-discriminatory.`,
             category: `bias_${biasType}`,
-            severity: config.severity,
+            severity: config.severity as 'high' | 'low' | 'medium' | 'critical',
             confidence: 0.75
           };
         }
@@ -233,7 +233,7 @@ export const useContentModeration = () => {
           isAppropriate: false,
           reason: "This content contains sensitive data that could compromise security and has been rejected.",
           category: "sensitive_data",
-          severity: PRIVACY_PATTERNS.sensitive_data.severity,
+          severity: PRIVACY_PATTERNS.sensitive_data.severity as 'high' | 'low' | 'medium' | 'critical',
           confidence: 0.85
         };
       }

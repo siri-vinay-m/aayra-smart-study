@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TimerType, TimerStatus } from '@/types/timer';
 import { useSession } from './SessionContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useLoadingPopup } from '@/hooks/useLoadingPopup';

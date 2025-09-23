@@ -118,11 +118,22 @@ export const useBackButtonHandler = () => {
     };
 
     // Add back button listener
-    const backButtonListener = App.addListener('backButton', handleBackButton);
+    const setupListener = async () => {
+      const backButtonListener = await App.addListener('backButton', handleBackButton);
+      return backButtonListener;
+    };
+    
+    let listenerPromise: Promise<any> | null = null;
+    
+    if (Capacitor.isNativePlatform()) {
+      listenerPromise = setupListener();
+    }
 
     // Cleanup listener on unmount
     return () => {
-      backButtonListener.remove();
+      if (listenerPromise) {
+        listenerPromise.then(listener => listener.remove());
+      }
     };
   }, [location.pathname, currentSession, navigate, handleNavigationAttempt, toast]);
 

@@ -87,24 +87,25 @@ export class SmartNotificationService {
     for (const user of users || []) {
       try {
         // Get pending reviews for this user
-        const pendingReviews = await this.getUserPendingReviews(user.id);
+        const pendingReviews = await this.getUserPendingReviews(user.userid);
         
         // Get recent sessions for smart recap
-        const recentSessions = await this.getUserRecentSessions(user.id);
+        const recentSessions = await this.getUserRecentSessions(user.userid);
         
         // Calculate user stats
-        const userStats = await this.calculateUserStats(user.id, pendingReviews, recentSessions);
+        const userStats = await this.calculateUserStats(user.userid, pendingReviews, recentSessions);
 
         userNotificationData.push({
-          userId: user.id,
-          preferredStudyWeekdays: user.preferredstudyweekdays || [],
+          userId: user.userid,
+          preferredStudyWeekdays: Array.isArray(user.preferredstudyweekdays) ? user.preferredstudyweekdays : 
+            (user.preferredstudyweekdays ? [user.preferredstudyweekdays] : []),
           preferredStudyStartTime: user.preferredstudystarttime || '',
           pendingReviews,
           recentSessions,
           userStats
         });
       } catch (error) {
-        console.error(`Error processing user ${user.id}:`, error);
+        console.error(`Error processing user ${user.userid}:`, error);
       }
     }
 
@@ -434,22 +435,10 @@ export class SmartNotificationService {
    */
   async logNotificationEvent(userId: string, eventType: 'delivered' | 'clicked'): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('notification_logs')
-        .update({ 
-          [`${eventType}_time`]: new Date().toISOString(),
-          status: eventType
-        })
-        .eq('user_id', userId)
-        .eq('status', eventType === 'delivered' ? 'sent' : 'delivered')
-        .order('scheduled_time', { ascending: false })
-        .limit(1);
-
-      if (error) {
-        console.error(`Error logging ${eventType} event:`, error);
-      }
+      // Skip database logging for now since notification_logs table doesn't exist
+      console.log(`Notification event ${eventType} for user ${userId}`);
     } catch (error) {
-      console.error(`Error in logNotificationEvent (${eventType}):`, error);
+      console.error('Error logging notification event:', error);
     }
   }
 

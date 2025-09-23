@@ -134,7 +134,7 @@ export class SimpleMobileNotificationService {
     try {
       if (Capacitor.isNativePlatform()) {
         const result = await LocalNotifications.checkPermissions();
-        return { display: result.display };
+        return { display: result.display as 'granted' | 'denied' | 'prompt' };
       } else {
         // Web notification permission
         if ('Notification' in window) {

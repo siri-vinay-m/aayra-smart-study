@@ -146,19 +146,9 @@ export class NotificationService {
           registration.showNotification(title, {
             body,
             icon: icon || '/favicon.png',
-        badge: '/favicon.png',
+            badge: '/favicon.png',
             tag: 'study-reminder',
-            requireInteraction: true,
-            actions: [
-              {
-                action: 'open',
-                title: 'Start Studying'
-              },
-              {
-                action: 'dismiss',
-                title: 'Dismiss'
-              }
-            ]
+            requireInteraction: true
           });
         }).catch((error) => {
           console.error('Error showing service worker notification:', error);

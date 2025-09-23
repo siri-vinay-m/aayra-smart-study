@@ -41,7 +41,7 @@ const NotificationSettingsPage: React.FC = () => {
         try {
           await mobileNotificationService.initialize();
           const permissions = await mobileNotificationService.checkPermissions();
-          setNotificationsEnabled(permissions.receive === 'granted');
+          setNotificationsEnabled(permissions.display === 'granted');
         } catch (error) {
           console.error('Error initializing mobile notifications:', error);
           setNotificationsEnabled(false);
@@ -66,7 +66,7 @@ const NotificationSettingsPage: React.FC = () => {
         
         if (isMobile) {
           // Mobile platform - use Capacitor push notifications
-          granted = await mobileNotificationService.requestPermission();
+          granted = await mobileNotificationService.requestPermissions();
         } else {
           // Web platform - use browser notifications
           granted = await notificationService.requestPermission();

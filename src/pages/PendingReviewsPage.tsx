@@ -51,7 +51,7 @@ const PendingReviewsPage = () => {
           if (!document.hidden) {
             // Debounce visibility changes to prevent excessive API calls
             clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
+            timeoutId = window.setTimeout(() => {
               debouncedLoadReviews();
             }, 500);
           }

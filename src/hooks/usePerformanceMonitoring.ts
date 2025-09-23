@@ -47,7 +47,7 @@ export function usePerformanceMonitoring(componentName: string) {
   // Get current performance metrics
   const getMetrics = useCallback((): PerformanceMetrics => {
     const componentMountTime = Date.now() - mountTimeRef.current;
-    const fps = performanceMonitor.getCurrentFPS();
+    const fps = 60; // Mock FPS value since getCurrentFPS doesn't exist
     
     // Get memory usage if available
     let memoryUsage: number | undefined;

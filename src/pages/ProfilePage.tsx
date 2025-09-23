@@ -232,7 +232,7 @@ const ProfilePage = () => {
           displayName={displayName}
           setDisplayName={setDisplayName}
           studentCategory={studentCategory}
-          setStudentCategory={setStudentCategory}
+          setStudentCategory={(value: string) => setStudentCategory(value as StudentCategory)}
           preferredStudyWeekdays={preferredStudyWeekdays}
           setPreferredStudyWeekdays={setPreferredStudyWeekdays}
           preferredStudyStartTime={preferredStudyStartTime}
