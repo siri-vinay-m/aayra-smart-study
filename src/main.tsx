@@ -4,6 +4,8 @@ import App from './App.tsx'
 import './index.css'
 
 console.log('main.tsx: Starting application initialization');
+console.log('main.tsx: Document ready state:', document.readyState);
+console.log('main.tsx: Location:', window.location.href);
 
 try {
   // Get the root element
