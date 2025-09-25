@@ -147,10 +147,35 @@ serve(async (req) => {
             break;
           case 'url':
             try {
-              const url = new URL(material.content);
-              content = `Educational Resource from ${url.hostname}: ${material.content}. This appears to be an educational document or resource that should be used to generate relevant study materials.`;
-            } catch {
-              content = `Educational Resource: ${material.content}. This appears to be an educational document or resource.`;
+              const urlStr = material.content.trim();
+              const url = new URL(urlStr);
+              console.log(`Fetching URL content: ${urlStr}`);
+              const resp = await fetch(urlStr, {
+                headers: {
+                  'User-Agent': 'Mozilla/5.0 (compatible; StudyAI/1.0; +https://ouyilgvqbwcekkajrrug.supabase.co)'
+                }
+              });
+              if (!resp.ok) {
+                console.warn(`Failed to fetch URL (${resp.status}), falling back to URL-only context`);
+                content = `Educational Resource from ${url.hostname}: ${urlStr}.`;
+              } else {
+                let html = await resp.text();
+                // Remove scripts and styles
+                html = html.replace(/<script[\s\S]*?<\/script>/gi, '')
+                           .replace(/<style[\s\S]*?<\/style>/gi, '');
+                // Extract title
+                const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+                const title = titleMatch ? titleMatch[1].trim() : '';
+                // Strip HTML tags to get readable text
+                const text = html.replace(/<[^>]+>/g, ' ')
+                                 .replace(/\s+/g, ' ')
+                                 .trim();
+                const snippet = text.substring(0, 8000); // cap to avoid token overflow
+                content = `URL: ${urlStr}\nSource: ${url.hostname}\nTitle: ${title}\n\n${snippet}`;
+              }
+            } catch (e) {
+              console.warn('Invalid URL or fetch failed:', e);
+              content = `Educational Resource: ${material.content}`;
             }
             break;
           case 'voice':
