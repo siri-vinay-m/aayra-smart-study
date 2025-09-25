@@ -15,11 +15,16 @@ export const useStudyReminders = () => {
         return;
       }
 
-      // Request notification permission
+      // Only proceed if user has study preferences set
+      if (!user.preferredStudyWeekdays || !user.preferredStudyStartTime) {
+        return;
+      }
+
+      // Request notification permission (won't show repeated alerts)
       const hasPermission = await notificationService.requestPermission();
       
       if (!hasPermission) {
-        console.log('Notification permission denied');
+        console.log('Notification permission not available');
         return;
       }
 
@@ -27,13 +32,11 @@ export const useStudyReminders = () => {
       const userStats = calculateUserStats();
       
       // Schedule reminders based on user preferences
-      if (user.preferredStudyWeekdays && user.preferredStudyStartTime) {
-        notificationService.scheduleStudyReminders(
-          user.preferredStudyWeekdays,
-          user.preferredStudyStartTime,
-          userStats
-        );
-      }
+      notificationService.scheduleStudyReminders(
+        user.preferredStudyWeekdays,
+        user.preferredStudyStartTime,
+        userStats
+      );
     };
 
     setupNotifications();
@@ -44,7 +47,7 @@ export const useStudyReminders = () => {
         notificationService.clearAllNotifications();
       }
     };
-  }, [user?.preferredStudyWeekdays, user?.preferredStudyStartTime, user?.id, pendingReviews, completedSessions]);
+  }, [user?.preferredStudyWeekdays, user?.preferredStudyStartTime, user?.id]);
 
   const calculateUserStats = () => {
     if (!completedSessions || !user) {

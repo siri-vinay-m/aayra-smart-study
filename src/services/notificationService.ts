@@ -94,6 +94,8 @@ export class NotificationService {
     }
   }
 
+  private hasShownBlockedAlert = false;
+
   async requestPermission(): Promise<boolean> {
     if (!('Notification' in window)) {
       console.log('This browser does not support notifications');
@@ -106,10 +108,14 @@ export class NotificationService {
       return true;
     }
 
-    // Don't request if explicitly denied
+    // Don't request if explicitly denied - but only show alert once per session
     if (Notification.permission === 'denied') {
       console.log('Notifications are blocked by the user');
-      alert('Notifications are blocked. Please enable them in your browser settings to receive study reminders.');
+      if (!this.hasShownBlockedAlert) {
+        this.hasShownBlockedAlert = true;
+        // Use a less intrusive method than alert
+        console.warn('Notifications are blocked. Please enable them in your browser settings to receive study reminders.');
+      }
       return false;
     }
 

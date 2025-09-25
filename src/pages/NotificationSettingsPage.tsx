@@ -68,6 +68,17 @@ const NotificationSettingsPage: React.FC = () => {
           // Mobile platform - use Capacitor push notifications
           granted = await mobileNotificationService.requestPermissions();
         } else {
+          // Web platform - check if notifications are permanently blocked
+          if (Notification.permission === 'denied') {
+            toast({
+              title: "Notifications Blocked",
+              description: "Notifications are blocked in your browser. Please click the lock icon in your address bar and enable notifications, then try again.",
+              variant: "destructive",
+            });
+            setIsLoading(false);
+            return;
+          }
+          
           // Web platform - use browser notifications
           granted = await notificationService.requestPermission();
         }
@@ -86,7 +97,7 @@ const NotificationSettingsPage: React.FC = () => {
             title: "Permission Denied",
             description: isMobile
               ? "Please enable push notifications in your device settings to receive study reminders."
-              : "Please enable notifications in your browser settings to receive study reminders.",
+              : "Please enable notifications in your browser settings. Click the lock icon in your address bar and select 'Allow' for notifications.",
             variant: "destructive",
           });
         }
